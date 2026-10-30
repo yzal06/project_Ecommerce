@@ -950,7 +950,7 @@ async function handleLoginSubmit(e) {
                 cancelButtonColor: '#64748B'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = '/admin';
+                    window.location.href = 'admin.html';
                 }
             });
         }

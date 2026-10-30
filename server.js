@@ -47,13 +47,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static directories
+// Serve static directories (Supports both public/ and root directory structure)
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 // Specific friendly route for admin
 app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+    const adminPath = fs.existsSync(path.join(__dirname, 'admin.html'))
+        ? path.join(__dirname, 'admin.html')
+        : path.join(__dirname, 'public', 'admin.html');
+    res.sendFile(adminPath);
 });
 
 // Auth Middleware

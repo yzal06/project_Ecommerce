@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Trị - MintMart Admin Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mint: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            300: '#6ee7b7',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom Admin Styles -->
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen">
+
+    <!-- ADMIN LOGIN SCREEN (If not authenticated as admin) -->
+    <div id="adminLoginScreen" class="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl relative border border-slate-100">
+            <!-- Brand without AI icon -->
+            <div class="text-center mb-6">
+                <div class="text-3xl font-black text-slate-900 tracking-tighter uppercase font-sans">
+                    MINT<span class="text-emerald-600">MART</span>
+                </div>
+                <div class="mt-1">
+                    <span class="inline-block text-[10px] font-extrabold uppercase tracking-widest bg-emerald-100 text-emerald-800 px-3 py-0.5 rounded-full">
+                        Hệ Thống Quản Trị Cửa Hàng
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 mt-2">Đăng nhập để quản lý sản phẩm, đơn hàng và kho đa kênh</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Email Quản Trị Viên</label>
+                    <div class="relative">
+                        <i class="fa-regular fa-envelope absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                        <input type="email" id="adminEmailInput" required value="admin@mintmart.vn" class="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white font-medium">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Mật Khẩu</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                        <input type="password" id="adminPasswordInput" required value="admin123" class="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white font-medium">
+                    </div>
+                </div>
+
+                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-800 space-y-1">
+                    <div class="font-bold flex items-center"><i class="fa-solid fa-circle-info mr-1.5 text-emerald-600"></i> Thông tin quản trị mặc định:</div>
+                    <div class="text-[11px] text-emerald-700">Email: <strong>admin@mintmart.vn</strong> | Pass: <strong>admin123</strong></div>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg transition flex items-center justify-center">
+                    <i class="fa-solid fa-arrow-right-to-bracket mr-2"></i> Đăng Nhập Quản Trị
+                </button>
+
+                <div class="text-center pt-2">
+                    <a href="index.html" class="text-xs text-slate-500 hover:text-emerald-600 flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-left mr-1.5"></i> Trở về Cửa Hàng Bán Hàng
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="adminSidebarBackdrop" class="hidden" onclick="toggleAdminSidebar(false)"></div>
+
+    <!-- MAIN ADMIN DASHBOARD LAYOUT (Visible when authenticated) -->
+    <div id="adminMainLayout" class="hidden min-h-screen flex">
+
+        <!-- Sidebar Navigation (Responsive Drawer on Mobile) -->
+        <aside id="adminSidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 z-30 transition-all">
+            <!-- Sidebar Header without AI leaf icon -->
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+                <a href="admin.html" class="flex flex-col">
+                    <div class="font-black text-white text-xl tracking-tighter font-sans uppercase">
+                        MINT<span class="text-emerald-400">MART</span>
+                    </div>
+                    <div class="text-[9px] text-emerald-300 font-bold uppercase tracking-widest">Admin Control Center</div>
+                </a>
+                <div class="flex items-center space-x-2">
+                    <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">PRO</span>
+                    <button onclick="toggleAdminSidebar(false)" class="md:hidden text-slate-400 hover:text-white p-1 text-sm rounded-lg" title="Đóng menu">
+                        <i class="fa-solid fa-xmark text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 p-4 space-y-1.5 text-xs font-semibold overflow-y-auto">
+                <div class="text-[10px] uppercase font-bold text-slate-500 px-3 py-1 tracking-wider">Menu Chính</div>
+                
+                <button onclick="switchAdminTab('dashboard')" id="navTab-dashboard" class="sidebar-link active w-full flex items-center space-x-3 px-3 py-2.5 text-left">
+                    <i class="fa-solid fa-chart-pie text-sm w-5 text-center"></i>
+                    <span>Tổng Quan (Dashboard)</span>
+                </button>
+
+                <button onclick="switchAdminTab('products')" id="navTab-products" class="sidebar-link w-full flex items-center justify-between px-3 py-2.5 text-left">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-box-open text-sm w-5 text-center"></i>
+                        <span>Quản Lý Sản Phẩm</span>
+                    </div>
+                    <span id="sidebarProductCount" class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full text-[10px] font-bold">0</span>
+                </button>
+
+                <button onclick="switchAdminTab('categories')" id="navTab-categories" class="sidebar-link w-full flex items-center space-x-3 px-3 py-2.5 text-left">
+                    <i class="fa-solid fa-tags text-sm w-5 text-center"></i>
+                    <span>Quản Lý Danh Mục</span>
+                </button>
+
+                <button onclick="switchAdminTab('orders')" id="navTab-orders" class="sidebar-link w-full flex items-center justify-between px-3 py-2.5 text-left">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-cart-flatbed text-sm w-5 text-center"></i>
+                        <span>Quản Lý Đơn Hàng</span>
+                    </div>
+                    <span id="sidebarOrderCount" class="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full text-[10px] font-bold">0</span>
+                </button>
+
+                <button onclick="switchAdminTab('users')" id="navTab-users" class="sidebar-link w-full flex items-center space-x-3 px-3 py-2.5 text-left">
+                    <i class="fa-solid fa-users text-sm w-5 text-center"></i>
+                    <span>Người Dùng & Phân Quyền</span>
+                </button>
+
+                <button onclick="switchAdminTab('marketplace')" id="navTab-marketplace" class="sidebar-link w-full flex items-center justify-between px-3 py-2.5 text-left">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-arrows-rotate text-sm w-5 text-center text-amber-400"></i>
+                        <span>Đồng Bộ Shopee & Lazada</span>
+                    </div>
+                    <span class="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded text-[10px] font-black">2 SÀN</span>
+                </button>
+
+                <div class="text-[10px] uppercase font-bold text-slate-500 px-3 pt-4 pb-1 tracking-wider">Hệ Thống</div>
+
+                <a href="index.html" target="_blank" class="sidebar-link w-full flex items-center space-x-3 px-3 py-2.5 text-left text-emerald-400 hover:text-white">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-sm w-5 text-center"></i>
+                    <span>Mở Cửa Hàng Khách Hàng</span>
+                </a>
+            </nav>
+
+            <!-- Current Logged In Admin Card -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950/50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-xs font-bold text-white truncate" id="sidebarAdminName">Admin</div>
+                            <div class="text-[10px] text-emerald-400 font-medium">Toàn quyền Quản trị</div>
+                        </div>
+                    </div>
+                    <button onclick="handleAdminLogout()" title="Đăng xuất" class="text-slate-400 hover:text-rose-400 p-1.5 transition">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+            
+            <!-- Top Bar (With Mobile Hamburger) -->
+            <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 sticky top-0 z-20 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <!-- Hamburger Menu Button for Mobile -->
+                    <button onclick="toggleAdminSidebar(true)" class="md:hidden p-2 -ml-2 text-slate-600 hover:text-emerald-600 rounded-xl hover:bg-slate-100 transition text-lg" title="Mở danh mục menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-sm sm:text-base font-extrabold text-slate-800" id="adminPageTitle">Bảng Điều Khiển</h2>
+                        <div class="text-[10px] sm:text-[11px] text-slate-400" id="adminBreadcrumb">MintMart > Quản Trị > Tổng quan</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- Quick Add Product Button -->
+                    <button onclick="openProductModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 sm:px-4 py-2 rounded-xl shadow-md transition flex items-center">
+                        <i class="fa-solid fa-plus sm:mr-1.5"></i>
+                        <span class="hidden sm:inline">Thêm Mặt Hàng Mới</span>
+                        <span class="sm:hidden ml-1">Thêm</span>
+                    </button>
+
+                    <!-- Link to Customer Website -->
+                    <a href="index.html" target="_blank" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition flex items-center">
+                        <i class="fa-solid fa-store sm:mr-1.5 text-emerald-600"></i>
+                        <span class="hidden sm:inline">Xem Web Bán Hàng</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Dynamic Views Container -->
+            <main class="flex-1 p-6">
+                
+                <!-- TAB 1: DASHBOARD OVERVIEW -->
+                <div id="tabContent-dashboard" class="space-y-6">
+                    
+                    <!-- 4 KPI Stat Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <!-- Revenue -->
+                        <div class="kpi-card p-5 rounded-2xl flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold uppercase text-slate-400">Doanh Thu Thực Tế</span>
+                                <div class="text-2xl font-black text-slate-800 mt-1" id="statTotalRevenue">0 ₫</div>
+                                <span class="text-[11px] text-emerald-600 font-bold flex items-center mt-1">
+                                    <i class="fa-solid fa-arrow-trend-up mr-1"></i> +18.5% so với tháng trước
+                                </span>
+                            </div>
+                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-sack-dollar"></i>
+                            </div>
+                        </div>
+
+                        <!-- Orders -->
+                        <div class="kpi-card p-5 rounded-2xl flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold uppercase text-slate-400">Tổng Đơn Hàng</span>
+                                <div class="text-2xl font-black text-slate-800 mt-1" id="statTotalOrders">0</div>
+                                <span class="text-[11px] text-emerald-600 font-bold flex items-center mt-1">
+                                    <i class="fa-solid fa-arrow-trend-up mr-1"></i> Tỷ lệ hoàn tất 92%
+                                </span>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-cart-shopping"></i>
+                            </div>
+                        </div>
+
+                        <!-- Products -->
+                        <div class="kpi-card p-5 rounded-2xl flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold uppercase text-slate-400">Mặt Hàng Kinh Doanh</span>
+                                <div class="text-2xl font-black text-slate-800 mt-1" id="statTotalProducts">0</div>
+                                <span class="text-[11px] text-slate-500 font-medium mt-1 block">
+                                    Đang phân phối trên trang
+                                </span>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                            </div>
+                        </div>
+
+                        <!-- Customers -->
+                        <div class="kpi-card p-5 rounded-2xl flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold uppercase text-slate-400">Khách Hàng Thành Viên</span>
+                                <div class="text-2xl font-black text-slate-800 mt-1" id="statTotalCustomers">0</div>
+                                <span class="text-[11px] text-emerald-600 font-bold flex items-center mt-1">
+                                    <i class="fa-solid fa-user-plus mr-1"></i> Tăng trưởng đều đặn
+                                </span>
+                            </div>
+                            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Revenue Trend Chart -->
+                        <div class="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800 text-sm">Doanh Thu 7 Ngày Gần Nhất</h3>
+                                <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Đồng bộ tự động</span>
+                            </div>
+                            <div class="h-64">
+                                <canvas id="revenueChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Categories Doughnut -->
+                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <h3 class="font-bold text-slate-800 text-sm mb-4">Tỷ Trọng Mặt Hàng Theo Danh Mục</h3>
+                            <div class="h-56 relative flex items-center justify-center">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                            <div class="text-[11px] text-slate-400 text-center mt-2">Dựa trên số lượng sản phẩm đang có</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Orders & Low Stock Tables -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Recent Orders (2 Cols) -->
+                        <div class="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800 text-sm">Đơn Hàng Mới Nhận</h3>
+                                <button onclick="switchAdminTab('orders')" class="text-xs text-emerald-600 font-bold hover:underline">
+                                    Xem tất cả đơn <i class="fa-solid fa-arrow-right ml-1"></i>
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="text-slate-400 uppercase bg-slate-50 border-b border-slate-100">
+                                        <tr>
+                                            <th class="py-2.5 px-3">Mã đơn</th>
+                                            <th class="py-2.5 px-3">Khách hàng</th>
+                                            <th class="py-2.5 px-3">Tổng tiền</th>
+                                            <th class="py-2.5 px-3">Trạng thái</th>
+                                            <th class="py-2.5 px-3 text-right">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashboardRecentOrdersBody" class="divide-y divide-slate-100">
+                                        <!-- Injected via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Low Stock Products (1 Col) -->
+                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-bold text-slate-800 text-sm flex items-center">
+                                    <i class="fa-solid fa-triangle-exclamation text-amber-500 mr-2"></i> Cảnh Báo Tồn Kho
+                                </h3>
+                                <span class="text-[11px] text-slate-400">&lt; 15 sản phẩm</span>
+                            </div>
+                            <div class="space-y-3" id="dashboardLowStockList">
+                                <!-- Injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- TAB 2: PRODUCTS MANAGEMENT -->
+                <div id="tabContent-products" class="hidden space-y-5">
+                    
+                    <!-- Products Status Tabs (Tất cả, Đang mở bán, Đã gỡ bán / Tạm ẩn) -->
+                    <div class="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs font-bold w-full sm:w-auto scrollbar-none" id="productStatusFilterPills">
+                            <button type="button" onclick="filterProductsByStatus('all')" id="statusPill-all" class="prod-status-pill active px-3.5 py-1.5 rounded-xl bg-slate-900 text-white shadow-sm flex items-center whitespace-nowrap">
+                                <span>Tất cả</span>
+                                <span class="ml-1.5 bg-white/20 text-white px-1.5 py-0.2 rounded-full text-[10px]" id="countStatusAll">0</span>
+                            </button>
+                            <button type="button" onclick="filterProductsByStatus('active')" id="statusPill-active" class="prod-status-pill px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center whitespace-nowrap">
+                                <i class="fa-solid fa-circle-check text-emerald-500 mr-1.5 text-[11px]"></i>
+                                <span>Đang Mở Bán</span>
+                                <span class="ml-1.5 bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full text-[10px]" id="countStatusActive">0</span>
+                            </button>
+                            <button type="button" onclick="filterProductsByStatus('inactive')" id="statusPill-inactive" class="prod-status-pill px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-100 text-rose-700 flex items-center whitespace-nowrap border border-transparent hover:border-rose-200">
+                                <i class="fa-solid fa-circle-pause text-rose-500 mr-1.5 text-[11px]"></i>
+                                <span>Đã Gỡ Bán / Tạm Ẩn</span>
+                                <span class="ml-1.5 bg-rose-100 text-rose-800 px-1.5 py-0.2 rounded-full text-[10px]" id="countStatusInactive">0</span>
+                            </button>
+                        </div>
+                        <span class="text-[11px] text-slate-400 font-medium hidden lg:inline">
+                            Quản lý hiển thị & gỡ sản phẩm khỏi website chỉ với 1 click
+                        </span>
+                    </div>
+
+                    <!-- Products Toolbar (Search, Filter, Add button) -->
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-[240px]">
+                            <!-- Search -->
+                            <div class="relative flex-1">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                                <input type="text" id="adminProductSearch" oninput="debounceProductSearch()" placeholder="Tìm theo tên sản phẩm..." class="w-full pl-8 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white">
+                            </div>
+                            <!-- Category Filter -->
+                            <select id="adminProductCatFilter" onchange="loadAdminProducts()" class="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 text-slate-700 outline-none max-w-[140px] sm:max-w-none">
+                                <option value="all">Tất cả danh mục</option>
+                            </select>
+                        </div>
+
+                        <!-- Add Product Button (High-visibility for phone and PC) -->
+                        <button onclick="openProductModal()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center justify-center">
+                            <i class="fa-solid fa-plus mr-1.5"></i> Thêm Mặt Hàng Mới
+                        </button>
+                    </div>
+
+                    <!-- Mobile Products Cards View (Visible on Mobile Only) -->
+                    <div id="adminProductsMobileContainer" class="space-y-3 md:hidden">
+                        <!-- Dynamically injected mobile cards via JS -->
+                    </div>
+
+                    <!-- Products Table (Visible on Tablets & Desktops) -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hidden md:block">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[11px]">
+                                    <tr>
+                                        <th class="py-3 px-4">Ảnh & Tên Mặt Hàng</th>
+                                        <th class="py-3 px-3">Danh Mục</th>
+                                        <th class="py-3 px-3">Giá Bán & Giảm Giá</th>
+                                        <th class="py-3 px-3">Kho Web</th>
+                                        <th class="py-3 px-3"><span class="text-orange-500 font-bold"><i class="fa-solid fa-bag-shopping mr-1"></i>Shopee</span></th>
+                                        <th class="py-3 px-3"><span class="text-blue-500 font-bold"><i class="fa-solid fa-heart mr-1"></i>Lazada</span></th>
+                                        <th class="py-3 px-3">Trạng Thái Bán</th>
+                                        <th class="py-3 px-4 text-right">Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminProductsTableBody" class="divide-y divide-slate-100">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- TAB 3: CATEGORIES MANAGEMENT -->
+                <div id="tabContent-categories" class="hidden space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Add Category Form -->
+                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm h-fit">
+                            <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center">
+                                <i class="fa-solid fa-plus-circle text-emerald-600 mr-2"></i> Thêm Danh Mục Mới
+                            </h3>
+                            <form id="addCategoryForm" onsubmit="handleAddCategory(event)" class="space-y-3 text-xs">
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1">Tên danh mục <span class="text-rose-500">*</span></label>
+                                    <input type="text" id="newCatName" required placeholder="Ví dụ: Đồ thể thao" class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1">Biểu tượng FontAwesome</label>
+                                    <input type="text" id="newCatIcon" placeholder="fa-tag, fa-laptop, fa-shirt..." value="fa-tag" class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1">Mô tả ngắn</label>
+                                    <textarea id="newCatDesc" rows="3" placeholder="Mô tả danh mục sản phẩm..." class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500"></textarea>
+                                </div>
+                                <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">
+                                    Tạo Danh Mục
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Existing Categories List -->
+                        <div class="md:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-slate-800 text-sm mb-4">Danh Sách Danh Mục Hiện Có</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase">
+                                        <tr>
+                                            <th class="py-2.5 px-3">Icon</th>
+                                            <th class="py-2.5 px-3">Tên Danh Mục</th>
+                                            <th class="py-2.5 px-3">Slug</th>
+                                            <th class="py-2.5 px-3">Số Mặt Hàng</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminCategoriesTableBody" class="divide-y divide-slate-100">
+                                        <!-- Injected via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: ORDERS MANAGEMENT -->
+                <div id="tabContent-orders" class="hidden space-y-5">
+                    <!-- Order Filter Tabs -->
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2 text-xs font-bold" id="orderFilterPills">
+                            <button onclick="filterOrdersByStatus('all')" class="order-pill active px-3 py-1.5 rounded-lg bg-emerald-600 text-white">Tất cả</button>
+                            <button onclick="filterOrdersByStatus('pending')" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">Chờ xử lý</button>
+                            <button onclick="filterOrdersByStatus('shipping')" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">Đang giao</button>
+                            <button onclick="filterOrdersByStatus('completed')" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">Đã hoàn thành</button>
+                            <button onclick="filterOrdersByStatus('cancelled')" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">Đã hủy</button>
+                        </div>
+                        <span class="text-xs text-slate-400">Tự động đồng bộ từ khách hàng</span>
+                    </div>
+
+                    <!-- Orders Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[11px]">
+                                    <tr>
+                                        <th class="py-3 px-4">Mã Đơn</th>
+                                        <th class="py-3 px-3">Khách Hàng</th>
+                                        <th class="py-3 px-3">Số Điện Thoại</th>
+                                        <th class="py-3 px-3">Tổng Tiền</th>
+                                        <th class="py-3 px-3">Thanh Toán</th>
+                                        <th class="py-3 px-3">Trạng Thái</th>
+                                        <th class="py-3 px-3">Ngày Đặt</th>
+                                        <th class="py-3 px-4 text-right">Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminOrdersTableBody" class="divide-y divide-slate-100">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: USERS & ROLES -->
+                <div id="tabContent-users" class="hidden space-y-5">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-sm">Danh Sách Tài Khoản & Phân Quyền</h3>
+                                <p class="text-xs text-slate-400">Bạn có thể phân quyền Quản Trị Viên (Admin) hoặc Khách Hàng (Customer)</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[11px]">
+                                    <tr>
+                                        <th class="py-3 px-4">Họ và Tên</th>
+                                        <th class="py-3 px-3">Email</th>
+                                        <th class="py-3 px-3">Số Điện Thoại</th>
+                                        <th class="py-3 px-3">Địa Chỉ</th>
+                                        <th class="py-3 px-3">Vai Trò</th>
+                                        <th class="py-3 px-4 text-right">Đổi Phân Quyền</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminUsersTableBody" class="divide-y divide-slate-100">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 6: MARKETPLACE INTEGRATION (SHOPEE & LAZADA) -->
+                <div id="tabContent-marketplace" class="hidden space-y-6">
+                    
+                    <!-- Marketplace Header & Quick Bulk Sync -->
+                    <div class="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white rounded-3xl p-6 border border-emerald-500/20 shadow-lg flex flex-wrap items-center justify-between gap-4">
+                        <div class="max-w-xl">
+                            <span class="inline-block bg-amber-500/20 text-amber-300 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-2 border border-amber-500/30">
+                                <i class="fa-solid fa-arrows-rotate mr-1"></i> Ràng Buộc Tồn Kho Đa Kênh Tức Thời
+                            </span>
+                            <h3 class="text-xl font-black text-white">Đồng Bộ API Sàn Shopee & Lazada</h3>
+                            <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                                Khi khách đặt hàng thành công trên website MintMart, hệ thống sẽ <strong>tự động gọi API của Shopee và Lazada</strong> để trừ kho tức thì, ngăn chặn tình trạng bán vượt số lượng tồn kho (over-selling).
+                            </p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="triggerSyncAllMarketplaces()" class="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs rounded-xl shadow-lg transition flex items-center">
+                                <i class="fa-solid fa-bolt mr-2 text-amber-300"></i> Đồng Bộ Kho Toàn Bộ 2 Sàn
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2 API Connection Cards: Shopee & Lazada -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- Shopee Open Platform API Card -->
+                        <div class="bg-white rounded-2xl p-5 border border-orange-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                                <div class="flex items-center space-x-2.5">
+                                    <div class="w-10 h-10 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center text-xl font-bold shadow-sm">
+                                        <i class="fa-solid fa-bag-shopping"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-800 text-sm">Shopee Open Platform API</h4>
+                                        <span class="text-[11px] text-slate-400">Endpoint: /api/v2/product/update_stock</span>
+                                    </div>
+                                </div>
+                                <span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Đang Kết Nối
+                                </span>
+                            </div>
+
+                            <div class="space-y-3 text-xs flex-1">
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1">Partner ID</label>
+                                    <input type="text" id="shopeePartnerId" value="2005831" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1">Shop ID (Gian hàng)</label>
+                                    <input type="text" id="shopeeShopId" value="98273615" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1">Partner Key (Bí mật)</label>
+                                    <input type="password" id="shopeePartnerKey" value="shopee_live_secret_key_prod_89a7f3" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono">
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-100 flex items-center justify-between mt-4">
+                                <button onclick="testMarketplaceApi('shopee')" class="px-3.5 py-2 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-xl text-xs transition flex items-center">
+                                    <i class="fa-solid fa-plug-circle-check mr-1.5"></i> Test Kết Nối Shopee
+                                </button>
+                                <span class="text-[11px] text-slate-400 font-medium" id="shopeeTestStatus">Độ trễ: ~54ms</span>
+                            </div>
+                        </div>
+
+                        <!-- Lazada Open Platform API Card -->
+                        <div class="bg-white rounded-2xl p-5 border border-blue-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                                <div class="flex items-center space-x-2.5">
+                                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl font-bold shadow-sm">
+                                        <i class="fa-solid fa-heart"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-800 text-sm">Lazada Open Platform API</h4>
+                                        <span class="text-[11px] text-slate-400">Endpoint: /product/price_quantity/update</span>
+                                    </div>
+                                </div>
+                                <span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Đang Kết Nối
+                                </span>
+                            </div>
+
+                            <div class="space-y-3 text-xs flex-1">
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1">App Key</label>
+                                    <input type="text" id="lazadaAppKey" value="109283" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1">Seller ID</label>
+                                    <input type="text" id="lazadaSellerId" value="VN_SELLER_88371" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 mb-1">App Secret (Bí mật)</label>
+                                    <input type="password" id="lazadaAppSecret" value="lazada_live_app_secret_d49e8a" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono">
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-100 flex items-center justify-between mt-4">
+                                <button onclick="testMarketplaceApi('lazada')" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold rounded-xl text-xs transition flex items-center">
+                                    <i class="fa-solid fa-plug-circle-check mr-1.5"></i> Test Kết Nối Lazada
+                                </button>
+                                <span class="text-[11px] text-slate-400 font-medium" id="lazadaTestStatus">Độ trễ: ~62ms</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Real-time Synchronization Logs Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i>
+                                <h4 class="font-bold text-slate-800 text-sm">Nhật Ký Khấu Trừ & Đồng Bộ Tồn Kho Shopee & Lazada</h4>
+                            </div>
+                            <button onclick="loadMarketplaceLogs()" class="text-xs text-emerald-600 hover:text-emerald-700 font-bold flex items-center">
+                                <i class="fa-solid fa-rotate-right mr-1"></i> Làm mới
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[11px]">
+                                    <tr>
+                                        <th class="py-3 px-4">Thời Gian</th>
+                                        <th class="py-3 px-3">Mã Đơn / Thao Tác</th>
+                                        <th class="py-3 px-3">Sản Phẩm Trừ Kho</th>
+                                        <th class="py-3 px-3">Sàn Đồng Bộ</th>
+                                        <th class="py-3 px-3">Số Lượng Trừ</th>
+                                        <th class="py-3 px-3">Tồn Kho Sau Trừ</th>
+                                        <th class="py-3 px-4 text-right">Trạng Thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="marketplaceLogsTableBody" class="divide-y divide-slate-100">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ADD / EDIT PRODUCT MODAL (Optimized for Mobile Phone & PC) -->
+    <div id="productModal" class="fixed inset-0 z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col shadow-2xl relative my-0 sm:my-8 overflow-hidden">
+            
+            <!-- Modal Header (Pinned at Top) -->
+            <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 bg-white z-10 flex-shrink-0">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-box-archive"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-sm sm:text-base" id="productModalTitle">Thêm Mặt Hàng Mới</h3>
+                        <p class="text-[10px] sm:text-[11px] text-slate-400">Đồng bộ tức thì lên gian hàng điện thoại & máy tính</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeProductModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-sm transition" title="Đóng">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Scrollable Form Body -->
+            <form id="productForm" onsubmit="handleSaveProduct(event)" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 text-xs">
+                <input type="hidden" id="editProductId" value="">
+
+                <!-- Product Name -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Tên mặt hàng <span class="text-rose-500">*</span></label>
+                    <input type="text" id="prodName" required placeholder="Ví dụ: Tai nghe Bluetooth Không Dây Mint Sound Pro" class="w-full px-3.5 py-2.5 sm:py-2 text-xs sm:text-sm border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-medium">
+                </div>
+
+                <!-- Category & Badge -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Danh mục sản phẩm <span class="text-rose-500">*</span></label>
+                        <select id="prodCategory" required class="w-full px-3 py-2.5 sm:py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white font-medium">
+                            <!-- Injected via JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">Huy hiệu nổi bật (Badge)</label>
+                        <input type="text" id="prodBadge" placeholder="HOT, MỚI, SALE, BÁN CHẠY..." class="w-full px-3 py-2.5 sm:py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <!-- SMART DISCOUNT & PRICING SECTION (Mục Giảm Giá Thông Minh) -->
+                <div class="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-emerald-900 text-xs flex items-center">
+                            <i class="fa-solid fa-tags text-emerald-600 mr-1.5"></i> Thiết Lập Giá Bán & Khuyến Mãi (Giảm Giá)
+                        </label>
+                        <span id="discountSavingsBadge" class="hidden text-[10px] bg-rose-500 text-white font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                            Tiết kiệm: 0₫ (-0%)
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Giá Gốc Niêm Yết -->
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Giá gốc niêm yết (VNĐ)</label>
+                            <input type="number" id="prodOriginalPrice" oninput="calculateDiscount('original')" min="0" step="1000" placeholder="1200000" class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white">
+                        </div>
+
+                        <!-- Mức Giảm Giá (%) -->
+                        <div>
+                            <label class="block font-semibold text-slate-600 mb-1">Mức giảm giá (%)</label>
+                            <div class="flex items-center space-x-1.5">
+                                <input type="number" id="prodDiscountPercent" oninput="calculateDiscount('percent')" min="0" max="99" placeholder="0" class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-bold text-rose-600 bg-white">
+                                <span class="font-bold text-slate-400">%</span>
+                            </div>
+                        </div>
+
+                        <!-- Giá Bán Thực Tế Sau Giảm -->
+                        <div>
+                            <label class="block font-bold text-slate-800 mb-1">Giá bán thực tế (VNĐ) <span class="text-rose-500">*</span></label>
+                            <input type="number" id="prodPrice" oninput="calculateDiscount('sale')" required min="1000" step="1000" placeholder="890000" class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-extrabold text-emerald-600 bg-white text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Quick Discount Buttons -->
+                    <div class="flex items-center space-x-1.5 pt-1 overflow-x-auto scrollbar-none">
+                        <span class="text-[10px] text-slate-400 font-semibold whitespace-nowrap">Chọn nhanh % giảm:</span>
+                        <button type="button" onclick="applyQuickDiscount(10)" class="px-2 py-0.5 bg-white hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 border border-slate-200 rounded-lg text-[10px] font-bold">10%</button>
+                        <button type="button" onclick="applyQuickDiscount(20)" class="px-2 py-0.5 bg-white hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 border border-slate-200 rounded-lg text-[10px] font-bold">20%</button>
+                        <button type="button" onclick="applyQuickDiscount(30)" class="px-2 py-0.5 bg-white hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 border border-slate-200 rounded-lg text-[10px] font-bold">30%</button>
+                        <button type="button" onclick="applyQuickDiscount(50)" class="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[10px] font-black">50% DEAL SỐC</button>
+                    </div>
+
+                    <!-- Stock Count -->
+                    <div class="pt-2 border-t border-emerald-100">
+                        <label class="block font-bold text-slate-700 mb-1">Số lượng hàng trong kho website <span class="text-rose-500">*</span></label>
+                        <input type="number" id="prodStock" required min="0" placeholder="50" value="50" class="w-full sm:w-1/2 px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white font-medium">
+                    </div>
+                </div>
+
+                <!-- IMAGE UPLOAD: DIRECT CAMERA / GALLERY ON PHONE -->
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="block font-bold text-slate-700">Hình ảnh mặt hàng</label>
+                        <span class="text-[10px] text-emerald-600 font-semibold">Hỗ trợ chụp trực tiếp từ điện thoại</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Direct File / Camera Upload Button (Designed for Phone touch) -->
+                        <div>
+                            <span class="text-[11px] text-slate-500 font-semibold block mb-1">Cách 1: Chụp ảnh hoặc Tải từ điện thoại</span>
+                            <label class="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 rounded-xl font-bold cursor-pointer transition shadow-sm text-center">
+                                <i class="fa-solid fa-camera text-base"></i>
+                                <span>Chụp ảnh / Chọn từ máy</span>
+                                <input type="file" id="prodImageFile" accept="image/*" onchange="handleImageFileSelect(this)" class="hidden">
+                            </label>
+                        </div>
+
+                        <!-- Image URL Option -->
+                        <div>
+                            <span class="text-[11px] text-slate-500 font-semibold block mb-1">Cách 2: Hoặc Dán link URL ảnh</span>
+                            <input type="url" id="prodImageUrl" oninput="updateImagePreview(this.value)" placeholder="https://images.unsplash.com/..." class="w-full px-3 py-2.5 sm:py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white">
+                        </div>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div class="flex items-center space-x-3 pt-1">
+                        <div class="w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <img id="imagePreview" src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&auto=format&fit=crop&q=80" alt="Preview" class="w-full h-full object-cover">
+                        </div>
+                        <div class="text-[10px] text-slate-400 leading-tight">
+                            Ảnh sẽ được tối ưu hóa tự động và hiển thị sắc nét trên cả điện thoại và máy tính của khách hàng.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marketplace Inventory Mapping Card -->
+                <div class="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/80 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-800 text-xs flex items-center">
+                            <i class="fa-solid fa-arrows-rotate text-amber-600 mr-1.5"></i> Ràng Buộc Kho Shopee & Lazada
+                        </label>
+                        <span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">Khấu trừ tự động</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Shopee Mapping -->
+                        <div class="p-3 bg-white rounded-xl border border-orange-200 shadow-sm space-y-2">
+                            <div class="font-bold text-orange-600 flex items-center text-[11px]">
+                                <i class="fa-solid fa-bag-shopping mr-1"></i> Gian Hàng Shopee
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Shopee Item ID</label>
+                                <input type="text" id="prodShopeeItemId" placeholder="SHP-10928374" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tồn kho Shopee</label>
+                                <input type="number" id="prodShopeeStock" placeholder="50" min="0" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none font-bold text-orange-600">
+                            </div>
+                        </div>
+
+                        <!-- Lazada Mapping -->
+                        <div class="p-3 bg-white rounded-xl border border-blue-200 shadow-sm space-y-2">
+                            <div class="font-bold text-blue-600 flex items-center text-[11px]">
+                                <i class="fa-solid fa-heart mr-1"></i> Gian Hàng Lazada
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Lazada SKU / Item ID</label>
+                                <input type="text" id="prodLazadaItemId" placeholder="LAZ-2091823" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 mb-0.5">Tồn kho Lazada</label>
+                                <input type="number" id="prodLazadaStock" placeholder="50" min="0" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg outline-none font-bold text-blue-600">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Mô tả sản phẩm</label>
+                    <textarea id="prodDescription" rows="3" placeholder="Mô tả thông số kỹ thuật, chất liệu, tính năng nổi bật..." class="w-full px-3 py-2 border border-slate-200 rounded-xl outline-none focus:border-emerald-500"></textarea>
+                </div>
+
+                <!-- UNLIST / ACTIVE TOGGLE (MỤC GỠ SẢN PHẨM KHỎI WEBSITE) -->
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                    <label class="block font-bold text-slate-800 text-xs">Trạng thái phân phối trên website</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <label class="flex items-center p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-emerald-500 transition">
+                            <input type="radio" name="prodActiveRadio" id="radioActiveTrue" value="1" checked onchange="handleActiveRadioChange(1)" class="text-emerald-600 focus:ring-emerald-500 mr-2.5">
+                            <div>
+                                <div class="font-bold text-emerald-700 flex items-center">
+                                    <i class="fa-solid fa-circle-check mr-1.5"></i> Đang mở bán
+                                </div>
+                                <div class="text-[10px] text-slate-400 mt-0.5">Hiển thị cho khách hàng xem và mua</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 bg-white rounded-xl border border-slate-200 cursor-pointer hover:border-rose-400 transition">
+                            <input type="radio" name="prodActiveRadio" id="radioActiveFalse" value="0" onchange="handleActiveRadioChange(0)" class="text-rose-600 focus:ring-rose-500 mr-2.5">
+                            <div>
+                                <div class="font-bold text-rose-600 flex items-center">
+                                    <i class="fa-solid fa-circle-pause mr-1.5"></i> Gỡ sản phẩm (Tạm ẩn)
+                                </div>
+                                <div class="text-[10px] text-slate-400 mt-0.5">Khách không thấy trên website</div>
+                            </div>
+                        </label>
+                    </div>
+                    <input type="hidden" id="prodIsActiveValue" value="1">
+                </div>
+
+            </form>
+
+            <!-- Modal Footer (Sticky Pinned at Bottom on Phone & PC) -->
+            <div class="p-3 sm:p-4 border-t border-slate-100 bg-white flex items-center justify-between z-10 flex-shrink-0">
+                <button type="button" onclick="closeProductModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold transition text-xs">
+                    Hủy bỏ
+                </button>
+                <button type="button" onclick="triggerProductFormSubmit()" class="px-5 sm:px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md transition flex items-center text-xs">
+                    <i class="fa-solid fa-floppy-disk mr-1.5"></i> Lưu Mặt Hàng
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ORDER DETAIL MODAL -->
+    <div id="adminOrderDetailModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeOrderDetailModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="orderDetailContent">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Floating Action Button (Thêm Sản Phẩm Nhanh Trên Điện Thoại) -->
+    <button onclick="openProductModal()" class="admin-mobile-fab md:hidden" title="Thêm mặt hàng mới trên điện thoại">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- Mobile Fixed Bottom Navigation Bar (Dành riêng cho giao diện điện thoại) -->
+    <div class="admin-mobile-nav md:hidden">
+        <button onclick="switchAdminTab('dashboard')" class="admin-mobile-nav-item active" id="mobileNav-dashboard">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Tổng quan</span>
+        </button>
+        <button onclick="switchAdminTab('products')" class="admin-mobile-nav-item" id="mobileNav-products">
+            <i class="fa-solid fa-box-open"></i>
+            <span>Sản phẩm</span>
+        </button>
+        <!-- Center Floating Action Button Trigger -->
+        <button onclick="openProductModal()" class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xl shadow-lg shadow-emerald-500/40 -mt-5 active:scale-95 transition" title="Thêm mặt hàng mới">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+        <button onclick="switchAdminTab('orders')" class="admin-mobile-nav-item" id="mobileNav-orders">
+            <i class="fa-solid fa-cart-flatbed"></i>
+            <span>Đơn hàng</span>
+        </button>
+        <button onclick="toggleAdminSidebar(true)" class="admin-mobile-nav-item" id="mobileNav-more">
+            <i class="fa-solid fa-bars"></i>
+            <span>Menu</span>
+        </button>
+    </div>
+
+    <!-- Shared Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
