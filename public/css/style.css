@@ -1,0 +1,157 @@
+/* MintMart Storefront Custom Styles */
+:root {
+    --primary-mint: #10B981;
+    --primary-mint-dark: #059669;
+    --primary-mint-light: #A7F3D0;
+    --primary-mint-bg: #ECFDF5;
+    --primary-mint-soft: #D1FAE5;
+    --text-dark: #1E293B;
+    --text-muted: #64748B;
+    --bg-white: #FFFFFF;
+    --bg-offwhite: #F8FAFC;
+    --accent-coral: #F43F5E;
+}
+
+body {
+    font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-white);
+    color: var(--text-dark);
+    overflow-x: hidden;
+}
+
+/* Custom Mint Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #a7f3d0;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #10b981;
+}
+
+/* Header Gradient */
+.mint-header-gradient {
+    background: linear-gradient(135deg, #059669 0%, #10B981 60%, #14B8A6 100%);
+}
+
+.mint-badge {
+    background-color: var(--primary-mint-bg);
+    color: var(--primary-mint-dark);
+    border: 1px solid var(--primary-mint-light);
+}
+
+/* Product Card Styling */
+.product-card {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #f1f5f9;
+    position: relative;
+    background: #ffffff;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px -10px rgba(16, 185, 129, 0.25);
+    border-color: #a7f3d0;
+}
+
+.product-image-container {
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 1 / 1;
+    background-color: #f8fafc;
+}
+
+.product-image-container img {
+    transition: transform 0.4s ease;
+}
+
+.product-card:hover .product-image-container img {
+    transform: scale(1.06);
+}
+
+/* Floating Quick Action Overlay */
+.product-action-overlay {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s ease;
+}
+
+.product-card:hover .product-action-overlay {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Flash Sale Countdown Pill */
+.timer-pill {
+    background: rgba(0, 0, 0, 0.75);
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 6px;
+    padding: 2px 8px;
+    min-width: 32px;
+    text-align: center;
+    display: inline-block;
+}
+
+/* Category Pill */
+.category-chip {
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
+}
+
+.category-chip:hover, .category-chip.active {
+    background-color: #10B981;
+    color: white !important;
+    border-color: #10B981;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+/* Cart Drawer */
+.cart-drawer-overlay {
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(2px);
+    transition: opacity 0.3s ease;
+}
+
+.cart-drawer {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Line Clamp */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Ripple & Pulse */
+@keyframes mintPulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+    70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.mint-pulse {
+    animation: mintPulse 2s infinite;
+}
