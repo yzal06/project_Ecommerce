@@ -145,6 +145,9 @@ async function loadCategories() {
             `).join('');
             sidebarList.innerHTML = sideHtml;
         }
+
+        // 4. Fill GitHub-style Sidebar Drawer Categories
+        renderDrawerCategories(allCategories);
     } catch (err) {
         console.error('Không thể tải danh mục:', err);
     }
@@ -426,6 +429,7 @@ async function loadHotProducts() {
         hotProducts = res.products || [];
         renderHotProductsTable(hotProducts);
         renderHotProductsMobile(hotProducts);
+        renderDrawerTopProducts(hotProducts);
     } catch (err) {
         console.error('Không thể tải danh sách sản phẩm hot:', err);
     }
@@ -555,6 +559,134 @@ function renderHotProductsMobile(products) {
     }).join('');
 }
 
+/* ========================================================
+   GITHUB-STYLE SIDEBAR DRAWER (Bản menu bên hông giống GitHub)
+   ======================================================== */
+
+let drawerAllProducts = [];
+
+function toggleStoreSidebarDrawer(open) {
+    const drawer = document.getElementById('githubSidebarDrawer');
+    const backdrop = document.getElementById('githubSidebarBackdrop');
+    if (!drawer || !backdrop) return;
+
+    if (open) {
+        backdrop.classList.remove('hidden');
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            drawer.classList.add('open');
+        }, 10);
+        document.body.style.overflow = 'hidden';
+
+        // Re-render categories & products if loaded
+        if (allCategories && allCategories.length > 0) {
+            renderDrawerCategories(allCategories);
+        }
+        if (hotProducts && hotProducts.length > 0) {
+            renderDrawerTopProducts(hotProducts);
+        }
+    } else {
+        drawer.classList.remove('open');
+        backdrop.classList.add('opacity-0');
+        setTimeout(() => {
+            backdrop.classList.add('hidden');
+            document.body.style.overflow = '';
+        }, 280);
+    }
+}
+
+// Render Categories inside the GitHub Sidebar Drawer
+function renderDrawerCategories(categories) {
+    const list = document.getElementById('drawerCategoriesList');
+    if (!list) return;
+
+    list.innerHTML = categories.map(c => `
+        <button onclick="drawerNavigate('category', ${c.id})" class="github-menu-item ${currentCategory == c.id ? 'active' : ''}">
+            <i class="fa-solid ${c.icon || 'fa-tag'}"></i>
+            <span class="flex-1 text-left truncate">${c.name}</span>
+            <span class="text-[10px] text-[#848d97] font-bold bg-[#21262d] px-1.5 py-0.5 rounded-full">${c.product_count || 0}</span>
+        </button>
+    `).join('');
+}
+
+// Render Top Products with Mini Avatars inside Drawer (matching GitHub top repos in user screenshot)
+function renderDrawerTopProducts(products) {
+    drawerAllProducts = products || [];
+    const list = document.getElementById('drawerTopProductsList');
+    if (!list) return;
+
+    if (products.length === 0) {
+        list.innerHTML = `<div class="text-xs text-[#848d97] px-3 py-2">Đang tải sản phẩm bán chạy...</div>`;
+        return;
+    }
+
+    list.innerHTML = products.slice(0, 6).map((p) => `
+        <button onclick="openQuickView(${p.id}); toggleStoreSidebarDrawer(false);" class="github-repo-item group">
+            <img src="${p.image_url}" alt="${p.name}" class="github-repo-thumb group-hover:scale-110 transition-transform">
+            <div class="flex-1 min-w-0 text-left">
+                <div class="font-semibold truncate text-[#f0f6fc] text-xs group-hover:text-emerald-400 transition">${p.name}</div>
+                <div class="text-[10px] text-emerald-400 font-bold flex items-center justify-between">
+                    <span>${formatCurrency(p.price)}</span>
+                    <span class="text-[#848d97] text-[9px] font-normal">Đã bán ${p.sold_count || 0}</span>
+                </div>
+            </div>
+        </button>
+    `).join('');
+}
+
+// Search filter in drawer
+function filterDrawerProducts(query) {
+    const list = document.getElementById('drawerTopProductsList');
+    if (!list) return;
+
+    const q = (query || '').toLowerCase().trim();
+    const filtered = drawerAllProducts.filter(p => (p.name || '').toLowerCase().includes(q));
+
+    if (filtered.length === 0) {
+        list.innerHTML = `<div class="text-xs text-[#848d97] px-3 py-2">Không tìm thấy sản phẩm</div>`;
+        return;
+    }
+
+    list.innerHTML = filtered.slice(0, 6).map(p => `
+        <button onclick="openQuickView(${p.id}); toggleStoreSidebarDrawer(false);" class="github-repo-item group">
+            <img src="${p.image_url}" alt="${p.name}" class="github-repo-thumb group-hover:scale-110 transition-transform">
+            <div class="flex-1 min-w-0 text-left">
+                <div class="font-semibold truncate text-[#f0f6fc] text-xs group-hover:text-emerald-400 transition">${p.name}</div>
+                <div class="text-[10px] text-emerald-400 font-bold flex items-center justify-between">
+                    <span>${formatCurrency(p.price)}</span>
+                    <span class="text-[#848d97] text-[9px] font-normal">Đã bán ${p.sold_count || 0}</span>
+                </div>
+            </div>
+        </button>
+    `).join('');
+}
+
+// Drawer Navigation Handler
+function drawerNavigate(type, value) {
+    toggleStoreSidebarDrawer(false);
+
+    if (type === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (type === 'all') {
+        filterCategory('all');
+        scrollToProducts();
+    } else if (type === 'sale') {
+        filterOnSale();
+    } else if (type === 'hot') {
+        scrollToHotSection();
+    } else if (type === 'category') {
+        filterCategory(value);
+        scrollToProducts();
+    }
+}
+
+// ESC Key listener to close drawer
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        toggleStoreSidebarDrawer(false);
+    }
+});
+
 // Quick View Modal
 async function openQuickView(productId) {
     try {
@@ -679,6 +811,8 @@ function updateCartUI() {
     if (headerCartCount) headerCartCount.textContent = count;
     const drawerBadge = document.getElementById('drawerCartBadge');
     if (drawerBadge) drawerBadge.textContent = count;
+    const sideDrawerCount = document.getElementById('drawerCartCount');
+    if (sideDrawerCount) sideDrawerCount.textContent = count;
 
     // Totals in drawer
     const subtotalEl = document.getElementById('drawerSubtotal');

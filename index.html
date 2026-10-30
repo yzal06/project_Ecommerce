@@ -67,18 +67,25 @@
 
     <!-- Main Header (Mint Green Gradient) -->
     <header class="mint-header-gradient text-white sticky top-0 z-40 shadow-lg">
-        <div class="container mx-auto px-4 py-3.5">
-            <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center justify-between gap-3 sm:gap-4">
                 
-                <!-- Brand Logo (Clean Typography - No AI Generated Icon) -->
-                <a href="index.html" class="flex flex-col flex-shrink-0 group">
-                    <div class="text-2xl sm:text-3xl font-black tracking-tighter leading-none text-white font-sans uppercase">
-                        MINT<span class="text-emerald-200 font-light">MART</span>
-                    </div>
-                    <div class="text-[9px] uppercase tracking-widest text-emerald-100/90 font-bold mt-0.5">
-                        Mua Sắm Trực Tuyến Đẳng Cấp
-                    </div>
-                </a>
+                <div class="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                    <!-- GitHub Style Sidebar Menu Button -->
+                    <button onclick="toggleStoreSidebarDrawer(true)" class="p-2 sm:px-3 sm:py-2 text-white hover:bg-emerald-600/70 rounded-xl transition flex items-center space-x-1.5 border border-emerald-400/40 shadow-sm group cursor-pointer" title="Mở danh mục (Bản bên hông giống GitHub)">
+                        <i class="fa-solid fa-bars text-lg group-hover:scale-110 transition-transform"></i>
+                        <span class="hidden md:inline text-xs font-black uppercase tracking-wider">Menu</span>
+                    </button>
+
+                    <!-- Brand Logo (Clean Typography - No AI Generated Icon) -->
+                    <a href="index.html" class="flex flex-col flex-shrink-0 group">
+                        <div class="text-2xl sm:text-3xl font-black tracking-tighter leading-none text-white font-sans uppercase">
+                            MINT<span class="text-emerald-200 font-light">MART</span>
+                        </div>
+                        <div class="text-[9px] uppercase tracking-widest text-emerald-100/90 font-bold mt-0.5">
+                            Mua Sắm Trực Tuyến Đẳng Cấp
+                        </div>
+                    </a>
+                </div>
 
                 <!-- Search Bar with Category Filter (Shopee / Amazon style) -->
                 <div class="flex-1 max-w-2xl mx-2 hidden sm:block">
@@ -170,7 +177,13 @@
         <!-- Navigation Bar (Categories, Deals & Hot Links) -->
         <nav class="bg-emerald-700/80 backdrop-blur-sm border-t border-emerald-600/50 text-xs font-semibold">
             <div class="container mx-auto px-4 flex items-center justify-between overflow-x-auto py-2 scrollbar-none">
-                <div class="flex items-center space-x-6 whitespace-nowrap">
+                <div class="flex items-center space-x-3 sm:space-x-5 whitespace-nowrap">
+                    <!-- GitHub-Style Menu Pill -->
+                    <button onclick="toggleStoreSidebarDrawer(true)" class="bg-slate-900/60 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-black flex items-center space-x-1.5 transition border border-emerald-400/40 shadow-sm mr-1 cursor-pointer">
+                        <i class="fa-solid fa-bars text-emerald-300"></i>
+                        <span>Danh mục (Bản bên hông)</span>
+                    </button>
+
                     <button onclick="filterCategory('all')" class="category-nav-link text-white hover:text-emerald-200 transition flex items-center active font-bold">
                         <i class="fa-solid fa-border-all mr-1.5 text-emerald-300"></i> Tất cả sản phẩm
                     </button>
@@ -810,6 +823,117 @@
             </div>
         </div>
     </footer>
+
+    <!-- ========================================================
+         GITHUB-STYLE SIDEBAR DRAWER (Bản menu bên hông giống GitHub)
+         ======================================================== -->
+    <div id="githubSidebarBackdrop" class="fixed inset-0 github-sidebar-backdrop z-50 hidden opacity-0" onclick="toggleStoreSidebarDrawer(false)"></div>
+
+    <aside id="githubSidebarDrawer" class="fixed inset-y-0 left-0 github-sidebar-drawer z-50 flex flex-col h-full overflow-hidden">
+        
+        <!-- Header (GitHub Style: Brand Logo + Close Button X) -->
+        <div class="p-4 border-b border-[#30363d] flex items-center justify-between flex-shrink-0 bg-[#0d1117]">
+            <a href="index.html" class="flex items-center space-x-2.5 group" onclick="toggleStoreSidebarDrawer(false)">
+                <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-sm group-hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-store"></i>
+                </div>
+                <div>
+                    <div class="text-base font-black tracking-tight text-white leading-none">
+                        MINT<span class="text-emerald-400">MART</span>
+                    </div>
+                    <div class="text-[9px] text-[#848d97] font-semibold mt-0.5 uppercase tracking-wider">Hệ Thống Mua Sắm</div>
+                </div>
+            </a>
+            <button onclick="toggleStoreSidebarDrawer(false)" class="text-[#848d97] hover:text-white p-1.5 rounded-lg hover:bg-[#21262d] transition cursor-pointer" title="Đóng menu">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Scrollable Navigation Body (GitHub Style) -->
+        <div class="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-none">
+            
+            <!-- SECTION 1: Core Navigation (Matches GitHub Home, Feed, All issues...) -->
+            <button onclick="drawerNavigate('home')" class="github-menu-item active">
+                <i class="fa-solid fa-house"></i>
+                <span>Trang Chủ (Home)</span>
+            </button>
+            <button onclick="drawerNavigate('all')" class="github-menu-item">
+                <i class="fa-solid fa-border-all"></i>
+                <span>Tất Cả Sản Phẩm</span>
+            </button>
+            <button onclick="drawerNavigate('sale')" class="github-menu-item text-amber-300 hover:text-amber-200">
+                <i class="fa-solid fa-percent text-amber-400"></i>
+                <span>Săn Deal Giảm Giá</span>
+            </button>
+            <button onclick="drawerNavigate('hot')" class="github-menu-item text-orange-400 hover:text-orange-300">
+                <i class="fa-solid fa-fire text-orange-400"></i>
+                <span>Bảng Xếp Hạng HOT</span>
+            </button>
+            <button onclick="toggleCartDrawer(true); toggleStoreSidebarDrawer(false);" class="github-menu-item">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span class="flex-1 text-left">Giỏ Hàng Của Tôi</span>
+                <span id="drawerCartCount" class="bg-emerald-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
+            </button>
+            <button onclick="openOrderHistoryModal(); toggleStoreSidebarDrawer(false);" class="github-menu-item">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Lịch Sử Đơn Hàng</span>
+            </button>
+
+            <hr class="github-divider">
+
+            <!-- SECTION 2: Explore Categories (Matches GitHub Explore, Marketplace...) -->
+            <div class="github-section-header">
+                <span>DANH MỤC MUA SẮM</span>
+                <i class="fa-solid fa-compass text-[11px]"></i>
+            </div>
+            <div id="drawerCategoriesList" class="space-y-0.5">
+                <!-- Injected via JavaScript with icons and counts -->
+            </div>
+
+            <hr class="github-divider">
+
+            <!-- SECTION 3: Top Products (Matches GitHub "Top repositories" in screenshot) -->
+            <div class="github-section-header">
+                <span>SẢN PHẨM BÁN CHẠY NHẤT</span>
+                <button onclick="document.getElementById('drawerProductSearch').focus()" title="Tìm nhanh" class="hover:text-white cursor-pointer">
+                    <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
+                </button>
+            </div>
+            
+            <!-- Quick filter in drawer -->
+            <div class="px-2 mb-2">
+                <div class="relative">
+                    <input type="text" id="drawerProductSearch" oninput="filterDrawerProducts(this.value)" placeholder="Tìm sản phẩm hot..." class="w-full bg-[#161b22] border border-[#30363d] text-xs text-[#f0f6fc] rounded-md px-2.5 py-1.5 pl-7 outline-none focus:border-emerald-500 placeholder-[#848d97]">
+                    <i class="fa-solid fa-magnifying-glass text-[10px] text-[#848d97] absolute left-2.5 top-2.5"></i>
+                </div>
+            </div>
+
+            <!-- List of products with avatar / thumbnail -->
+            <div id="drawerTopProductsList" class="space-y-1">
+                <!-- Dynamically loaded with mini thumbnails -->
+            </div>
+
+            <hr class="github-divider">
+
+            <!-- SECTION 4: System / Admin Portal -->
+            <div class="github-section-header">
+                <span>QUẢN TRỊ & HỆ THỐNG</span>
+            </div>
+            <a href="admin.html" class="github-menu-item text-emerald-400 hover:text-emerald-300">
+                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                <span>Cổng Quản Trị Viên (Admin)</span>
+            </a>
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-3 border-t border-[#30363d] bg-[#010409] flex items-center justify-between text-xs text-[#848d97] flex-shrink-0">
+            <div class="flex items-center space-x-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="text-[11px]">MintMart • GitHub Style</span>
+            </div>
+            <span class="text-[10px]">Hotline: 1900 6868</span>
+        </div>
+    </aside>
 
     <!-- Shared Scripts -->
     <script src="js/api.js"></script>

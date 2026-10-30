@@ -155,3 +155,117 @@ body {
 .mint-pulse {
     animation: mintPulse 2s infinite;
 }
+
+/* ========================================================
+   GITHUB-STYLE SIDEBAR DRAWER (Bản menu bên hông giống GitHub)
+   ======================================================== */
+.github-sidebar-backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    transition: opacity 0.25s ease-in-out;
+}
+
+.github-sidebar-drawer {
+    background-color: #0d1117;
+    color: #f0f6fc;
+    border-right: 1px solid #30363d;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateX(-100%);
+    width: 320px;
+    max-width: 85vw;
+}
+
+.github-sidebar-drawer.open {
+    transform: translateX(0);
+}
+
+.github-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #f0f6fc;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+}
+
+.github-menu-item:hover {
+    background-color: #161b22;
+    color: #10B981;
+}
+
+.github-menu-item.active {
+    background-color: #21262d;
+    color: #34d399;
+    font-weight: 600;
+}
+
+.github-menu-item i {
+    width: 18px;
+    text-align: center;
+    color: #848d97;
+    transition: color 0.15s ease;
+}
+
+.github-menu-item:hover i,
+.github-menu-item.active i {
+    color: #10B981;
+}
+
+.github-divider {
+    border: 0;
+    border-top: 1px solid #30363d;
+    margin: 8px 0;
+}
+
+.github-section-header {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #848d97;
+    padding: 6px 12px 4px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-transform: uppercase;
+}
+
+.github-repo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #f0f6fc;
+    transition: background 0.15s ease;
+    cursor: pointer;
+    text-decoration: none;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+}
+
+.github-repo-item:hover {
+    background-color: #161b22;
+    color: #10B981;
+}
+
+.github-repo-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #30363d;
+    flex-shrink: 0;
+}
