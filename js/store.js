@@ -13,6 +13,7 @@ let hotProducts = [];
 let onlyDiscounted = false;
 
 document.addEventListener('DOMContentLoaded', () => {
+    initCustomerTheme();
     initStore();
     initFlashSaleCountdown();
     setupEventListeners();
@@ -206,13 +207,10 @@ async function loadCategories() {
             sidebarList.innerHTML = sideHtml;
         }
 
-        // 4. Fill GitHub-style Sidebar Drawer Categories
-        renderDrawerCategories(allCategories);
+        // 4. Fill Daniel Wellington Style Left Drawer Categories (Image 3)
+        renderDWDrawerCategories(allCategories);
 
-        // 5. Fill Right-side Collapsible Category Drawer
-        renderRightDrawerCategories(allCategories);
-
-        // 6. Fill Home Category Grid (if on index.html)
+        // 5. Fill Home Category Grid (if on index.html)
         renderHomeCategories(allCategories);
     } catch (err) {
         console.error('Không thể tải danh mục:', err);
@@ -730,8 +728,9 @@ function filterDrawerProducts(query) {
 
 // Drawer Navigation Handler (Multi-page aware)
 function drawerNavigate(type, value) {
+    toggleLeftDrawer(false);
     toggleStoreSidebarDrawer(false);
-    toggleRightCategoryDrawer(false);
+    toggleThemeModal(false);
 
     const isProductsPage = window.location.pathname.endsWith('products.html') || window.location.pathname.endsWith('/products');
     const isHotPage = window.location.pathname.endsWith('hot.html') || window.location.pathname.endsWith('/hot');
@@ -761,73 +760,110 @@ function drawerNavigate(type, value) {
 }
 
 /* ========================================================
-   RIGHT-SIDE COLLAPSIBLE CATEGORY DRAWER (Bảng danh mục góc phải)
+   DANIEL WELLINGTON STYLE LEFT DRAWER (Bảng danh mục bên trái - Image 3)
    ======================================================== */
-function toggleRightCategoryDrawer(open) {
-    const drawer = document.getElementById('categoryDrawerRight');
-    const backdrop = document.getElementById('categoryDrawerRightBackdrop');
+function toggleLeftDrawer(open) {
+    const drawer = document.getElementById('danielWellingtonDrawer');
+    const backdrop = document.getElementById('danielWellingtonBackdrop');
     if (!drawer || !backdrop) return;
 
     if (open) {
-        backdrop.classList.remove('hidden');
-        setTimeout(() => {
-            backdrop.classList.remove('opacity-0');
-            drawer.classList.add('open');
-        }, 10);
+        backdrop.classList.add('open');
+        drawer.classList.add('open');
         document.body.style.overflow = 'hidden';
         if (allCategories && allCategories.length > 0) {
-            renderRightDrawerCategories(allCategories);
+            renderDWDrawerCategories(allCategories);
         }
     } else {
         drawer.classList.remove('open');
-        backdrop.classList.add('opacity-0');
-        setTimeout(() => {
-            backdrop.classList.add('hidden');
-            document.body.style.overflow = '';
-        }, 280);
+        backdrop.classList.remove('open');
+        document.body.style.overflow = '';
     }
 }
 
-function renderRightDrawerCategories(categories) {
-    const list = document.getElementById('drawerCategoriesListRight');
+// Fallback alias
+function toggleRightCategoryDrawer(open) {
+    toggleLeftDrawer(open);
+}
+
+function renderDWDrawerCategories(categories) {
+    const list = document.getElementById('dwCategoriesList');
     if (!list) return;
 
-    list.innerHTML = `
-        <a href="products.html" class="flex items-center justify-between p-3 rounded-2xl border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/60 transition group cursor-pointer ${currentCategory === 'all' ? 'bg-emerald-50/70 border-emerald-300' : 'bg-slate-50/60'}">
-            <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-sm group-hover:scale-105 transition-transform">
-                    <i class="fa-solid fa-border-all"></i>
-                </div>
-                <div>
-                    <div class="font-bold text-xs text-slate-800 group-hover:text-emerald-700 transition">Tất Cả Sản Phẩm</div>
-                    <div class="text-[10px] text-slate-400">Xem toàn bộ kho hàng MintMart</div>
-                </div>
-            </div>
-            <span class="text-xs text-emerald-600 font-bold"><i class="fa-solid fa-chevron-right text-[10px]"></i></span>
-        </a>
-    ` + categories.map(c => `
-        <a href="products.html?category=${c.id}" class="flex items-center justify-between p-3 rounded-2xl border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/60 transition group cursor-pointer ${currentCategory == c.id ? 'bg-emerald-50/70 border-emerald-300' : 'bg-white'}">
-            <div class="flex items-center space-x-3 min-w-0">
-                <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm group-hover:bg-emerald-600 group-hover:text-white transition flex-shrink-0">
-                    <i class="fa-solid ${c.icon || 'fa-tag'}"></i>
-                </div>
-                <div class="min-w-0">
-                    <div class="font-bold text-xs text-slate-800 group-hover:text-emerald-700 transition truncate">${c.name}</div>
-                    <div class="text-[10px] text-slate-400 truncate max-w-[180px]">${c.description || 'Sản phẩm chính hãng'}</div>
-                </div>
-            </div>
-            <div class="flex items-center space-x-2 flex-shrink-0">
-                <span class="text-[10px] bg-slate-100 group-hover:bg-emerald-200 group-hover:text-emerald-800 text-slate-500 font-extrabold px-2 py-0.5 rounded-full transition">${c.product_count || 0}</span>
-                <i class="fa-solid fa-chevron-right text-[10px] text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-transform"></i>
+    list.innerHTML = categories.map(c => `
+        <a href="products.html?category=${c.id}" class="dw-menu-item group">
+            <span class="flex items-center">
+                <i class="fa-solid ${c.icon || 'fa-tag'} mr-3 text-slate-400 group-hover:text-emerald-600 transition text-xs w-4 text-center"></i>
+                <span>${c.name}</span>
+            </span>
+            <div class="flex items-center space-x-2">
+                <span class="text-[10px] bg-slate-100 text-slate-500 font-bold px-1.5 py-0.5 rounded-full">${c.product_count || 0}</span>
+                <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-transform"></i>
             </div>
         </a>
     `).join('');
 }
 
-function filterRightDrawerCategories(query) {
-    const q = (query || '').toLowerCase().trim();
-    const filtered = allCategories.filter(c => (c.name || '').toLowerCase().includes(q) || (c.description || '').toLowerCase().includes(q));
-    renderRightDrawerCategories(filtered);
+/* ========================================================
+   CUSTOMER BACKGROUND COLOR THEMES (Đổi màu nền cho khách hàng)
+   ======================================================== */
+function setCustomerTheme(themeName) {
+    const themes = ['theme-white', 'theme-mint', 'theme-cream', 'theme-slate', 'theme-dark'];
+    themes.forEach(t => document.body.classList.remove(t));
+    document.body.classList.add(themeName);
+    localStorage.setItem('mintmart_theme', themeName);
+
+    // Update active highlight on theme buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        if (btn.dataset.theme === themeName) {
+            btn.classList.add('ring-2', 'ring-emerald-500', 'scale-105');
+        } else {
+            btn.classList.remove('ring-2', 'ring-emerald-500', 'scale-105');
+        }
+    });
+
+    const themeTitles = {
+        'theme-white': 'Trắng Tinh Tế',
+        'theme-mint': 'Xanh Bạc Hà',
+        'theme-cream': 'Be Ấm Áp (Daniel Wellington)',
+        'theme-slate': 'Xám Hiện Đại',
+        'theme-dark': 'Đen Huyền Bí'
+    };
+
+    showToast('info', `Đã chuyển màu nền sang: ${themeTitles[themeName] || themeName}`);
+}
+
+function initCustomerTheme() {
+    const saved = localStorage.getItem('mintmart_theme') || 'theme-white';
+    const themes = ['theme-white', 'theme-mint', 'theme-cream', 'theme-slate', 'theme-dark'];
+    themes.forEach(t => document.body.classList.remove(t));
+    document.body.classList.add(saved);
+
+    // Highlight button
+    setTimeout(() => {
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            if (btn.dataset.theme === saved) {
+                btn.classList.add('ring-2', 'ring-emerald-500', 'scale-105');
+            } else {
+                btn.classList.remove('ring-2', 'ring-emerald-500', 'scale-105');
+            }
+        });
+    }, 100);
+}
+
+function toggleThemeModal(open) {
+    const modal = document.getElementById('themeModal');
+    if (!modal) return;
+    if (open) {
+        modal.classList.remove('hidden');
+    } else {
+        modal.classList.add('hidden');
+    }
+}
+
+// Zalo Chat Helper
+function openZaloChat() {
+    window.open('https://zalo.me/0912345678', '_blank');
 }
 
 /* ========================================================
@@ -1097,8 +1133,10 @@ function renderProductsIntoGrid(grid, products) {
 // ESC Key listener to close drawers & modals
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+        toggleLeftDrawer(false);
         toggleStoreSidebarDrawer(false);
         toggleRightCategoryDrawer(false);
+        toggleThemeModal(false);
         closeQuickViewModal();
         closeCheckoutModal();
         closeAuthModal();
