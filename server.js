@@ -52,12 +52,33 @@ app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
 
-// Specific friendly route for admin
+// Specific friendly routes for clean URLs
 app.get('/admin', (req, res) => {
     const adminPath = fs.existsSync(path.join(__dirname, 'admin.html'))
         ? path.join(__dirname, 'admin.html')
         : path.join(__dirname, 'public', 'admin.html');
     res.sendFile(adminPath);
+});
+
+app.get('/products', (req, res) => {
+    const p = fs.existsSync(path.join(__dirname, 'products.html'))
+        ? path.join(__dirname, 'products.html')
+        : path.join(__dirname, 'public', 'products.html');
+    res.sendFile(p);
+});
+
+app.get('/hot', (req, res) => {
+    const p = fs.existsSync(path.join(__dirname, 'hot.html'))
+        ? path.join(__dirname, 'hot.html')
+        : path.join(__dirname, 'public', 'hot.html');
+    res.sendFile(p);
+});
+
+app.get('/deals', (req, res) => {
+    const p = fs.existsSync(path.join(__dirname, 'deals.html'))
+        ? path.join(__dirname, 'deals.html')
+        : path.join(__dirname, 'public', 'deals.html');
+    res.sendFile(p);
 });
 
 // Auth Middleware

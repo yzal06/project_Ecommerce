@@ -22,9 +22,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Initialize Store
 async function initStore() {
+    parseUrlParams();
     await loadCategories();
-    await loadProducts();
-    await loadHotProducts();
+
+    // 1. If on products page (has productsGrid)
+    if (document.getElementById('productsGrid')) {
+        await loadProducts();
+    }
+
+    // 2. If on home page (has homeFeaturedGrid or homeCategoryGrid)
+    if (document.getElementById('homeFeaturedGrid')) {
+        await loadHomeFeatured();
+    }
+    if (document.getElementById('homeCategoryGrid')) {
+        renderHomeCategories(allCategories);
+    }
+    if (document.getElementById('flashSaleContainer')) {
+        await loadFlashSale();
+    }
+
+    // 3. If on hot products page (has hotProductsTableBody or hotProductsMobileList)
+    if (document.getElementById('hotProductsTableBody') || document.getElementById('hotProductsMobileList')) {
+        await loadHotProducts();
+    }
+
+    // 4. If on deals page (has dealsGrid)
+    if (document.getElementById('dealsGrid')) {
+        await loadDealsProducts();
+    }
+}
+
+// Parse URL query parameters
+function parseUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('category')) {
+        currentCategory = params.get('category');
+    }
+    if (params.has('search')) {
+        currentSearch = params.get('search');
+        const sIn = document.getElementById('searchInput');
+        if (sIn) sIn.value = currentSearch;
+        const sInMob = document.getElementById('searchInputMobile');
+        if (sInMob) sInMob.value = currentSearch;
+    }
+    if (params.has('sale')) {
+        onlyDiscounted = params.get('sale') === '1' || params.get('sale') === 'true';
+        const saleChk = document.getElementById('sidebarSaleOnlyCheckbox');
+        if (saleChk) saleChk.checked = onlyDiscounted;
+    }
 }
 
 // Setup Event Listeners
@@ -34,12 +79,21 @@ function setupEventListeners() {
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const query = document.getElementById('searchInput').value;
-            const cat = document.getElementById('searchCategorySelect').value;
-            currentSearch = query;
-            currentCategory = cat;
-            loadProducts();
-            scrollToProducts();
+            const query = (document.getElementById('searchInput')?.value || '').trim();
+            const cat = document.getElementById('searchCategorySelect')?.value || 'all';
+
+            const isProductsPage = window.location.pathname.endsWith('products.html') || window.location.pathname.endsWith('/products');
+            if (isProductsPage) {
+                currentSearch = query;
+                currentCategory = cat;
+                loadProducts();
+                scrollToProducts();
+            } else {
+                const params = new URLSearchParams();
+                if (query) params.set('search', query);
+                if (cat && cat !== 'all') params.set('category', cat);
+                window.location.href = `products.html?${params.toString()}`;
+            }
         });
     }
 
@@ -47,9 +101,15 @@ function setupEventListeners() {
     if (searchFormMobile) {
         searchFormMobile.addEventListener('submit', (e) => {
             e.preventDefault();
-            currentSearch = document.getElementById('searchInputMobile').value;
-            loadProducts();
-            scrollToProducts();
+            const query = (document.getElementById('searchInputMobile')?.value || '').trim();
+            const isProductsPage = window.location.pathname.endsWith('products.html') || window.location.pathname.endsWith('/products');
+            if (isProductsPage) {
+                currentSearch = query;
+                loadProducts();
+                scrollToProducts();
+            } else {
+                window.location.href = `products.html?search=${encodeURIComponent(query)}`;
+            }
         });
     }
 
@@ -61,7 +121,7 @@ function setupEventListeners() {
         const userContainer = document.getElementById('userMenuContainer');
         const userDropdown = document.getElementById('userDropdown');
         if (userContainer && !userContainer.contains(e.target)) {
-            userDropdown.classList.add('hidden');
+            userDropdown?.classList.add('hidden');
         }
     });
 }
@@ -148,6 +208,12 @@ async function loadCategories() {
 
         // 4. Fill GitHub-style Sidebar Drawer Categories
         renderDrawerCategories(allCategories);
+
+        // 5. Fill Right-side Collapsible Category Drawer
+        renderRightDrawerCategories(allCategories);
+
+        // 6. Fill Home Category Grid (if on index.html)
+        renderHomeCategories(allCategories);
     } catch (err) {
         console.error('Không thể tải danh mục:', err);
     }
@@ -427,6 +493,7 @@ async function loadHotProducts() {
     try {
         const res = await apiFetch('/api/products/hot');
         hotProducts = res.products || [];
+        renderHotPodium(hotProducts);
         renderHotProductsTable(hotProducts);
         renderHotProductsMobile(hotProducts);
         renderDrawerTopProducts(hotProducts);
@@ -661,29 +728,381 @@ function filterDrawerProducts(query) {
     `).join('');
 }
 
-// Drawer Navigation Handler
+// Drawer Navigation Handler (Multi-page aware)
 function drawerNavigate(type, value) {
     toggleStoreSidebarDrawer(false);
+    toggleRightCategoryDrawer(false);
+
+    const isProductsPage = window.location.pathname.endsWith('products.html') || window.location.pathname.endsWith('/products');
+    const isHotPage = window.location.pathname.endsWith('hot.html') || window.location.pathname.endsWith('/hot');
+    const isDealsPage = window.location.pathname.endsWith('deals.html') || window.location.pathname.endsWith('/deals');
 
     if (type === 'home') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.location.href = 'index.html';
     } else if (type === 'all') {
-        filterCategory('all');
-        scrollToProducts();
+        if (isProductsPage) {
+            filterCategory('all');
+            scrollToProducts();
+        } else {
+            window.location.href = 'products.html';
+        }
     } else if (type === 'sale') {
-        filterOnSale();
+        window.location.href = 'deals.html';
     } else if (type === 'hot') {
-        scrollToHotSection();
+        window.location.href = 'hot.html';
     } else if (type === 'category') {
-        filterCategory(value);
-        scrollToProducts();
+        if (isProductsPage) {
+            filterCategory(value);
+            scrollToProducts();
+        } else {
+            window.location.href = `products.html?category=${value}`;
+        }
     }
 }
 
-// ESC Key listener to close drawer
+/* ========================================================
+   RIGHT-SIDE COLLAPSIBLE CATEGORY DRAWER (Bảng danh mục góc phải)
+   ======================================================== */
+function toggleRightCategoryDrawer(open) {
+    const drawer = document.getElementById('categoryDrawerRight');
+    const backdrop = document.getElementById('categoryDrawerRightBackdrop');
+    if (!drawer || !backdrop) return;
+
+    if (open) {
+        backdrop.classList.remove('hidden');
+        setTimeout(() => {
+            backdrop.classList.remove('opacity-0');
+            drawer.classList.add('open');
+        }, 10);
+        document.body.style.overflow = 'hidden';
+        if (allCategories && allCategories.length > 0) {
+            renderRightDrawerCategories(allCategories);
+        }
+    } else {
+        drawer.classList.remove('open');
+        backdrop.classList.add('opacity-0');
+        setTimeout(() => {
+            backdrop.classList.add('hidden');
+            document.body.style.overflow = '';
+        }, 280);
+    }
+}
+
+function renderRightDrawerCategories(categories) {
+    const list = document.getElementById('drawerCategoriesListRight');
+    if (!list) return;
+
+    list.innerHTML = `
+        <a href="products.html" class="flex items-center justify-between p-3 rounded-2xl border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/60 transition group cursor-pointer ${currentCategory === 'all' ? 'bg-emerald-50/70 border-emerald-300' : 'bg-slate-50/60'}">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-sm group-hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-border-all"></i>
+                </div>
+                <div>
+                    <div class="font-bold text-xs text-slate-800 group-hover:text-emerald-700 transition">Tất Cả Sản Phẩm</div>
+                    <div class="text-[10px] text-slate-400">Xem toàn bộ kho hàng MintMart</div>
+                </div>
+            </div>
+            <span class="text-xs text-emerald-600 font-bold"><i class="fa-solid fa-chevron-right text-[10px]"></i></span>
+        </a>
+    ` + categories.map(c => `
+        <a href="products.html?category=${c.id}" class="flex items-center justify-between p-3 rounded-2xl border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/60 transition group cursor-pointer ${currentCategory == c.id ? 'bg-emerald-50/70 border-emerald-300' : 'bg-white'}">
+            <div class="flex items-center space-x-3 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm group-hover:bg-emerald-600 group-hover:text-white transition flex-shrink-0">
+                    <i class="fa-solid ${c.icon || 'fa-tag'}"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="font-bold text-xs text-slate-800 group-hover:text-emerald-700 transition truncate">${c.name}</div>
+                    <div class="text-[10px] text-slate-400 truncate max-w-[180px]">${c.description || 'Sản phẩm chính hãng'}</div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 flex-shrink-0">
+                <span class="text-[10px] bg-slate-100 group-hover:bg-emerald-200 group-hover:text-emerald-800 text-slate-500 font-extrabold px-2 py-0.5 rounded-full transition">${c.product_count || 0}</span>
+                <i class="fa-solid fa-chevron-right text-[10px] text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-transform"></i>
+            </div>
+        </a>
+    `).join('');
+}
+
+function filterRightDrawerCategories(query) {
+    const q = (query || '').toLowerCase().trim();
+    const filtered = allCategories.filter(c => (c.name || '').toLowerCase().includes(q) || (c.description || '').toLowerCase().includes(q));
+    renderRightDrawerCategories(filtered);
+}
+
+/* ========================================================
+   HOME PAGE SPECIFIC HELPERS
+   ======================================================== */
+async function loadHomeFeatured() {
+    try {
+        const res = await apiFetch('/api/products?sort=popular');
+        const products = (res.products || []).slice(0, 8);
+        const container = document.getElementById('homeFeaturedGrid');
+        if (!container) return;
+        renderProductsIntoGrid(container, products);
+    } catch (err) {
+        console.error('Không thể tải sản phẩm nổi bật:', err);
+    }
+}
+
+async function loadFlashSale() {
+    try {
+        const res = await apiFetch('/api/products?on_sale=1&sort=discount');
+        flashSaleProducts = (res.products || []).slice(0, 4);
+        renderFlashSale(flashSaleProducts);
+    } catch (err) {
+        console.error('Không thể tải flash sale:', err);
+    }
+}
+
+function renderHomeCategories(categories) {
+    const container = document.getElementById('homeCategoryGrid');
+    if (!container) return;
+
+    container.innerHTML = categories.map(c => `
+        <a href="products.html?category=${c.id}" class="category-card-hover bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between group transition">
+            <div class="flex items-center justify-between mb-3">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:bg-emerald-600 group-hover:text-white transition shadow-sm">
+                    <i class="fa-solid ${c.icon || 'fa-tag'}"></i>
+                </div>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 group-hover:bg-emerald-100 group-hover:text-emerald-800 transition">
+                    ${c.product_count || 0} SP
+                </span>
+            </div>
+            <div>
+                <h3 class="font-bold text-sm text-slate-800 group-hover:text-emerald-600 transition mb-1">${c.name}</h3>
+                <p class="text-xs text-slate-400 line-clamp-2 mb-3 leading-relaxed">${c.description || 'Sản phẩm chất lượng cao chính hãng'}</p>
+                <div class="text-xs font-bold text-emerald-600 flex items-center">
+                    Khám phá ngay <i class="fa-solid fa-arrow-right ml-1.5 text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+        </a>
+    `).join('');
+}
+
+/* ========================================================
+   HOT PRODUCTS PODIUM HELPER
+   ======================================================== */
+function renderHotPodium(products) {
+    const podium = document.getElementById('hotPodiumContainer');
+    if (!podium || products.length < 3) return;
+
+    const top1 = products[0];
+    const top2 = products[1];
+    const top3 = products[2];
+
+    podium.innerHTML = `
+        <!-- TOP 2 -->
+        <div class="order-2 md:order-1 bg-white rounded-3xl p-5 border border-slate-200 shadow-md flex flex-col justify-between relative group transform md:translate-y-4">
+            <div class="absolute -top-3 left-4 bg-slate-200 text-slate-800 text-[11px] font-black px-3 py-1 rounded-full shadow border border-slate-300">
+                🥈 TOP 2 THỊNH HÀNH
+            </div>
+            <div class="aspect-square rounded-2xl overflow-hidden mb-3 bg-slate-50 relative mt-2">
+                <img src="${top2.image_url}" alt="${top2.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                <span class="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                    ĐÃ BÁN ${top2.sold_count}
+                </span>
+            </div>
+            <div>
+                <span class="text-[11px] text-emerald-600 font-bold">${top2.category_name}</span>
+                <h4 class="font-bold text-sm text-slate-800 line-clamp-2 mt-0.5 mb-2 hover:text-emerald-600 transition cursor-pointer" onclick="openQuickView(${top2.id})">${top2.name}</h4>
+                <div class="flex items-baseline space-x-2 mb-3">
+                    <span class="text-emerald-600 font-black text-base">${formatCurrency(top2.price)}</span>
+                    ${top2.original_price ? `<span class="text-slate-400 text-xs line-through">${formatCurrency(top2.original_price)}</span>` : ''}
+                </div>
+                <button onclick="handleAddToCartClick(${top2.id})" class="w-full py-2 bg-slate-100 hover:bg-emerald-600 text-slate-700 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-cart-plus"></i> <span>Mua ngay</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TOP 1 (Champion) -->
+        <div class="order-1 md:order-2 bg-gradient-to-b from-amber-50/70 to-white rounded-3xl p-6 border-2 border-amber-300 shadow-xl flex flex-col justify-between relative group z-10">
+            <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-lg flex items-center space-x-1.5">
+                <i class="fa-solid fa-crown text-yellow-200 animate-bounce"></i>
+                <span>QUÁN QUÂN TOP 1</span>
+            </div>
+            <div class="aspect-square rounded-2xl overflow-hidden mb-3 bg-white relative mt-3 shadow-inner">
+                <img src="${top1.image_url}" alt="${top1.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                <span class="absolute top-2.5 right-2.5 bg-gradient-to-r from-rose-500 to-amber-500 text-white text-xs font-black px-2.5 py-1 rounded-full shadow">
+                    🔥 ĐÃ BÁN ${top1.sold_count}
+                </span>
+            </div>
+            <div>
+                <span class="text-[11px] text-amber-700 font-extrabold uppercase">${top1.category_name}</span>
+                <h3 class="font-extrabold text-base text-slate-800 line-clamp-2 mt-0.5 mb-2 hover:text-emerald-600 transition cursor-pointer" onclick="openQuickView(${top1.id})">${top1.name}</h3>
+                <div class="flex items-baseline space-x-2 mb-3">
+                    <span class="text-rose-600 font-black text-lg">${formatCurrency(top1.price)}</span>
+                    ${top1.original_price ? `<span class="text-slate-400 text-xs line-through">${formatCurrency(top1.original_price)}</span>` : ''}
+                </div>
+                <button onclick="handleAddToCartClick(${top1.id})" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-extrabold shadow-md transition flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-cart-shopping"></i> <span>Đặt mua ngay quán quân</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TOP 3 -->
+        <div class="order-3 bg-white rounded-3xl p-5 border border-slate-200 shadow-md flex flex-col justify-between relative group transform md:translate-y-4">
+            <div class="absolute -top-3 left-4 bg-amber-100 text-amber-900 text-[11px] font-black px-3 py-1 rounded-full shadow border border-amber-300">
+                🥉 TOP 3 THỊNH HÀNH
+            </div>
+            <div class="aspect-square rounded-2xl overflow-hidden mb-3 bg-slate-50 relative mt-2">
+                <img src="${top3.image_url}" alt="${top3.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+                <span class="absolute top-2 right-2 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                    ĐÃ BÁN ${top3.sold_count}
+                </span>
+            </div>
+            <div>
+                <span class="text-[11px] text-emerald-600 font-bold">${top3.category_name}</span>
+                <h4 class="font-bold text-sm text-slate-800 line-clamp-2 mt-0.5 mb-2 hover:text-emerald-600 transition cursor-pointer" onclick="openQuickView(${top3.id})">${top3.name}</h4>
+                <div class="flex items-baseline space-x-2 mb-3">
+                    <span class="text-emerald-600 font-black text-base">${formatCurrency(top3.price)}</span>
+                    ${top3.original_price ? `<span class="text-slate-400 text-xs line-through">${formatCurrency(top3.original_price)}</span>` : ''}
+                </div>
+                <button onclick="handleAddToCartClick(${top3.id})" class="w-full py-2 bg-slate-100 hover:bg-emerald-600 text-slate-700 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-cart-plus"></i> <span>Mua ngay</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+/* ========================================================
+   DEALS PAGE SPECIFIC HELPERS
+   ======================================================== */
+let dealsFilterTier = 'all';
+
+async function loadDealsProducts() {
+    try {
+        const res = await apiFetch('/api/products?on_sale=1&sort=discount');
+        let products = res.products || [];
+        
+        if (dealsFilterTier === 'over30') {
+            products = products.filter(p => p.original_price && ((p.original_price - p.price) / p.original_price) >= 0.3);
+        } else if (dealsFilterTier === 'over20') {
+            products = products.filter(p => p.original_price && ((p.original_price - p.price) / p.original_price) >= 0.2);
+        } else if (dealsFilterTier === 'under500') {
+            products = products.filter(p => p.price <= 500000);
+        }
+
+        const countEl = document.getElementById('dealsResultCount');
+        if (countEl) countEl.textContent = products.length;
+
+        const grid = document.getElementById('dealsGrid');
+        const empty = document.getElementById('dealsEmptyState');
+        if (grid) {
+            if (products.length === 0) {
+                grid.innerHTML = '';
+                if (empty) empty.classList.remove('hidden');
+            } else {
+                if (empty) empty.classList.add('hidden');
+                renderProductsIntoGrid(grid, products);
+            }
+        }
+    } catch (err) {
+        console.error('Không thể tải sản phẩm deals:', err);
+    }
+}
+
+function filterDealsTier(tier) {
+    dealsFilterTier = tier;
+    document.querySelectorAll('.deal-tab-btn').forEach(btn => {
+        if (btn.dataset.tier === tier) {
+            btn.className = 'deal-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-emerald-600 text-white shadow-sm';
+        } else {
+            btn.className = 'deal-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition bg-white text-slate-600 hover:bg-slate-100 border border-slate-200';
+        }
+    });
+    loadDealsProducts();
+}
+
+// Helper: Generic Grid Renderer
+function renderProductsIntoGrid(grid, products) {
+    if (!grid) return;
+    grid.innerHTML = products.map(product => {
+        const discountPercent = product.original_price && product.original_price > product.price
+            ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
+            : 0;
+
+        return `
+            <div class="product-card rounded-2xl overflow-hidden flex flex-col justify-between group shadow-sm hover:shadow-md transition">
+                <div class="product-image-container relative">
+                    <img src="${product.image_url}" alt="${product.name}" class="w-full h-full object-cover" loading="lazy">
+                    
+                    <div class="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start z-10">
+                        ${discountPercent > 0 ? `
+                            <span class="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                -${discountPercent}%
+                            </span>
+                        ` : ''}
+                        ${product.badge ? `
+                            <span class="bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                ${product.badge}
+                            </span>
+                        ` : ''}
+                    </div>
+
+                    <div class="absolute top-2.5 right-2.5 z-10">
+                        ${product.stock > 0 ? `
+                            <span class="bg-white/90 backdrop-blur-sm text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border border-emerald-100">
+                                Sẵn hàng (${product.stock})
+                            </span>
+                        ` : `
+                            <span class="bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                                Tạm hết hàng
+                            </span>
+                        `}
+                    </div>
+
+                    <div class="product-action-overlay">
+                        <button onclick="openQuickView(${product.id})" class="bg-white hover:bg-emerald-50 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg border border-slate-100 flex items-center transition transform hover:scale-105">
+                            <i class="fa-regular fa-eye mr-1 text-emerald-600"></i> Xem nhanh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-3.5 flex flex-col flex-grow justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                            <span class="text-emerald-600 font-semibold truncate max-w-[65%]">${product.category_name || 'Khác'}</span>
+                            <span class="flex items-center text-amber-500 font-bold">
+                                <i class="fa-solid fa-star text-[10px] mr-1"></i> ${product.rating || '5.0'}
+                            </span>
+                        </div>
+
+                        <h3 class="font-bold text-xs sm:text-sm text-slate-800 line-clamp-2 hover:text-emerald-600 transition cursor-pointer mb-2" onclick="openQuickView(${product.id})">
+                            ${product.name}
+                        </h3>
+                    </div>
+
+                    <div>
+                        <div class="flex items-baseline space-x-2 mb-3">
+                            <span class="text-emerald-600 font-extrabold text-sm sm:text-base">${formatCurrency(product.price)}</span>
+                            ${product.original_price ? `
+                                <span class="text-slate-400 text-xs line-through">${formatCurrency(product.original_price)}</span>
+                            ` : ''}
+                        </div>
+
+                        <button onclick="handleAddToCartClick(${product.id})" ${product.stock <= 0 ? 'disabled' : ''} class="w-full py-2 bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 border border-emerald-200 hover:border-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-cart-plus"></i>
+                            <span>Thêm vào giỏ</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ESC Key listener to close drawers & modals
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         toggleStoreSidebarDrawer(false);
+        toggleRightCategoryDrawer(false);
+        closeQuickViewModal();
+        closeCheckoutModal();
+        closeAuthModal();
+        closeOrderHistoryModal();
     }
 });
 

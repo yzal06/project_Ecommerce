@@ -56,7 +56,6 @@
                 </a>
                 <span class="text-emerald-300">|</span>
                 <div id="topUserGreeting" class="inline-flex items-center space-x-1 cursor-pointer">
-                    <!-- Dynamic user auth state -->
                     <span id="topAuthButton" class="hover:text-white transition" onclick="openAuthModal('login')">
                         <i class="fa-regular fa-user mr-1"></i> Đăng nhập / Đăng ký
                     </span>
@@ -67,27 +66,22 @@
 
     <!-- Main Header (Mint Green Gradient) -->
     <header class="mint-header-gradient text-white sticky top-0 z-40 shadow-lg">
+        <div class="container mx-auto px-4 py-3">
             <div class="flex items-center justify-between gap-3 sm:gap-4">
                 
                 <div class="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                    <!-- GitHub Style Sidebar Menu Button -->
-                    <button onclick="toggleStoreSidebarDrawer(true)" class="p-2 sm:px-3 sm:py-2 text-white hover:bg-emerald-600/70 rounded-xl transition flex items-center space-x-1.5 border border-emerald-400/40 shadow-sm group cursor-pointer" title="Mở danh mục (Bản bên hông giống GitHub)">
-                        <i class="fa-solid fa-bars text-lg group-hover:scale-110 transition-transform"></i>
-                        <span class="hidden md:inline text-xs font-black uppercase tracking-wider">Menu</span>
-                    </button>
-
-                    <!-- Brand Logo (Clean Typography - No AI Generated Icon) -->
+                    <!-- Brand Logo -->
                     <a href="index.html" class="flex flex-col flex-shrink-0 group">
                         <div class="text-2xl sm:text-3xl font-black tracking-tighter leading-none text-white font-sans uppercase">
                             MINT<span class="text-emerald-200 font-light">MART</span>
                         </div>
                         <div class="text-[9px] uppercase tracking-widest text-emerald-100/90 font-bold mt-0.5">
-                            Mua Sắm Trực Tuyến Đẳng Cấp
+                            Cửa Hàng Trực Tuyến Đẳng Cấp
                         </div>
                     </a>
                 </div>
 
-                <!-- Search Bar with Category Filter (Shopee / Amazon style) -->
+                <!-- Search Bar with Category Filter -->
                 <div class="flex-1 max-w-2xl mx-2 hidden sm:block">
                     <form id="searchForm" class="flex items-center bg-white rounded-full p-1 shadow-md border border-emerald-400/30 focus-within:ring-2 focus-within:ring-emerald-300">
                         <select id="searchCategorySelect" class="bg-transparent text-slate-700 text-xs sm:text-sm font-medium py-2 px-3 border-r border-slate-200 outline-none cursor-pointer rounded-l-full">
@@ -101,10 +95,8 @@
                     </form>
                 </div>
 
-                <!-- Right Header Actions (Admin Quick Pill, User & Cart) -->
+                <!-- Right Header Actions (User & Cart) -->
                 <div class="flex items-center space-x-3">
-                    
-                    <!-- Admin Badge Pill (If logged in as admin) -->
                     <div id="headerAdminPill" class="hidden">
                         <a href="admin.html" class="flex items-center bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm transition border border-white/30 font-semibold">
                             <i class="fa-solid fa-gear text-emerald-200 mr-1.5"></i> Quản Trị
@@ -163,7 +155,7 @@
                 </div>
             </div>
 
-            <!-- Mobile Search Bar (Visible on mobile only) -->
+            <!-- Mobile Search Bar -->
             <div class="mt-3 sm:hidden">
                 <form id="searchFormMobile" class="flex items-center bg-white rounded-xl p-1 shadow-inner">
                     <input type="text" id="searchInputMobile" placeholder="Tìm kiếm sản phẩm..." class="flex-1 px-3 py-1.5 text-slate-800 text-xs outline-none bg-transparent">
@@ -174,46 +166,36 @@
             </div>
         </div>
 
-        <!-- Navigation Bar (Categories, Deals & Hot Links) -->
-        <nav class="bg-emerald-700/80 backdrop-blur-sm border-t border-emerald-600/50 text-xs font-semibold">
-            <div class="container mx-auto px-4 flex items-center justify-between overflow-x-auto py-2 scrollbar-none">
-                <div class="flex items-center space-x-3 sm:space-x-5 whitespace-nowrap">
-                    <!-- GitHub-Style Menu Pill -->
-                    <button onclick="toggleStoreSidebarDrawer(true)" class="bg-slate-900/60 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-black flex items-center space-x-1.5 transition border border-emerald-400/40 shadow-sm mr-1 cursor-pointer">
-                        <i class="fa-solid fa-bars text-emerald-300"></i>
-                        <span>Danh mục (Bản bên hông)</span>
-                    </button>
-
-                    <button onclick="filterCategory('all')" class="category-nav-link text-white hover:text-emerald-200 transition flex items-center active font-bold">
-                        <i class="fa-solid fa-border-all mr-1.5 text-emerald-300"></i> Tất cả sản phẩm
-                    </button>
-                    <!-- Dedicated Discount Deals Link -->
-                    <button onclick="filterOnSale()" class="category-nav-link text-amber-300 hover:text-white transition flex items-center font-black">
-                        <i class="fa-solid fa-percent mr-1.5 text-amber-300"></i> Săn Deal Giảm Giá
-                    </button>
-                    <!-- Dedicated HOT Products Link -->
-                    <button onclick="scrollToHotSection()" class="category-nav-link text-orange-200 hover:text-white transition flex items-center font-bold">
-                        <i class="fa-solid fa-fire mr-1.5 text-orange-400"></i> Sản Phẩm HOT
-                    </button>
-                    <button onclick="filterCategory(1)" class="category-nav-link text-emerald-100 hover:text-white transition flex items-center">
-                        <i class="fa-solid fa-laptop mr-1.5 text-emerald-300"></i> Công nghệ & Điện tử
-                    </button>
-                    <button onclick="filterCategory(2)" class="category-nav-link text-emerald-100 hover:text-white transition flex items-center">
-                        <i class="fa-solid fa-shirt mr-1.5 text-emerald-300"></i> Thời trang
-                    </button>
-                    <button onclick="filterCategory(3)" class="category-nav-link text-emerald-100 hover:text-white transition flex items-center">
-                        <i class="fa-solid fa-couch mr-1.5 text-emerald-300"></i> Nhà cửa & Đời sống
-                    </button>
-                    <button onclick="filterCategory(4)" class="category-nav-link text-emerald-100 hover:text-white transition flex items-center">
-                        <i class="fa-solid fa-spa mr-1.5 text-emerald-300"></i> Làm đẹp & Sức khỏe
-                    </button>
-                    <button onclick="filterCategory(5)" class="category-nav-link text-emerald-100 hover:text-white transition flex items-center">
-                        <i class="fa-solid fa-blender mr-1.5 text-emerald-300"></i> Gia dụng
-                    </button>
+        <!-- Clean Navigation Bar (No horizontal scroll! Right collapsible category drawer) -->
+        <nav class="bg-emerald-700/90 backdrop-blur-sm border-t border-emerald-600/50 text-xs font-semibold">
+            <div class="container mx-auto px-4 flex items-center justify-between py-2">
+                <!-- Main Nav Links -->
+                <div class="flex items-center space-x-1 sm:space-x-3">
+                    <a href="index.html" class="store-nav-link active">
+                        <i class="fa-solid fa-house text-emerald-300"></i>
+                        <span>Trang Chủ</span>
+                    </a>
+                    <a href="products.html" class="store-nav-link">
+                        <i class="fa-solid fa-border-all text-emerald-200"></i>
+                        <span>Tất Cả Sản Phẩm</span>
+                    </a>
+                    <a href="hot.html" class="store-nav-link text-orange-200 hover:text-white">
+                        <i class="fa-solid fa-fire text-orange-400"></i>
+                        <span>Bảng Xếp Hạng HOT</span>
+                    </a>
+                    <a href="deals.html" class="store-nav-link text-amber-300 hover:text-white font-bold">
+                        <i class="fa-solid fa-percent text-amber-300"></i>
+                        <span>Săn Deal Giảm Giá</span>
+                    </a>
                 </div>
-                <div class="hidden xl:flex items-center space-x-4 text-emerald-200 whitespace-nowrap">
-                    <span><i class="fa-solid fa-bolt text-amber-300 mr-1"></i> Giá luôn tốt nhất</span>
-                    <span><i class="fa-solid fa-shield-check text-emerald-300 mr-1"></i> 100% Chính hãng</span>
+
+                <!-- Right Corner: Collapsible Category Drawer Button -->
+                <div>
+                    <button onclick="toggleRightCategoryDrawer(true)" class="bg-emerald-900/60 hover:bg-emerald-900 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-2 border border-emerald-400/40 shadow-sm transition cursor-pointer group" title="Mở bảng danh mục thu gọn nằm riêng ở góc phải">
+                        <i class="fa-solid fa-layer-group text-emerald-300 group-hover:scale-110 transition-transform"></i>
+                        <span>Bảng Danh Mục</span>
+                        <i class="fa-solid fa-chevron-right text-[10px] text-emerald-300"></i>
+                    </button>
                 </div>
             </div>
         </nav>
@@ -226,7 +208,7 @@
         <section class="mb-8">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <!-- Main Promo Banner -->
-                <div class="lg:col-span-2 relative rounded-2xl overflow-hidden shadow-lg bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-800 text-white p-8 md:p-12 flex flex-col justify-between min-h-[300px]">
+                <div class="lg:col-span-2 relative rounded-3xl overflow-hidden shadow-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-800 text-white p-8 md:p-12 flex flex-col justify-between min-h-[320px]">
                     <div class="relative z-10 max-w-md">
                         <span class="inline-block bg-white/20 backdrop-blur-md text-emerald-100 text-xs font-bold px-3 py-1 rounded-full mb-3 uppercase tracking-wider">
                             Xu Hướng Mua Sắm Hiện Đại 2026
@@ -238,35 +220,35 @@
                             Khám phá hàng nghìn sản phẩm chính hãng, từ đồ công nghệ hiện đại đến thời trang cao cấp với giá ưu đãi đặc biệt.
                         </p>
                         <div class="flex flex-wrap gap-3">
-                            <a href="#productCatalogSection" class="bg-white text-emerald-700 hover:bg-emerald-50 px-6 py-3 rounded-xl font-bold text-sm shadow-md transition transform hover:-translate-y-0.5">
-                                Mua ngay hôm nay <i class="fa-solid fa-arrow-right ml-1"></i>
+                            <a href="products.html" class="bg-white text-emerald-700 hover:bg-emerald-50 px-6 py-3 rounded-xl font-bold text-sm shadow-md transition transform hover:-translate-y-0.5 flex items-center">
+                                Khám phá cửa hàng <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
                             </a>
-                            <button onclick="scrollToHotSection()" class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-3 rounded-xl font-bold text-sm shadow-md transition flex items-center">
-                                <i class="fa-solid fa-fire mr-1.5"></i> Xem Bảng Sản Phẩm Hot
-                            </button>
+                            <a href="hot.html" class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-3 rounded-xl font-bold text-sm shadow-md transition flex items-center">
+                                <i class="fa-solid fa-fire mr-1.5"></i> Bảng Xếp Hạng HOT
+                            </a>
                         </div>
                     </div>
-                    <!-- Sleek Ambient Background (No AI generated icon) -->
+                    <!-- Ambient Glow -->
                     <div class="absolute -right-16 -bottom-16 w-80 h-80 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
                 </div>
 
                 <!-- Side Feature Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
                     <!-- Feature Card 1 -->
-                    <div class="bg-gradient-to-br from-emerald-50 to-teal-100/60 border border-emerald-200/60 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow transition">
+                    <a href="products.html?category=1" class="bg-gradient-to-br from-emerald-50 to-teal-100/60 border border-emerald-200/60 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition group">
                         <div>
                             <span class="text-[11px] font-bold uppercase text-emerald-700 tracking-wider">Ưu đãi độc quyền</span>
-                            <h3 class="text-lg font-bold text-slate-800 mt-1">Đồ Công Nghệ Mint</h3>
+                            <h3 class="text-lg font-bold text-slate-800 mt-1 group-hover:text-emerald-700 transition">Đồ Công Nghệ Mint</h3>
                             <p class="text-xs text-slate-500 mt-0.5">Tai nghe, bàn phím & phụ kiện</p>
-                            <span class="inline-block mt-3 text-xs font-bold text-emerald-700 hover:underline cursor-pointer" onclick="filterCategory(1)">Khám phá <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
+                            <span class="inline-block mt-3 text-xs font-bold text-emerald-700">Khám phá <i class="fa-solid fa-chevron-right text-[10px] group-hover:translate-x-1 transition-transform"></i></span>
                         </div>
-                        <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-emerald-600 text-2xl shadow-sm">
+                        <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-emerald-600 text-2xl shadow-sm group-hover:scale-105 transition-transform">
                             <i class="fa-solid fa-headphones-simple"></i>
                         </div>
-                    </div>
+                    </a>
 
                     <!-- Feature Card 2 -->
-                    <div class="bg-gradient-to-br from-amber-50 to-orange-100/60 border border-amber-200/60 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow transition">
+                    <div class="bg-gradient-to-br from-amber-50 to-orange-100/60 border border-amber-200/60 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition">
                         <div>
                             <span class="text-[11px] font-bold uppercase text-amber-700 tracking-wider">Giờ vàng săn deal</span>
                             <h3 class="text-lg font-bold text-slate-800 mt-1">Voucher 50.000₫</h3>
@@ -316,7 +298,7 @@
         </section>
 
         <!-- Flash Sale Section (Shopee/Tiki Style) -->
-        <section class="bg-white rounded-2xl border border-rose-100 shadow-sm p-6 mb-8 overflow-hidden">
+        <section class="bg-white rounded-3xl border border-rose-100 shadow-sm p-6 mb-8 overflow-hidden">
             <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100 mb-6">
                 <div class="flex items-center space-x-3">
                     <span class="flex items-center text-rose-600 text-xl font-black uppercase tracking-wider">
@@ -332,9 +314,9 @@
                         <span class="timer-pill" id="flashTimerSeconds">18</span>
                     </div>
                 </div>
-                <button onclick="scrollToProducts()" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center">
-                    Xem tất cả deal sốc <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i>
-                </button>
+                <a href="deals.html" class="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl transition border border-rose-200">
+                    Xem tất cả deal sốc <i class="fa-solid fa-chevron-right ml-1.5 text-[10px]"></i>
+                </a>
             </div>
 
             <!-- Flash Sale Horizontal Cards -->
@@ -343,184 +325,70 @@
             </div>
         </section>
 
-        <!-- BẢNG HIỂN THỊ SẢN PHẨM HOT (Viewer Hot Products Board) -->
-        <section id="hotProductsBoardSection" class="bg-white rounded-3xl border border-amber-200/90 shadow-lg p-5 sm:p-7 mb-8 overflow-hidden relative">
-            <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-amber-100 mb-5">
+        <!-- Danh Mục Mua Sắm Nổi Bật (Clean Grid, NO Horizontal Scrollbar) -->
+        <section class="mb-10">
+            <div class="flex items-center justify-between mb-5">
                 <div>
-                    <div class="flex items-center space-x-2">
-                        <span class="inline-flex items-center text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2.5 py-0.5 rounded-full shadow-sm">
-                            <i class="fa-solid fa-fire mr-1 text-yellow-200 animate-bounce"></i> TOP THỊNH HÀNH
-                        </span>
-                        <span class="text-[11px] text-slate-400 font-semibold hidden sm:inline">Dữ liệu doanh số & lượt mua thật</span>
-                    </div>
-                    <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight mt-1">
-                        Bảng Xếp Hạng Sản Phẩm HOT Nhất
+                    <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center">
+                        <span class="w-2.5 h-6 bg-emerald-500 rounded mr-2.5"></span> Danh Mục Mua Sắm Nổi Bật
                     </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Khám phá theo nhu cầu mua sắm phong phú</p>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <span class="text-xs text-slate-400 font-medium hidden md:inline">Cập nhật tức thời theo kho hàng</span>
-                    <button onclick="scrollToProducts()" class="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3.5 py-2 rounded-xl transition flex items-center border border-amber-200">
-                        Khám phá thêm <i class="fa-solid fa-chevron-right ml-1.5 text-[10px]"></i>
-                    </button>
-                </div>
+                <button onclick="toggleRightCategoryDrawer(true)" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl transition flex items-center border border-emerald-200">
+                    Xem Bảng Danh Mục Đầy Đủ (Góc Phải) <i class="fa-solid fa-chevron-right ml-1.5 text-[10px]"></i>
+                </button>
             </div>
-
-            <!-- HOT Products Ranking Table (Tablets & Desktops) -->
-            <div class="hidden sm:block overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                    <thead class="bg-amber-50/70 border-b border-amber-100 text-slate-600 uppercase font-black text-[11px]">
-                        <tr>
-                            <th class="py-3 px-3 text-center w-16">Thứ Hạng</th>
-                            <th class="py-3 px-3">Mặt Hàng Hot</th>
-                            <th class="py-3 px-3">Danh Mục</th>
-                            <th class="py-3 px-3">Giá Bán & Khuyến Mãi</th>
-                            <th class="py-3 px-3">Đã Bán & Đánh Giá</th>
-                            <th class="py-3 px-4 text-right">Mua Hàng</th>
-                        </tr>
-                    </thead>
-                    <tbody id="hotProductsTableBody" class="divide-y divide-slate-100">
-                        <!-- Dynamically injected via JS -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- HOT Products Mobile Cards (Smartphones) -->
-            <div class="sm:hidden space-y-3" id="hotProductsMobileList">
-                <!-- Dynamically injected mobile list via JS -->
-            </div>
-        </section>
-
-        <!-- Category Shortcuts (Visual Chips) -->
-        <section class="mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-slate-800 flex items-center">
-                    <span class="w-2.5 h-6 bg-emerald-500 rounded mr-2.5"></span> Danh Mục Nổi Bật
-                </h2>
-                <div class="text-xs text-slate-400">Khám phá theo nhu cầu mua sắm</div>
-            </div>
-            <div class="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none" id="categoryChipsContainer">
+            <!-- Clean 6-card grid with NO scrollbar -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" id="homeCategoryGrid">
                 <!-- Injected via JS -->
             </div>
         </section>
 
-        <!-- Main Product Catalog with Filters (Layout) -->
-        <section id="productCatalogSection" class="pt-2">
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                
-                <!-- Left Filter Sidebar -->
-                <aside class="lg:col-span-1">
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm sticky top-28 space-y-6">
-                        
-                        <!-- Header & Reset -->
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <h3 class="font-bold text-slate-800 text-sm flex items-center">
-                                <i class="fa-solid fa-filter text-emerald-600 mr-2"></i> Bộ Lọc Tìm Kiếm
-                            </h3>
-                            <button onclick="resetFilters()" class="text-xs text-rose-500 hover:text-rose-600 font-semibold">
-                                Xóa tất cả
-                            </button>
-                        </div>
+        <!-- Featured Products Preview Grid -->
+        <section class="mb-10">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight flex items-center">
+                        <span class="w-2.5 h-6 bg-teal-500 rounded mr-2.5"></span> Sản Phẩm Được Quan Tâm Nhất
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Lựa chọn từ các mặt hàng đánh giá cao và bán chạy</p>
+                </div>
+                <a href="products.html" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2 rounded-xl transition flex items-center border border-emerald-200">
+                    Xem Toàn Bộ Sản Phẩm <i class="fa-solid fa-arrow-right ml-1.5 text-[10px]"></i>
+                </a>
+            </div>
 
-                        <!-- Filter: Chỉ xem hàng giảm giá (Mục Giảm Giá) -->
-                        <div>
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5">Khuyến mãi & Giảm giá</h4>
-                            <label class="flex items-center cursor-pointer text-slate-700 hover:text-emerald-700 font-bold text-xs p-2.5 rounded-xl bg-rose-50/60 border border-rose-200/80 transition">
-                                <input type="checkbox" id="sidebarSaleOnlyCheckbox" onchange="toggleDiscountOnlyFilter(this.checked)" class="text-rose-600 focus:ring-rose-500 rounded mr-2.5 w-4 h-4 cursor-pointer">
-                                <span class="flex items-center">
-                                    <i class="fa-solid fa-percent text-rose-500 mr-2"></i> Chỉ xem hàng đang Giảm Giá
-                                </span>
-                            </label>
-                        </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5" id="homeFeaturedGrid">
+                <!-- Dynamically loaded preview items -->
+            </div>
 
-                        <!-- Filter by Category -->
-                        <div class="pt-4 border-t border-slate-100">
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Danh mục sản phẩm</h4>
-                            <div class="space-y-2 text-sm" id="sidebarCategoryList">
-                                <!-- Dynamic categories with radio -->
-                            </div>
-                        </div>
+            <div class="text-center mt-8">
+                <a href="products.html" class="inline-flex items-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm px-8 py-3.5 rounded-2xl shadow-lg transition transform hover:-translate-y-0.5">
+                    <i class="fa-solid fa-boxes-stacked mr-2"></i> Khám Phá Toàn Bộ Kho Hàng & Bộ Lọc Tìm Kiếm
+                </a>
+            </div>
+        </section>
 
-                        <!-- Filter by Price -->
-                        <div class="pt-4 border-t border-slate-100">
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Khoảng giá</h4>
-                            <div class="space-y-2 text-xs">
-                                <label class="flex items-center cursor-pointer text-slate-600 hover:text-emerald-600">
-                                    <input type="radio" name="priceRange" value="all" checked onchange="handlePriceFilter(this.value)" class="text-emerald-600 focus:ring-emerald-500 mr-2">
-                                    Tất cả mức giá
-                                </label>
-                                <label class="flex items-center cursor-pointer text-slate-600 hover:text-emerald-600">
-                                    <input type="radio" name="priceRange" value="0-300000" onchange="handlePriceFilter(this.value)" class="text-emerald-600 focus:ring-emerald-500 mr-2">
-                                    Dưới 300.000₫
-                                </label>
-                                <label class="flex items-center cursor-pointer text-slate-600 hover:text-emerald-600">
-                                    <input type="radio" name="priceRange" value="300000-1000000" onchange="handlePriceFilter(this.value)" class="text-emerald-600 focus:ring-emerald-500 mr-2">
-                                    300.000₫ - 1.000.000₫
-                                </label>
-                                <label class="flex items-center cursor-pointer text-slate-600 hover:text-emerald-600">
-                                    <input type="radio" name="priceRange" value="1000000-2000000" onchange="handlePriceFilter(this.value)" class="text-emerald-600 focus:ring-emerald-500 mr-2">
-                                    1.000.000₫ - 2.000.000₫
-                                </label>
-                                <label class="flex items-center cursor-pointer text-slate-600 hover:text-emerald-600">
-                                    <input type="radio" name="priceRange" value="2000000-99999999" onchange="handlePriceFilter(this.value)" class="text-emerald-600 focus:ring-emerald-500 mr-2">
-                                    Trên 2.000.000₫
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Promotion Banner in Sidebar -->
-                        <div class="pt-4 border-t border-slate-100">
-                            <div class="bg-gradient-to-br from-emerald-500 to-teal-700 text-white rounded-xl p-4 text-center">
-                                <i class="fa-solid fa-crown text-2xl text-amber-300 mb-2"></i>
-                                <div class="font-bold text-xs uppercase">Dành Cho Quản Trị Viên</div>
-                                <div class="text-[11px] text-emerald-100 mt-1 mb-3">Bạn muốn thêm hoặc chỉnh sửa mặt hàng trên trang?</div>
-                                <a href="admin.html" class="inline-block bg-white text-emerald-700 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:bg-emerald-50 transition">
-                                    Mở Trang Quản Trị <i class="fa-solid fa-arrow-right ml-1"></i>
-                                </a>
-                            </div>
-                        </div>
-
+        <!-- Hot Ranking Teaser Banner -->
+        <section class="mb-10">
+            <div class="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 p-6 md:p-8 rounded-3xl border border-amber-200/80 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-3xl shadow-lg flex-shrink-0">
+                        <i class="fa-solid fa-fire text-yellow-200"></i>
                     </div>
-                </aside>
-
-                <!-- Right Product Grid Area -->
-                <section class="lg:col-span-3">
-                    
-                    <!-- Sorting & Results Toolbar -->
-                    <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm mb-5 flex flex-wrap items-center justify-between gap-3">
-                        <div class="text-xs text-slate-500">
-                            Hiển thị: <strong class="text-emerald-600 font-bold text-sm" id="productResultCount">0</strong> mặt hàng
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[10px] font-black uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-full">TOP THỊNH HÀNH</span>
+                            <span class="text-xs text-slate-500 font-semibold">Cập nhật tức thời</span>
                         </div>
-
-                        <div class="flex items-center space-x-2 text-xs">
-                            <span class="text-slate-400 font-medium">Sắp xếp theo:</span>
-                            <select id="sortBySelect" onchange="handleSortChange(this.value)" class="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-3 py-1.5 font-medium outline-none focus:ring-1 focus:ring-emerald-500">
-                                <option value="newest">Mới nhất</option>
-                                <option value="popular">Bán chạy nhất</option>
-                                <option value="discount">Giảm giá nhiều nhất (%)</option>
-                                <option value="price_asc">Giá: Thấp đến Cao</option>
-                                <option value="price_desc">Giá: Cao đến Thấp</option>
-                            </select>
-                        </div>
+                        <h3 class="text-xl font-black text-slate-800 mt-1">Bảng Xếp Hạng Sản Phẩm HOT Nhất</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Xem danh sách các mặt hàng đang đứng đầu doanh thu và được khách hàng săn đón nhiều nhất.</p>
                     </div>
-
-                    <!-- Products Grid -->
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5" id="productsGrid">
-                        <!-- Dynamic Product Cards Injected here -->
-                    </div>
-
-                    <!-- Loading / Empty State -->
-                    <div id="productsEmptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200">
-                        <div class="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto text-2xl mb-3">
-                            <i class="fa-solid fa-box-open"></i>
-                        </div>
-                        <h4 class="text-base font-bold text-slate-700">Không tìm thấy sản phẩm nào phù hợp</h4>
-                        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Vui lòng thử tìm kiếm từ khóa khác hoặc điều chỉnh lại các tiêu chí bộ lọc giá / danh mục.</p>
-                        <button onclick="resetFilters()" class="mt-4 bg-emerald-600 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-sm hover:bg-emerald-700 transition">
-                            Xem tất cả sản phẩm
-                        </button>
-                    </div>
-
-                </section>
+                </div>
+                <a href="hot.html" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs px-6 py-3 rounded-xl shadow-md transition flex items-center space-x-2 flex-shrink-0">
+                    <span>Mở Bảng Xếp Hạng Đầy Đủ</span>
+                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
             </div>
         </section>
 
@@ -529,7 +397,6 @@
     <!-- Shopping Cart Drawer (Slide-out from Right) -->
     <div id="cartDrawerBackdrop" onclick="toggleCartDrawer(false)" class="cart-drawer-overlay fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-300"></div>
     <div id="cartDrawer" class="cart-drawer fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform translate-x-full flex flex-col">
-        <!-- Drawer Header -->
         <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-50/60">
             <div class="flex items-center space-x-2">
                 <i class="fa-solid fa-cart-shopping text-emerald-600 text-lg"></i>
@@ -541,12 +408,10 @@
             </button>
         </div>
 
-        <!-- Drawer Body (Items List) -->
         <div class="flex-1 overflow-y-auto p-4 space-y-3" id="cartDrawerItems">
             <!-- Items rendered via JS -->
         </div>
 
-        <!-- Drawer Footer (Subtotal & Checkout) -->
         <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-3">
             <div class="space-y-1.5 text-xs text-slate-600">
                 <div class="flex justify-between">
@@ -626,7 +491,6 @@
                     <textarea id="orderShippingAddress" required rows="2" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..." class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500"></textarea>
                 </div>
 
-                <!-- Payment Method Selection -->
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1.5">Phương thức thanh toán</label>
                     <div class="grid grid-cols-2 gap-2 text-xs">
@@ -646,7 +510,6 @@
                     <input type="text" id="orderNote" placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao..." class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
                 </div>
 
-                <!-- Checkout Summary Box -->
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1">
                     <div class="flex justify-between text-slate-500">
                         <span>Số lượng sản phẩm:</span>
@@ -669,14 +532,13 @@
         </div>
     </div>
 
-    <!-- Auth Modal (Login / Register Tabs) -->
+    <!-- Auth Modal -->
     <div id="authModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
             <button onclick="closeAuthModal()" class="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
-            <!-- Tabs Header -->
             <div class="flex border-b border-slate-100 mb-5">
                 <button id="authTabLogin" onclick="switchAuthTab('login')" class="flex-1 pb-2 text-xs font-bold border-b-2 border-emerald-500 text-emerald-600 text-center">
                     Đăng Nhập
@@ -686,7 +548,6 @@
                 </button>
             </div>
 
-            <!-- Login Form -->
             <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Email</label>
@@ -697,7 +558,6 @@
                     <input type="password" id="loginPassword" required placeholder="Nhập mật khẩu" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
                 </div>
 
-                <!-- One-click test logins -->
                 <div class="pt-1">
                     <span class="text-[10px] text-slate-400 font-semibold uppercase block mb-1.5">Tài khoản thử nghiệm nhanh:</span>
                     <div class="grid grid-cols-2 gap-1.5">
@@ -715,7 +575,6 @@
                 </button>
             </form>
 
-            <!-- Register Form -->
             <form id="registerForm" onsubmit="handleRegisterSubmit(event)" class="space-y-3 hidden">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Họ và tên</label>
@@ -755,11 +614,56 @@
         </div>
     </div>
 
+    <!-- ========================================================
+         BẢNG DANH MỤC SẢN PHẨM THU GỌN - NẰM RIÊNG Ở GÓC PHẢI
+         ======================================================== -->
+    <div id="categoryDrawerRightBackdrop" class="category-drawer-backdrop fixed inset-0 z-50 hidden opacity-0" onclick="toggleRightCategoryDrawer(false)"></div>
+
+    <aside id="categoryDrawerRight" class="category-drawer-right">
+        <!-- Header -->
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-emerald-700 to-teal-700 text-white flex-shrink-0">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-sm text-white leading-none">Bảng Danh Mục</h3>
+                    <p class="text-[10px] text-emerald-100 font-semibold mt-0.5">Thu gọn nằm riêng góc phải</p>
+                </div>
+            </div>
+            <button onclick="toggleRightCategoryDrawer(false)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer" title="Đóng bảng danh mục">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Filter Search in Drawer -->
+        <div class="p-3 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+            <div class="relative">
+                <input type="text" id="rightDrawerSearchInput" oninput="filterRightDrawerCategories(this.value)" placeholder="Tìm nhanh danh mục..." class="w-full bg-white border border-slate-200 text-xs text-slate-800 rounded-xl px-3 py-2 pl-8 outline-none focus:border-emerald-500 shadow-inner">
+                <i class="fa-solid fa-magnifying-glass text-[11px] text-slate-400 absolute left-2.5 top-3"></i>
+            </div>
+        </div>
+
+        <!-- Scrollable Category List in Drawer -->
+        <div class="flex-1 overflow-y-auto p-3 space-y-2" id="drawerCategoriesListRight">
+            <!-- Dynamic Category Links Injected via JS -->
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500 flex-shrink-0">
+            <a href="products.html" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center">
+                <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Tất cả sản phẩm
+            </a>
+            <a href="admin.html" class="text-xs font-bold text-slate-600 hover:text-emerald-700 flex items-center">
+                <i class="fa-solid fa-shield-halved mr-1 text-emerald-600"></i> Quản trị
+            </a>
+        </div>
+    </aside>
+
     <!-- Footer -->
     <footer class="bg-slate-900 text-slate-300 text-xs mt-16 pt-12 pb-8 border-t border-slate-800">
         <div class="container mx-auto px-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-                <!-- Col 1: About -->
                 <div>
                     <div class="mb-3">
                         <span class="text-white text-xl font-black tracking-tighter uppercase font-sans">MINT<span class="text-emerald-400 font-light">MART</span></span>
@@ -776,7 +680,6 @@
                     </div>
                 </div>
 
-                <!-- Col 2: Customer Service -->
                 <div>
                     <h4 class="text-white font-bold text-sm mb-3">Chăm Sóc Khách Hàng</h4>
                     <ul class="space-y-2 text-slate-400">
@@ -787,22 +690,17 @@
                     </ul>
                 </div>
 
-                <!-- Col 3: Portal Links -->
                 <div>
-                    <h4 class="text-white font-bold text-sm mb-3">Hệ Thống Phân Quyền</h4>
+                    <h4 class="text-white font-bold text-sm mb-3">Điều Hướng Trang</h4>
                     <ul class="space-y-2 text-slate-400">
-                        <li>
-                            <a href="admin.html" class="hover:text-emerald-400 font-semibold flex items-center">
-                                <i class="fa-solid fa-shield-halved text-emerald-400 mr-1.5"></i> Cổng Quản Trị Viên (Admin)
-                            </a>
-                        </li>
-                        <li><a href="index.html" class="hover:text-white transition">Cửa hàng Người Tiêu Dùng</a></li>
-                        <li><a href="#" class="hover:text-white transition">Liên hệ hợp tác bán hàng</a></li>
-                        <li><a href="#" class="hover:text-white transition">Tuyển dụng & Sự nghiệp</a></li>
+                        <li><a href="index.html" class="hover:text-emerald-400 font-bold transition">Trang Chủ</a></li>
+                        <li><a href="products.html" class="hover:text-white transition">Tất Cả Sản Phẩm & Bộ Lọc</a></li>
+                        <li><a href="hot.html" class="hover:text-white transition">Bảng Xếp Hạng HOT</a></li>
+                        <li><a href="deals.html" class="hover:text-white transition">Săn Deal Giảm Giá</a></li>
+                        <li><a href="admin.html" class="hover:text-emerald-400 font-semibold transition">Cổng Quản Trị (Admin)</a></li>
                     </ul>
                 </div>
 
-                <!-- Col 4: Newsletter -->
                 <div>
                     <h4 class="text-white font-bold text-sm mb-3">Đăng Ký Nhận Bản Tin</h4>
                     <p class="text-slate-400 text-xs mb-3">Nhận ngay voucher giảm giá 10% cho đơn hàng đầu tiên.</p>
@@ -823,117 +721,6 @@
             </div>
         </div>
     </footer>
-
-    <!-- ========================================================
-         GITHUB-STYLE SIDEBAR DRAWER (Bản menu bên hông giống GitHub)
-         ======================================================== -->
-    <div id="githubSidebarBackdrop" class="fixed inset-0 github-sidebar-backdrop z-50 hidden opacity-0" onclick="toggleStoreSidebarDrawer(false)"></div>
-
-    <aside id="githubSidebarDrawer" class="fixed inset-y-0 left-0 github-sidebar-drawer z-50 flex flex-col h-full overflow-hidden">
-        
-        <!-- Header (GitHub Style: Brand Logo + Close Button X) -->
-        <div class="p-4 border-b border-[#30363d] flex items-center justify-between flex-shrink-0 bg-[#0d1117]">
-            <a href="index.html" class="flex items-center space-x-2.5 group" onclick="toggleStoreSidebarDrawer(false)">
-                <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-sm shadow-sm group-hover:scale-105 transition-transform">
-                    <i class="fa-solid fa-store"></i>
-                </div>
-                <div>
-                    <div class="text-base font-black tracking-tight text-white leading-none">
-                        MINT<span class="text-emerald-400">MART</span>
-                    </div>
-                    <div class="text-[9px] text-[#848d97] font-semibold mt-0.5 uppercase tracking-wider">Hệ Thống Mua Sắm</div>
-                </div>
-            </a>
-            <button onclick="toggleStoreSidebarDrawer(false)" class="text-[#848d97] hover:text-white p-1.5 rounded-lg hover:bg-[#21262d] transition cursor-pointer" title="Đóng menu">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-        </div>
-
-        <!-- Scrollable Navigation Body (GitHub Style) -->
-        <div class="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-none">
-            
-            <!-- SECTION 1: Core Navigation (Matches GitHub Home, Feed, All issues...) -->
-            <button onclick="drawerNavigate('home')" class="github-menu-item active">
-                <i class="fa-solid fa-house"></i>
-                <span>Trang Chủ (Home)</span>
-            </button>
-            <button onclick="drawerNavigate('all')" class="github-menu-item">
-                <i class="fa-solid fa-border-all"></i>
-                <span>Tất Cả Sản Phẩm</span>
-            </button>
-            <button onclick="drawerNavigate('sale')" class="github-menu-item text-amber-300 hover:text-amber-200">
-                <i class="fa-solid fa-percent text-amber-400"></i>
-                <span>Săn Deal Giảm Giá</span>
-            </button>
-            <button onclick="drawerNavigate('hot')" class="github-menu-item text-orange-400 hover:text-orange-300">
-                <i class="fa-solid fa-fire text-orange-400"></i>
-                <span>Bảng Xếp Hạng HOT</span>
-            </button>
-            <button onclick="toggleCartDrawer(true); toggleStoreSidebarDrawer(false);" class="github-menu-item">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span class="flex-1 text-left">Giỏ Hàng Của Tôi</span>
-                <span id="drawerCartCount" class="bg-emerald-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">0</span>
-            </button>
-            <button onclick="openOrderHistoryModal(); toggleStoreSidebarDrawer(false);" class="github-menu-item">
-                <i class="fa-solid fa-clock-rotate-left"></i>
-                <span>Lịch Sử Đơn Hàng</span>
-            </button>
-
-            <hr class="github-divider">
-
-            <!-- SECTION 2: Explore Categories (Matches GitHub Explore, Marketplace...) -->
-            <div class="github-section-header">
-                <span>DANH MỤC MUA SẮM</span>
-                <i class="fa-solid fa-compass text-[11px]"></i>
-            </div>
-            <div id="drawerCategoriesList" class="space-y-0.5">
-                <!-- Injected via JavaScript with icons and counts -->
-            </div>
-
-            <hr class="github-divider">
-
-            <!-- SECTION 3: Top Products (Matches GitHub "Top repositories" in screenshot) -->
-            <div class="github-section-header">
-                <span>SẢN PHẨM BÁN CHẠY NHẤT</span>
-                <button onclick="document.getElementById('drawerProductSearch').focus()" title="Tìm nhanh" class="hover:text-white cursor-pointer">
-                    <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
-                </button>
-            </div>
-            
-            <!-- Quick filter in drawer -->
-            <div class="px-2 mb-2">
-                <div class="relative">
-                    <input type="text" id="drawerProductSearch" oninput="filterDrawerProducts(this.value)" placeholder="Tìm sản phẩm hot..." class="w-full bg-[#161b22] border border-[#30363d] text-xs text-[#f0f6fc] rounded-md px-2.5 py-1.5 pl-7 outline-none focus:border-emerald-500 placeholder-[#848d97]">
-                    <i class="fa-solid fa-magnifying-glass text-[10px] text-[#848d97] absolute left-2.5 top-2.5"></i>
-                </div>
-            </div>
-
-            <!-- List of products with avatar / thumbnail -->
-            <div id="drawerTopProductsList" class="space-y-1">
-                <!-- Dynamically loaded with mini thumbnails -->
-            </div>
-
-            <hr class="github-divider">
-
-            <!-- SECTION 4: System / Admin Portal -->
-            <div class="github-section-header">
-                <span>QUẢN TRỊ & HỆ THỐNG</span>
-            </div>
-            <a href="admin.html" class="github-menu-item text-emerald-400 hover:text-emerald-300">
-                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
-                <span>Cổng Quản Trị Viên (Admin)</span>
-            </a>
-        </div>
-
-        <!-- Drawer Footer -->
-        <div class="p-3 border-t border-[#30363d] bg-[#010409] flex items-center justify-between text-xs text-[#848d97] flex-shrink-0">
-            <div class="flex items-center space-x-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span class="text-[11px]">MintMart • GitHub Style</span>
-            </div>
-            <span class="text-[10px]">Hotline: 1900 6868</span>
-        </div>
-    </aside>
 
     <!-- Shared Scripts -->
     <script src="js/api.js"></script>
