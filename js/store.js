@@ -805,60 +805,21 @@ function renderDWDrawerCategories(categories) {
 }
 
 /* ========================================================
-   CUSTOMER BACKGROUND COLOR THEMES (Đổi màu nền cho khách hàng)
+   CUSTOMER BACKGROUND COLOR THEMES (Feature removed)
    ======================================================== */
 function setCustomerTheme(themeName) {
-    const themes = ['theme-white', 'theme-mint', 'theme-cream', 'theme-slate', 'theme-dark'];
-    themes.forEach(t => document.body.classList.remove(t));
-    document.body.classList.add(themeName);
-    localStorage.setItem('mintmart_theme', themeName);
-
-    // Update active highlight on theme buttons
-    document.querySelectorAll('.theme-btn').forEach(btn => {
-        if (btn.dataset.theme === themeName) {
-            btn.classList.add('ring-2', 'ring-emerald-500', 'scale-105');
-        } else {
-            btn.classList.remove('ring-2', 'ring-emerald-500', 'scale-105');
-        }
-    });
-
-    const themeTitles = {
-        'theme-white': 'Trắng Tinh Tế',
-        'theme-mint': 'Xanh Bạc Hà',
-        'theme-cream': 'Be Ấm Áp (Daniel Wellington)',
-        'theme-slate': 'Xám Hiện Đại',
-        'theme-dark': 'Đen Huyền Bí'
-    };
-
-    showToast('info', `Đã chuyển màu nền sang: ${themeTitles[themeName] || themeName}`);
+    // Background color theme feature removed per user request
 }
 
 function initCustomerTheme() {
-    const saved = localStorage.getItem('mintmart_theme') || 'theme-white';
+    // Reset any previously saved theme to clean default
+    localStorage.removeItem('mintmart_theme');
     const themes = ['theme-white', 'theme-mint', 'theme-cream', 'theme-slate', 'theme-dark'];
     themes.forEach(t => document.body.classList.remove(t));
-    document.body.classList.add(saved);
-
-    // Highlight button
-    setTimeout(() => {
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            if (btn.dataset.theme === saved) {
-                btn.classList.add('ring-2', 'ring-emerald-500', 'scale-105');
-            } else {
-                btn.classList.remove('ring-2', 'ring-emerald-500', 'scale-105');
-            }
-        });
-    }, 100);
 }
 
 function toggleThemeModal(open) {
-    const modal = document.getElementById('themeModal');
-    if (!modal) return;
-    if (open) {
-        modal.classList.remove('hidden');
-    } else {
-        modal.classList.add('hidden');
-    }
+    // No-op
 }
 
 // Zalo Chat Helper
@@ -1524,27 +1485,17 @@ async function handleLoginSubmit(e) {
         });
 
         setAuth(res.token, res.user);
-        closeAuthModal();
+        // If admin, automatically redirect to Admin portal
+        if (res.user.role === 'admin') {
+            showToast('success', `Chào mừng Quản trị viên ${res.user.name}! Đang chuyển đến Trang Quản Trị...`);
+            setTimeout(() => {
+                window.location.href = 'admin.html';
+            }, 500);
+            return;
+        }
+
         updateUserUI();
         showToast('success', `Chào mừng ${res.user.name} đã quay trở lại!`);
-
-        // If admin, show prompt to switch to admin portal
-        if (res.user.role === 'admin') {
-            Swal.fire({
-                icon: 'info',
-                title: 'Xin chào Quản Trị Viên!',
-                text: 'Bạn đang đăng nhập bằng tài khoản Admin. Bạn có muốn chuyển sang Trang Quản Trị ngay bây giờ không?',
-                showCancelButton: true,
-                confirmButtonText: 'Đến Trang Quản Trị',
-                cancelButtonText: 'Ở lại Cửa Hàng',
-                confirmButtonColor: '#10B981',
-                cancelButtonColor: '#64748B'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = 'admin.html';
-                }
-            });
-        }
 
     } catch (err) {
         showToast('error', err.message || 'Đăng nhập không thành công');

@@ -50,16 +50,6 @@
                 <span class="hidden md:inline"><i class="fa-solid fa-phone text-emerald-400 mr-1.5"></i> Hotline: <strong>1900 6868</strong></span>
             </div>
             <div class="flex items-center space-x-3 text-[11px] sm:text-xs">
-                <!-- Theme Palette Quick Pill -->
-                <button onclick="toggleThemeModal(true)" class="inline-flex items-center bg-white/10 hover:bg-white/20 text-emerald-100 font-medium px-2.5 py-0.5 rounded-full transition cursor-pointer">
-                    <i class="fa-solid fa-palette text-amber-300 mr-1.5"></i> Đổi Màu Nền
-                </button>
-                <span>|</span>
-                <!-- Admin Portal Link -->
-                <a href="admin.html" class="inline-flex items-center bg-emerald-700 hover:bg-emerald-600 text-white font-medium px-2.5 py-0.5 rounded-full shadow-sm transition">
-                    <i class="fa-solid fa-shield-halved mr-1"></i> Admin
-                </a>
-                <span>|</span>
                 <div id="topUserGreeting" class="inline-flex items-center space-x-1 cursor-pointer">
                     <span id="topAuthButton" class="hover:text-white transition" onclick="openAuthModal('login')">
                         <i class="fa-regular fa-user mr-1"></i> Đăng nhập
@@ -74,9 +64,9 @@
         <div class="container mx-auto px-3 sm:px-4 py-2.5">
             <div class="flex items-center justify-between gap-2 sm:gap-4">
                 
-                <!-- LEFT: Hamburger Menu Button (Daniel Wellington Image 3 Style) + Brand Logo -->
+                <!-- LEFT: Hamburger Menu Button (Mobile) + Brand Logo -->
                 <div class="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                    <button onclick="toggleLeftDrawer(true)" class="p-2 -ml-1 text-white hover:bg-white/15 rounded-xl transition flex items-center justify-center cursor-pointer border border-emerald-400/40 shadow-sm" title="Mở danh mục (Bên trái giống Daniel Wellington)">
+                    <button onclick="toggleLeftDrawer(true)" class="md:hidden p-2 -ml-1 text-white hover:bg-white/15 rounded-xl transition flex items-center justify-center cursor-pointer border border-emerald-400/40 shadow-sm" title="Mở danh mục">
                         <i class="fa-solid fa-bars text-lg sm:text-xl"></i>
                     </button>
 
@@ -104,13 +94,8 @@
                     </form>
                 </div>
 
-                <!-- RIGHT HEADER ACTIONS: Theme button, User, Cart -->
+                <!-- RIGHT HEADER ACTIONS: User, Cart -->
                 <div class="flex items-center space-x-1.5 sm:space-x-3 flex-shrink-0">
-                    <!-- Customer Theme Switcher Button -->
-                    <button onclick="toggleThemeModal(true)" class="p-2 bg-white/15 hover:bg-white/25 text-white rounded-xl transition flex items-center space-x-1 text-xs font-bold shadow-sm" title="Đổi màu nền trang web">
-                        <i class="fa-solid fa-palette text-amber-300 text-sm"></i>
-                        <span class="hidden lg:inline text-[11px]">Màu nền</span>
-                    </button>
 
                     <!-- User Account Dropdown -->
                     <div class="relative" id="userMenuContainer">
@@ -341,9 +326,9 @@
                     </h2>
                     <p class="text-xs text-slate-400 mt-0.5">Khám phá theo các ngành hàng chính hãng</p>
                 </div>
-                <button onclick="toggleLeftDrawer(true)" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition flex items-center border border-emerald-200 cursor-pointer">
-                    <i class="fa-solid fa-bars mr-1.5"></i> Mở Menu Bên Trái
-                </button>
+                <a href="products.html" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition flex items-center border border-emerald-200">
+                    Xem tất cả <i class="fa-solid fa-arrow-right ml-1.5 text-[10px]"></i>
+                </a>
             </div>
             <!-- Clean responsive grid with NO horizontal overflow -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4" id="homeCategoryGrid">
@@ -453,37 +438,7 @@
                 </a>
             </div>
 
-            <!-- 4. Background Color Switcher (Mục đổi màu nền cho khách hàng) -->
-            <div class="p-4 bg-slate-50">
-                <div class="text-[11px] font-black uppercase text-slate-600 tracking-wider mb-2.5 flex items-center justify-between">
-                    <span class="flex items-center"><i class="fa-solid fa-palette text-amber-500 mr-2"></i> ĐỔI MÀU NỀN</span>
-                    <span class="text-[9px] text-slate-400 font-normal">Tùy biến theo ý thích</span>
-                </div>
-                <div class="grid grid-cols-5 gap-2">
-                    <button onclick="setCustomerTheme('theme-white')" class="theme-btn w-full aspect-square rounded-xl bg-white border-2 border-slate-300 shadow-sm flex flex-col items-center justify-center p-1 cursor-pointer transition hover:scale-105" data-theme="theme-white" title="Trắng Tinh Tế">
-                        <span class="w-4 h-4 rounded-full bg-white border border-slate-400 shadow-inner"></span>
-                        <span class="text-[8px] font-bold text-slate-700 mt-1">Trắng</span>
-                    </button>
-                    <button onclick="setCustomerTheme('theme-mint')" class="theme-btn w-full aspect-square rounded-xl bg-emerald-50 border-2 border-emerald-300 shadow-sm flex flex-col items-center justify-center p-1 cursor-pointer transition hover:scale-105" data-theme="theme-mint" title="Xanh Bạc Hà">
-                        <span class="w-4 h-4 rounded-full bg-emerald-400"></span>
-                        <span class="text-[8px] font-bold text-emerald-800 mt-1">Bạc hà</span>
-                    </button>
-                    <button onclick="setCustomerTheme('theme-cream')" class="theme-btn w-full aspect-square rounded-xl bg-[#faf7f2] border-2 border-amber-300 shadow-sm flex flex-col items-center justify-center p-1 cursor-pointer transition hover:scale-105" data-theme="theme-cream" title="Be Ấm DW">
-                        <span class="w-4 h-4 rounded-full bg-[#e8dfd3]"></span>
-                        <span class="text-[8px] font-bold text-amber-900 mt-1">Be ấm</span>
-                    </button>
-                    <button onclick="setCustomerTheme('theme-slate')" class="theme-btn w-full aspect-square rounded-xl bg-slate-100 border-2 border-slate-300 shadow-sm flex flex-col items-center justify-center p-1 cursor-pointer transition hover:scale-105" data-theme="theme-slate" title="Xám Hiện Đại">
-                        <span class="w-4 h-4 rounded-full bg-slate-400"></span>
-                        <span class="text-[8px] font-bold text-slate-800 mt-1">Xám</span>
-                    </button>
-                    <button onclick="setCustomerTheme('theme-dark')" class="theme-btn w-full aspect-square rounded-xl bg-slate-900 border-2 border-slate-700 shadow-sm flex flex-col items-center justify-center p-1 cursor-pointer transition hover:scale-105" data-theme="theme-dark" title="Đen Sang Trọng">
-                        <span class="w-4 h-4 rounded-full bg-slate-800 border border-slate-600"></span>
-                        <span class="text-[8px] font-bold text-white mt-1">Tối</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- 5. Support & Contact Links -->
+            <!-- Support & Contact Links -->
             <div class="p-4 space-y-2 text-xs text-slate-600">
                 <a href="tel:19006868" class="flex items-center space-x-2.5 py-1.5 text-slate-700 hover:text-emerald-600 font-semibold">
                     <i class="fa-solid fa-phone text-emerald-600 w-4 text-center"></i>
@@ -492,10 +447,6 @@
                 <a href="https://zalo.me/0912345678" target="_blank" class="flex items-center space-x-2.5 py-1.5 text-slate-700 hover:text-emerald-600 font-semibold">
                     <span class="w-4 h-4 rounded-full bg-[#0068FF] text-white flex items-center justify-center font-black text-[8px]">Z</span>
                     <span>Hỗ trợ qua <strong>Zalo Official</strong></span>
-                </a>
-                <a href="admin.html" class="flex items-center space-x-2.5 py-1.5 text-emerald-700 hover:text-emerald-800 font-bold">
-                    <i class="fa-solid fa-shield-halved text-emerald-600 w-4 text-center"></i>
-                    <span>Cổng Quản Trị Viên (Admin)</span>
                 </a>
             </div>
         </div>
@@ -514,83 +465,6 @@
         <a href="https://zalo.me/0912345678" target="_blank" class="contact-floating-btn zalo-btn" title="Chat qua Zalo">
             <span>Zalo</span>
         </a>
-    </div>
-
-    <!-- Theme Selection Modal (Customer Background Color Switcher) -->
-    <div id="themeModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl relative border border-slate-100">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
-                        <i class="fa-solid fa-palette"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-extrabold text-sm text-slate-800">Đổi Màu Nền Giao Diện</h3>
-                        <p class="text-[11px] text-slate-400">Chọn tông màu bạn cảm thấy thoải mái nhất</p>
-                    </div>
-                </div>
-                <button onclick="toggleThemeModal(false)" class="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center">
-                    <i class="fa-solid fa-xmark text-xs"></i>
-                </button>
-            </div>
-
-            <div class="space-y-2.5">
-                <button onclick="setCustomerTheme('theme-white'); toggleThemeModal(false);" class="w-full flex items-center justify-between p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 bg-white transition group">
-                    <div class="flex items-center space-x-3">
-                        <span class="w-6 h-6 rounded-full bg-white border-2 border-slate-300 shadow-sm"></span>
-                        <div class="text-left">
-                            <div class="font-bold text-xs text-slate-800">Trắng Tinh Tế (Mặc định)</div>
-                            <div class="text-[10px] text-slate-400">Sáng sủa, thanh lịch, dễ nhìn</div>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-check text-emerald-600 opacity-0 group-hover:opacity-100 text-xs"></i>
-                </button>
-
-                <button onclick="setCustomerTheme('theme-mint'); toggleThemeModal(false);" class="w-full flex items-center justify-between p-3 rounded-2xl border border-emerald-200 hover:border-emerald-500 bg-emerald-50/50 transition group">
-                    <div class="flex items-center space-x-3">
-                        <span class="w-6 h-6 rounded-full bg-emerald-400 shadow-sm"></span>
-                        <div class="text-left">
-                            <div class="font-bold text-xs text-slate-800">Xanh Bạc Hà (Mint Pastel)</div>
-                            <div class="text-[10px] text-emerald-700">Tươi mát, dịu mắt, phong cách MintMart</div>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-check text-emerald-600 opacity-0 group-hover:opacity-100 text-xs"></i>
-                </button>
-
-                <button onclick="setCustomerTheme('theme-cream'); toggleThemeModal(false);" class="w-full flex items-center justify-between p-3 rounded-2xl border border-amber-200 hover:border-amber-500 bg-[#faf7f2] transition group">
-                    <div class="flex items-center space-x-3">
-                        <span class="w-6 h-6 rounded-full bg-[#e8dfd3] shadow-sm"></span>
-                        <div class="text-left">
-                            <div class="font-bold text-xs text-slate-800">Be Ấm Sang Trọng (Daniel Wellington)</div>
-                            <div class="text-[10px] text-amber-800">Cổ điển, cao cấp, êm dịu ban đêm</div>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-check text-emerald-600 opacity-0 group-hover:opacity-100 text-xs"></i>
-                </button>
-
-                <button onclick="setCustomerTheme('theme-slate'); toggleThemeModal(false);" class="w-full flex items-center justify-between p-3 rounded-2xl border border-slate-200 hover:border-slate-500 bg-slate-100 transition group">
-                    <div class="flex items-center space-x-3">
-                        <span class="w-6 h-6 rounded-full bg-slate-400 shadow-sm"></span>
-                        <div class="text-left">
-                            <div class="font-bold text-xs text-slate-800">Xám Hiện Đại (Modern Gray)</div>
-                            <div class="text-[10px] text-slate-500">Trung tính, giảm chói, hiện đại</div>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-check text-emerald-600 opacity-0 group-hover:opacity-100 text-xs"></i>
-                </button>
-
-                <button onclick="setCustomerTheme('theme-dark'); toggleThemeModal(false);" class="w-full flex items-center justify-between p-3 rounded-2xl border border-slate-700 hover:border-emerald-500 bg-slate-900 text-white transition group">
-                    <div class="flex items-center space-x-3">
-                        <span class="w-6 h-6 rounded-full bg-slate-700 border border-slate-500 shadow-sm"></span>
-                        <div class="text-left">
-                            <div class="font-bold text-xs text-white">Đen Huyền Bí (Dark Mode)</div>
-                            <div class="text-[10px] text-slate-400">Tiết kiệm pin, bảo vệ mắt ban đêm</div>
-                        </div>
-                    </div>
-                    <i class="fa-solid fa-check text-emerald-400 opacity-0 group-hover:opacity-100 text-xs"></i>
-                </button>
-            </div>
-        </div>
     </div>
 
     <!-- Shopping Cart Drawer (Slide-out from Right) -->
@@ -850,7 +724,6 @@
                         <li><a href="products.html" class="hover:text-white transition">Tất Cả Sản Phẩm & Bộ Lọc</a></li>
                         <li><a href="hot.html" class="hover:text-white transition">Bảng Xếp Hạng HOT</a></li>
                         <li><a href="deals.html" class="hover:text-white transition">Săn Deal Giảm Giá</a></li>
-                        <li><a href="admin.html" class="hover:text-emerald-400 font-semibold transition">Cổng Quản Trị (Admin)</a></li>
                     </ul>
                 </div>
 
@@ -869,7 +742,7 @@
             <div class="pt-6 border-t border-slate-800 text-center text-slate-500 text-[11px] flex flex-wrap justify-between items-center gap-2">
                 <div>© 2026 MintMart E-Commerce. Thiết kế theo tiêu chuẩn thương mại điện tử hiện đại.</div>
                 <div class="flex items-center space-x-2 text-slate-400">
-                    <span class="text-emerald-400 font-semibold">Tùy biến màu nền linh hoạt</span> & Phong cách tối giản
+                    <span class="text-emerald-400 font-semibold">Mua sắm tiện lợi</span> & Trải nghiệm tối ưu
                 </div>
             </div>
         </div>
