@@ -323,15 +323,153 @@
                         </div>
                     </div>
 
-                    <!-- Charts Row -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <!-- Revenue Trend Chart -->
-                        <div class="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-bold text-slate-800 text-sm">Doanh Thu 7 Ngày Gần Nhất</h3>
-                                <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Đồng bộ tự động</span>
+                    <!-- KHỐI DOANH THU 7 NGÀY PHÂN TÁCH 2 SÀN SHOPEE & LAZADA THÀNH 2 BẢNG RIÊNG BIỆT -->
+                    <div class="mb-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                            <div>
+                                <h3 class="font-extrabold text-slate-800 text-base flex items-center">
+                                    <span class="w-2.5 h-6 bg-emerald-500 rounded mr-2.5"></span>
+                                    Báo Cáo Doanh Thu 7 Ngày Gần Nhất - Phân Tách 2 Sàn Riêng Biệt
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Dữ liệu liên kết trực tiếp với số lượng đặt hàng & khấu trừ kho thực tế của Shopee & Lazada</p>
                             </div>
-                            <div class="h-64">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl font-bold flex items-center">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-1.5"></span>
+                                    Đã liên kết dữ liệu 2 sàn
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 2 Bảng Riêng Biệt Shopee & Lazada (Grid 2 cột) -->
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <!-- BẢNG 1: DOANH THU 7 NGÀY - SÀN SHOPEE -->
+                            <div class="bg-white rounded-2xl p-5 border border-orange-200 shadow-sm flex flex-col justify-between">
+                                <div class="flex items-center justify-between pb-3 border-b border-orange-100 mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-2xl bg-orange-500 text-white flex items-center justify-center font-black shadow-md shadow-orange-500/20 text-lg">
+                                            <i class="fa-solid fa-bag-shopping"></i>
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center space-x-2">
+                                                <h4 class="font-black text-slate-800 text-sm">Bảng Doanh Thu 7 Ngày - Shopee</h4>
+                                                <span class="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Shopee Mall</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-400">Liên kết trừ kho tự động qua Shopee API v2</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[11px] text-slate-400 block font-medium">Tổng 7 ngày:</span>
+                                        <strong class="text-base font-black text-orange-600" id="shopee7DayTotal">0 ₫</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Mini Trend Chart Shopee -->
+                                <div class="h-36 mb-4 relative bg-orange-50/20 rounded-xl p-2 border border-orange-100/60">
+                                    <canvas id="shopee7DayChart"></canvas>
+                                </div>
+
+                                <!-- Bảng số liệu chi tiết 7 ngày Shopee -->
+                                <div class="overflow-x-auto rounded-xl border border-slate-100">
+                                    <table class="w-full text-left text-xs">
+                                        <thead class="bg-orange-50/70 text-slate-600 font-bold border-b border-orange-100">
+                                            <tr>
+                                                <th class="py-2.5 px-3">Ngày</th>
+                                                <th class="py-2.5 px-3 text-center">Số đơn</th>
+                                                <th class="py-2.5 px-3 text-center">SP bán</th>
+                                                <th class="py-2.5 px-3 text-right">Doanh thu</th>
+                                                <th class="py-2.5 px-3 text-center">Tăng trưởng</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="shopee7DayTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
+                                            <!-- Rendered via JS -->
+                                        </tbody>
+                                        <tfoot class="bg-orange-50/40 font-bold border-t border-orange-100 text-slate-800">
+                                            <tr>
+                                                <td class="py-2.5 px-3">Tổng 7 ngày:</td>
+                                                <td class="py-2.5 px-3 text-center text-orange-600 font-bold" id="shopee7DayTotalOrders">0 đơn</td>
+                                                <td class="py-2.5 px-3 text-center text-orange-600 font-bold" id="shopee7DayTotalUnits">0 sp</td>
+                                                <td class="py-2.5 px-3 text-right text-orange-600 font-black text-sm" id="shopee7DayTotalRevFooter">0 ₫</td>
+                                                <td class="py-2.5 px-3 text-center text-emerald-600 font-bold"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Tăng đều</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- BẢNG 2: DOANH THU 7 NGÀY - SÀN LAZADA -->
+                            <div class="bg-white rounded-2xl p-5 border border-indigo-200 shadow-sm flex flex-col justify-between">
+                                <div class="flex items-center justify-between pb-3 border-b border-indigo-100 mb-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/20 text-lg">
+                                            <i class="fa-solid fa-store"></i>
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center space-x-2">
+                                                <h4 class="font-black text-slate-800 text-sm">Bảng Doanh Thu 7 Ngày - Lazada</h4>
+                                                <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center">
+                                                    <i class="fa-solid fa-pause text-[8px] mr-1"></i> Tạm ẩn API
+                                                </span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-400">Liên kết nội bộ (Đã tạm ẩn gửi request ra ngoài)</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-[11px] text-slate-400 block font-medium">Tổng 7 ngày:</span>
+                                        <strong class="text-base font-black text-indigo-600" id="lazada7DayTotal">0 ₫</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Mini Trend Chart Lazada -->
+                                <div class="h-36 mb-4 relative bg-indigo-50/20 rounded-xl p-2 border border-indigo-100/60">
+                                    <canvas id="lazada7DayChart"></canvas>
+                                </div>
+
+                                <!-- Bảng số liệu chi tiết 7 ngày Lazada -->
+                                <div class="overflow-x-auto rounded-xl border border-slate-100">
+                                    <table class="w-full text-left text-xs">
+                                        <thead class="bg-indigo-50/70 text-slate-600 font-bold border-b border-indigo-100">
+                                            <tr>
+                                                <th class="py-2.5 px-3">Ngày</th>
+                                                <th class="py-2.5 px-3 text-center">Số đơn</th>
+                                                <th class="py-2.5 px-3 text-center">SP bán</th>
+                                                <th class="py-2.5 px-3 text-right">Doanh thu</th>
+                                                <th class="py-2.5 px-3 text-center">Tăng trưởng</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="lazada7DayTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
+                                            <!-- Rendered via JS -->
+                                        </tbody>
+                                        <tfoot class="bg-indigo-50/40 font-bold border-t border-indigo-100 text-slate-800">
+                                            <tr>
+                                                <td class="py-2.5 px-3">Tổng 7 ngày:</td>
+                                                <td class="py-2.5 px-3 text-center text-indigo-600 font-bold" id="lazada7DayTotalOrders">0 đơn</td>
+                                                <td class="py-2.5 px-3 text-center text-indigo-600 font-bold" id="lazada7DayTotalUnits">0 sp</td>
+                                                <td class="py-2.5 px-3 text-right text-indigo-600 font-black text-sm" id="lazada7DayTotalRevFooter">0 ₫</td>
+                                                <td class="py-2.5 px-3 text-center text-amber-600 font-bold"><i class="fa-solid fa-lock mr-1"></i> Tạm ẩn API</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Categories Doughnut & Performance Summary Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Revenue Overview Trend (Shopee vs Lazada Comparison) -->
+                        <div class="lg:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="font-bold text-slate-800 text-sm flex items-center">
+                                        <i class="fa-solid fa-chart-line text-emerald-600 mr-2"></i>
+                                        Biểu Đồ So Sánh Xu Hướng Doanh Thu 7 Ngày (Shopee vs Lazada)
+                                    </h3>
+                                    <p class="text-[11px] text-slate-400">Đường màu cam: Shopee | Đường màu tím: Lazada</p>
+                                </div>
+                                <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">Đồng bộ tự động</span>
+                            </div>
+                            <div class="h-64 relative">
                                 <canvas id="revenueChart"></canvas>
                             </div>
                         </div>

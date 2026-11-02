@@ -421,8 +421,8 @@ async function loadDashboardStats() {
             }
         }
 
-        // Init / Update Revenue Trend Chart
-        initRevenueChart();
+        // Init / Update 2 Separate 7-Day Marketplace Tables & Charts
+        await load7DayMarketplaceRevenue(s.marketplace7Days);
 
         // Init / Update Category Chart
         initCategoryChart(s.salesByCategory);
@@ -432,40 +432,231 @@ async function loadDashboardStats() {
     }
 }
 
-// Chart.js Revenue Line Chart
-function initRevenueChart() {
+// Global instances for charts
+let shopee7DayChartInstance = null;
+let lazada7DayChartInstance = null;
+
+// LOAD VÀ RENDER 2 BẢNG DOANH THU 7 NGÀY GẦN NHẤT RIÊNG BIỆT CHO SHOPEE & LAZADA
+async function load7DayMarketplaceRevenue(initialData = null) {
+    let data = initialData;
+    if (!data) {
+        try {
+            data = await apiFetch('/api/marketplace/revenue-7days');
+        } catch (err) {
+            console.error('Không thể tải doanh thu 7 ngày 2 sàn:', err);
+            return;
+        }
+    }
+
+    if (!data || !data.shopee || !data.lazada) return;
+
+    const days = data.days || [];
+    const shp = data.shopee;
+    const laz = data.lazada;
+
+    // 1. Render Shopee Table & KPIs
+    const shpTotalEl = document.getElementById('shopee7DayTotal');
+    const shpOrdersEl = document.getElementById('shopee7DayTotalOrders');
+    const shpUnitsEl = document.getElementById('shopee7DayTotalUnits');
+    const shpFooterEl = document.getElementById('shopee7DayTotalRevFooter');
+    const shpTableBody = document.getElementById('shopee7DayTableBody');
+
+    if (shpTotalEl) shpTotalEl.textContent = formatCurrency(shp.total_revenue);
+    if (shpOrdersEl) shpOrdersEl.textContent = `${shp.total_orders} đơn`;
+    if (shpUnitsEl) shpUnitsEl.textContent = `${shp.total_units} sp`;
+    if (shpFooterEl) shpFooterEl.textContent = formatCurrency(shp.total_revenue);
+
+    if (shpTableBody && shp.daily) {
+        shpTableBody.innerHTML = shp.daily.map(d => `
+            <tr class="hover:bg-orange-50/40 transition">
+                <td class="py-2.5 px-3">
+                    <span class="font-bold text-slate-800">${d.dayLabel}</span>
+                    <span class="text-[10px] text-slate-400 block">${d.date}</span>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="font-bold text-slate-800">${d.orders}</span>
+                    ${d.real_synced_orders > 0 ? `<span class="text-[9px] text-orange-600 font-bold block">(+${d.real_synced_orders} web)</span>` : ''}
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-bold text-[10px]">${d.units} sp</span>
+                </td>
+                <td class="py-2.5 px-3 text-right">
+                    <strong class="font-black text-orange-600 text-xs">${formatCurrency(d.revenue)}</strong>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : 'text-rose-500'}">
+                        ${d.growth.startsWith('+') ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>' : '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>'}${d.growth}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // 2. Render Lazada Table & KPIs
+    const lazTotalEl = document.getElementById('lazada7DayTotal');
+    const lazOrdersEl = document.getElementById('lazada7DayTotalOrders');
+    const lazUnitsEl = document.getElementById('lazada7DayTotalUnits');
+    const lazFooterEl = document.getElementById('lazada7DayTotalRevFooter');
+    const lazTableBody = document.getElementById('lazada7DayTableBody');
+
+    if (lazTotalEl) lazTotalEl.textContent = formatCurrency(laz.total_revenue);
+    if (lazOrdersEl) lazOrdersEl.textContent = `${laz.total_orders} đơn`;
+    if (lazUnitsEl) lazUnitsEl.textContent = `${laz.total_units} sp`;
+    if (lazFooterEl) lazFooterEl.textContent = formatCurrency(laz.total_revenue);
+
+    if (lazTableBody && laz.daily) {
+        lazTableBody.innerHTML = laz.daily.map(d => `
+            <tr class="hover:bg-indigo-50/40 transition">
+                <td class="py-2.5 px-3">
+                    <span class="font-bold text-slate-800">${d.dayLabel}</span>
+                    <span class="text-[10px] text-slate-400 block">${d.date}</span>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="font-bold text-slate-800">${d.orders}</span>
+                    ${d.real_synced_orders > 0 ? `<span class="text-[9px] text-indigo-600 font-bold block">(+${d.real_synced_orders} web)</span>` : ''}
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold text-[10px]">${d.units} sp</span>
+                </td>
+                <td class="py-2.5 px-3 text-right">
+                    <strong class="font-black text-indigo-600 text-xs">${formatCurrency(d.revenue)}</strong>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : 'text-rose-500'}">
+                        ${d.growth.startsWith('+') ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>' : '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>'}${d.growth}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // 3. Render Mini Trend Charts & Comparison Chart
+    if (typeof Chart !== 'undefined') {
+        const shpRevs = (shp.daily || []).map(d => d.revenue);
+        const lazRevs = (laz.daily || []).map(d => d.revenue);
+
+        // Mini Shopee Chart
+        const shpCanvas = document.getElementById('shopee7DayChart');
+        if (shpCanvas) {
+            if (shopee7DayChartInstance) shopee7DayChartInstance.destroy();
+            shopee7DayChartInstance = new Chart(shpCanvas, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Shopee (VNĐ)',
+                        data: shpRevs,
+                        borderColor: '#EA580C',
+                        backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#EA580C',
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            ticks: { callback: v => (v / 1000000) + ' Tr', font: { size: 9 } },
+                            grid: { color: '#FFF7ED' }
+                        },
+                        x: { grid: { display: false }, font: { size: 9 } }
+                    }
+                }
+            });
+        }
+
+        // Mini Lazada Chart
+        const lazCanvas = document.getElementById('lazada7DayChart');
+        if (lazCanvas) {
+            if (lazada7DayChartInstance) lazada7DayChartInstance.destroy();
+            lazada7DayChartInstance = new Chart(lazCanvas, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [{
+                        label: 'Lazada (VNĐ)',
+                        data: lazRevs,
+                        borderColor: '#6366F1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#6366F1',
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            ticks: { callback: v => (v / 1000000) + ' Tr', font: { size: 9 } },
+                            grid: { color: '#EEF2FF' }
+                        },
+                        x: { grid: { display: false }, font: { size: 9 } }
+                    }
+                }
+            });
+        }
+
+        // Comparison Chart
+        initRevenueComparisonChart(days, shpRevs, lazRevs);
+    }
+}
+
+function initRevenueComparisonChart(labels, shpData, lazData) {
     const ctx = document.getElementById('revenueChart');
-    if (!ctx) return;
+    if (!ctx || typeof Chart === 'undefined') return;
 
     if (revenueChartInstance) {
         revenueChartInstance.destroy();
     }
 
-    const labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    const data = [1420000, 2150000, 1890000, 3400000, 2750000, 4800000, 5200000];
-
     revenueChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [{
-                label: 'Doanh thu (VNĐ)',
-                data: data,
-                borderColor: '#10B981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.35,
-                pointBackgroundColor: '#10B981',
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
+            datasets: [
+                {
+                    label: 'Doanh thu Shopee',
+                    data: shpData,
+                    borderColor: '#F97316',
+                    backgroundColor: 'rgba(249, 115, 22, 0.12)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.35,
+                    pointBackgroundColor: '#F97316',
+                    pointRadius: 4
+                },
+                {
+                    label: 'Doanh thu Lazada (Tạm ẩn)',
+                    data: lazData,
+                    borderColor: '#6366F1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                    borderWidth: 3,
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.35,
+                    pointBackgroundColor: '#6366F1',
+                    pointRadius: 4
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { display: false }
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { font: { size: 11, weight: 'bold' } }
+                }
             },
             scales: {
                 y: {

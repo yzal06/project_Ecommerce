@@ -857,6 +857,101 @@ async function handleMockApi(endpoint, options = {}) {
         };
     }
 
+    // P2. 7-DAY REVENUE REPORT FOR 2 MARKETPLACES
+    if (path === '/api/marketplace/revenue-7days') {
+        const days = [];
+        const shopeeDaily = [];
+        const lazadaDaily = [];
+        const shopeeBaseline = [
+            { orders: 14, units: 38, baseRev: 21500000 },
+            { orders: 18, units: 46, baseRev: 27800000 },
+            { orders: 16, units: 42, baseRev: 24200000 },
+            { orders: 22, units: 58, baseRev: 34500000 },
+            { orders: 25, units: 64, baseRev: 39100000 },
+            { orders: 32, units: 85, baseRev: 48600000 },
+            { orders: 28, units: 72, baseRev: 42300000 }
+        ];
+        const lazadaBaseline = [
+            { orders: 9,  units: 24, baseRev: 14200000 },
+            { orders: 11, units: 29, baseRev: 17500000 },
+            { orders: 10, units: 26, baseRev: 15800000 },
+            { orders: 15, units: 38, baseRev: 22900000 },
+            { orders: 17, units: 44, baseRev: 26400000 },
+            { orders: 21, units: 55, baseRev: 32800000 },
+            { orders: 19, units: 48, baseRev: 28500000 }
+        ];
+
+        let shpTotalRev = 0, shpTotalOrders = 0, shpTotalUnits = 0;
+        let lazTotalRev = 0, lazTotalOrders = 0, lazTotalUnits = 0;
+
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().slice(0, 10);
+            const shortDay = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()];
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dayLabel = `${shortDay} (${dd}/${mm})`;
+            const fullDate = `${dd}/${mm}/${d.getFullYear()}`;
+            days.push(dayLabel);
+            const idx = 6 - i;
+
+            const shpB = shopeeBaseline[idx];
+            shpTotalRev += shpB.baseRev;
+            shpTotalOrders += shpB.orders;
+            shpTotalUnits += shpB.units;
+            shopeeDaily.push({
+                date: fullDate,
+                dateStr,
+                dayLabel,
+                orders: shpB.orders,
+                units: shpB.units,
+                revenue: shpB.baseRev,
+                growth: idx === 0 ? '+5.2%' : '+8.5%',
+                status: 'Đồng bộ API v2'
+            });
+
+            const lazB = lazadaBaseline[idx];
+            lazTotalRev += lazB.baseRev;
+            lazTotalOrders += lazB.orders;
+            lazTotalUnits += lazB.units;
+            lazadaDaily.push({
+                date: fullDate,
+                dateStr,
+                dayLabel,
+                orders: lazB.orders,
+                units: lazB.units,
+                revenue: lazB.baseRev,
+                growth: idx === 0 ? '+3.8%' : '+6.2%',
+                status: 'Tạm ẩn API'
+            });
+        }
+
+        return {
+            success: true,
+            days,
+            shopee: {
+                platform: 'Shopee',
+                shop_name: 'MintMart Official Store (Shopee Mall)',
+                status_label: 'Đang kết nối API v2',
+                total_revenue: shpTotalRev,
+                total_orders: shpTotalOrders,
+                total_units: shpTotalUnits,
+                daily: shopeeDaily
+            },
+            lazada: {
+                platform: 'Lazada',
+                shop_name: 'MintMart LazMall Flagship Store',
+                status_label: 'Tạm ẩn theo yêu cầu quản trị viên',
+                is_temporarily_hidden: true,
+                total_revenue: lazTotalRev,
+                total_orders: lazTotalOrders,
+                total_units: lazTotalUnits,
+                daily: lazadaDaily
+            }
+        };
+    }
+
     // Q. MARKETPLACE LOGS & SETTINGS
     if (path === '/api/marketplace/logs') {
         return { success: true, count: getMockLogs().length, logs: getMockLogs() };

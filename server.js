@@ -822,6 +822,9 @@ app.get('/api/stats/dashboard', requireAdmin, async (req, res) => {
             GROUP BY c.id
         `);
 
+        // 7-day marketplace revenue separated for Shopee & Lazada
+        const marketplace7Days = await marketplaceService.get7DayMarketplaceRevenue();
+
         res.json({
             success: true,
             stats: {
@@ -831,12 +834,24 @@ app.get('/api/stats/dashboard', requireAdmin, async (req, res) => {
                 totalCustomers: totalCustomersResult.total,
                 recentOrders,
                 lowStockProducts,
-                salesByCategory
+                salesByCategory,
+                marketplace7Days
             }
         });
     } catch (err) {
         console.error('Lỗi lấy thống kê admin:', err);
         res.status(500).json({ success: false, message: 'Lỗi server khi lấy dữ liệu thống kê' });
+    }
+});
+
+// BÁO CÁO DOANH THU 7 NGÀY GẦN NHẤT PHÂN TÁCH 2 SÀN SHOPEE & LAZADA
+app.get('/api/marketplace/revenue-7days', requireAdmin, async (req, res) => {
+    try {
+        const report = await marketplaceService.get7DayMarketplaceRevenue();
+        res.json(report);
+    } catch (err) {
+        console.error('Lỗi lấy báo cáo doanh thu 7 ngày 2 sàn:', err);
+        res.status(500).json({ success: false, message: 'Lỗi server khi lấy báo cáo doanh thu 7 ngày' });
     }
 });
 
