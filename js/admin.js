@@ -149,27 +149,81 @@ function playDingDongChime() {
     }
 }
 
-// Giọng nói tiếng Việt phát thanh: "Bạn có đơn hàng mới!"
+// Audio cache cho giọng nữ Việt Nam phát thanh chuẩn
+let cachedFemaleAudio = null;
+
+// Tìm kiếm giọng đọc nữ tiếng Việt từ Web Speech API
+function getVietnameseFemaleVoice() {
+    if (!('speechSynthesis' in window)) return null;
+    const voices = window.speechSynthesis.getVoices();
+    // 1. Google tiếng Việt (Giọng nữ Việt Nam tự nhiên chuẩn của Chrome)
+    let v = voices.find(voice => voice.lang.includes('vi') && voice.name.toLowerCase().includes('google'));
+    // 2. Microsoft HoaiMy (Giọng nữ Việt Nam chuẩn của Edge/Windows)
+    if (!v) v = voices.find(voice => voice.name.includes('HoaiMy') || voice.name.includes('Hoài My'));
+    // 3. Giọng nữ tiếng Việt bất kỳ
+    if (!v) v = voices.find(voice => voice.lang.startsWith('vi') && (voice.name.toLowerCase().includes('female') || voice.name.toLowerCase().includes('nu')));
+    // 4. Bất kỳ giọng tiếng Việt nào
+    if (!v) v = voices.find(voice => voice.lang === 'vi-VN' || voice.lang.startsWith('vi'));
+    return v;
+}
+
+// Khởi tạo giọng nói khi trình duyệt sẵn sàng
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = () => {
+        getVietnameseFemaleVoice();
+    };
+}
+
+// Phát thanh giọng nữ Việt Nam: "Bạn có đơn hàng mới!"
 function speakOrderAlert(text = 'Bạn có đơn hàng mới!') {
+    // Ưu tiên 1: Phát file audio giọng nữ Việt Nam chuẩn bản địa (100% tiếng Việt tự nhiên)
+    const audioPath = 'uploads/alert-order-vi.mp3';
+    try {
+        if (!cachedFemaleAudio) {
+            cachedFemaleAudio = new Audio(audioPath);
+        }
+        cachedFemaleAudio.currentTime = 0;
+        const playPromise = cachedFemaleAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                // Đã phát thành công giọng nữ Việt Nam
+            }).catch(e => {
+                // Fallback nếu trình duyệt yêu cầu tương tác hoặc file chưa nạp
+                fallbackWebSpeechFemale(text);
+            });
+            return;
+        }
+    } catch (err) {
+        fallbackWebSpeechFemale(text);
+    }
+}
+
+// Fallback sử dụng Web Speech API lọc đúng giọng nữ tiếng Việt
+function fallbackWebSpeechFemale(text) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'vi-VN';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.1;
+        
+        const femaleVoice = getVietnameseFemaleVoice();
+        if (femaleVoice) {
+            utterance.voice = femaleVoice;
+        }
+        
+        // Điều chỉnh tần số và tốc độ thanh thoát chuẩn giọng nữ Việt Nam
+        utterance.rate = 0.95;
+        utterance.pitch = 1.25;
         window.speechSynthesis.speak(utterance);
     }
 }
 
-// Kích hoạt chuông + giọng nói + banner thông báo
+// Kích hoạt chuông + giọng nữ Việt Nam + banner thông báo
 function triggerNewOrderAlert(order) {
     if (speakerEnabled) {
         playDingDongChime();
         setTimeout(() => {
-            const customer = order ? order.customer_name : '';
-            const msg = customer ? `Bạn có đơn hàng mới từ ${customer}!` : 'Bạn có đơn hàng mới!';
-            speakOrderAlert(msg);
-        }, 300);
+            speakOrderAlert('Bạn có đơn hàng mới!');
+        }, 350);
     }
 
     // Hiển thị banner góc phải
@@ -191,9 +245,9 @@ function dismissOrderAlert() {
 function testOrderSound() {
     playDingDongChime();
     setTimeout(() => {
-        speakOrderAlert('Kiểm tra loa thông báo: Bạn có đơn hàng mới!');
-    }, 300);
-    showToast('info', '🔊 Đang phát thông báo qua loa: "Bạn có đơn hàng mới!"');
+        speakOrderAlert('Bạn có đơn hàng mới!');
+    }, 350);
+    showToast('info', '🔊 Đang phát thông báo giọng nữ Việt Nam: "Bạn có đơn hàng mới!"');
 }
 
 // Tự động kiểm tra đơn hàng mới trong nền
