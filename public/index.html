@@ -498,6 +498,26 @@
             <!-- Items rendered via JS -->
         </div>
 
+        <!-- Thông Tin Nhận Hàng & Ghi Chú Đặt Hàng Trực Tiếp Trên Giỏ Hàng -->
+        <div class="p-3.5 bg-emerald-50/70 border-t border-emerald-100 space-y-2">
+            <div class="flex items-center justify-between text-xs font-extrabold text-emerald-900">
+                <span class="flex items-center"><i class="fa-solid fa-truck-fast mr-1.5 text-emerald-600"></i> Thông tin giao hàng</span>
+                <span class="text-[10px] text-emerald-600 font-bold bg-emerald-100/70 px-2 py-0.5 rounded-full">Bắt buộc khi đặt</span>
+            </div>
+            <div>
+                <input type="text" id="drawerCustomerName" oninput="syncDrawerToCheckout()" placeholder="Họ và tên người nhận *" class="w-full px-3 py-1.5 text-xs border border-emerald-200 rounded-lg outline-none focus:border-emerald-500 bg-white shadow-sm">
+            </div>
+            <div>
+                <input type="tel" id="drawerCustomerPhone" oninput="syncDrawerToCheckout()" placeholder="Số điện thoại nhận hàng *" class="w-full px-3 py-1.5 text-xs border border-emerald-200 rounded-lg outline-none focus:border-emerald-500 bg-white shadow-sm">
+            </div>
+            <div>
+                <textarea id="drawerShippingAddress" oninput="syncDrawerToCheckout()" rows="2" placeholder="Địa chỉ nhận hàng (Số nhà, đường, phường/xã, quận, tỉnh) *" class="w-full px-3 py-1.5 text-xs border border-emerald-200 rounded-lg outline-none focus:border-emerald-500 bg-white shadow-sm"></textarea>
+            </div>
+            <div>
+                <input type="text" id="drawerOrderNote" oninput="syncDrawerToCheckout()" placeholder="Ghi chú đơn hàng cho người bán / shipper (Tùy chọn)..." class="w-full px-3 py-1.5 text-xs border border-emerald-200 rounded-lg outline-none focus:border-emerald-500 bg-white shadow-sm">
+            </div>
+        </div>
+
         <div class="p-4 border-t border-slate-100 bg-slate-50 space-y-3">
             <div class="space-y-1.5 text-xs text-slate-600">
                 <div class="flex justify-between">
@@ -556,25 +576,61 @@
             </div>
 
             <form id="checkoutForm" onsubmit="submitCheckout(event)" class="space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">Họ và tên người nhận <span class="text-rose-500">*</span></label>
-                        <input type="text" id="orderCustomerName" required placeholder="Nguyễn Văn A" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-3">
+                    <h4 class="text-xs font-extrabold text-slate-700 flex items-center uppercase tracking-wider">
+                        <i class="fa-solid fa-address-card text-emerald-600 mr-2 text-sm"></i> Thông tin khách hàng & Địa chỉ nhận hàng
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Họ và tên người nhận <span class="text-rose-500">*</span></label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-user text-xs"></i>
+                                </span>
+                                <input type="text" id="orderCustomerName" required oninput="syncCheckoutToDrawer()" placeholder="Nguyễn Văn A" class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Số điện thoại nhận hàng <span class="text-rose-500">*</span></label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-emerald-600">
+                                    <i class="fa-solid fa-phone text-xs"></i>
+                                </span>
+                                <input type="tel" id="orderCustomerPhone" required oninput="syncCheckoutToDrawer()" placeholder="0912 345 678" class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white">
+                            </div>
+                        </div>
                     </div>
+
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">Số điện thoại <span class="text-rose-500">*</span></label>
-                        <input type="tel" id="orderCustomerPhone" required placeholder="0912 345 678" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Email nhận thông báo đơn hàng (Tùy chọn)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-regular fa-envelope text-xs"></i>
+                            </span>
+                            <input type="email" id="orderCustomerEmail" placeholder="email@gmail.com" class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white">
+                        </div>
                     </div>
-                </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">Email nhận thông báo đơn hàng</label>
-                    <input type="email" id="orderCustomerEmail" placeholder="email@gmail.com" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
-                </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Địa chỉ giao hàng chi tiết <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <span class="absolute top-2.5 left-3 pointer-events-none text-rose-500">
+                                <i class="fa-solid fa-location-dot text-xs"></i>
+                            </span>
+                            <textarea id="orderShippingAddress" required oninput="syncCheckoutToDrawer()" rows="2" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..." class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white"></textarea>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 italic">Vui lòng nhập địa chỉ cụ thể để shipper giao hàng nhanh chóng và chính xác.</p>
+                    </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">Địa chỉ giao hàng chi tiết <span class="text-rose-500">*</span></label>
-                    <textarea id="orderShippingAddress" required rows="2" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..." class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500"></textarea>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Ghi chú đơn hàng cho người bán / shipper (Tùy chọn)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-amber-500">
+                                <i class="fa-solid fa-note-sticky text-xs"></i>
+                            </span>
+                            <input type="text" id="orderNote" oninput="syncCheckoutToDrawer()" placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao, đóng gói cẩn thận..." class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white">
+                        </div>
+                    </div>
                 </div>
 
                 <div>
@@ -597,11 +653,6 @@
                             <span><i class="fa-solid fa-credit-card text-blue-600 mr-1.5"></i> Thẻ Visa / Master</span>
                         </label>
                     </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">Ghi chú cho shipper (Tùy chọn)</label>
-                    <input type="text" id="orderNote" placeholder="Ví dụ: Giao giờ hành chính, gọi trước khi giao..." class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
                 </div>
 
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1">

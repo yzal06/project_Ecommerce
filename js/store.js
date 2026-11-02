@@ -1240,11 +1240,58 @@ function toggleCartDrawer(open) {
         backdrop.classList.remove('hidden');
         setTimeout(() => backdrop.classList.remove('opacity-0'), 10);
         drawer.classList.remove('translate-x-full');
+
+        // Pre-fill user data if logged in
+        const user = getCurrentUser();
+        if (user) {
+            const dName = document.getElementById('drawerCustomerName');
+            const dPhone = document.getElementById('drawerCustomerPhone');
+            const dAddr = document.getElementById('drawerShippingAddress');
+            if (dName && !dName.value) dName.value = user.name || '';
+            if (dPhone && !dPhone.value) dPhone.value = user.phone || '';
+            if (dAddr && !dAddr.value) dAddr.value = user.address || '';
+            syncDrawerToCheckout();
+        }
     } else {
         backdrop.classList.add('opacity-0');
         drawer.classList.add('translate-x-full');
         setTimeout(() => backdrop.classList.add('hidden'), 300);
     }
+}
+
+// Đồng bộ 2 chiều giữa Giỏ hàng (Drawer) và Modal Đặt Hàng (Checkout Modal)
+function syncDrawerToCheckout() {
+    const dName = document.getElementById('drawerCustomerName');
+    const dPhone = document.getElementById('drawerCustomerPhone');
+    const dAddr = document.getElementById('drawerShippingAddress');
+    const dNote = document.getElementById('drawerOrderNote');
+
+    const mName = document.getElementById('orderCustomerName');
+    const mPhone = document.getElementById('orderCustomerPhone');
+    const mAddr = document.getElementById('orderShippingAddress');
+    const mNote = document.getElementById('orderNote');
+
+    if (dName && mName && dName.value !== undefined) mName.value = dName.value;
+    if (dPhone && mPhone && dPhone.value !== undefined) mPhone.value = dPhone.value;
+    if (dAddr && mAddr && dAddr.value !== undefined) mAddr.value = dAddr.value;
+    if (dNote && mNote && dNote.value !== undefined) mNote.value = dNote.value;
+}
+
+function syncCheckoutToDrawer() {
+    const dName = document.getElementById('drawerCustomerName');
+    const dPhone = document.getElementById('drawerCustomerPhone');
+    const dAddr = document.getElementById('drawerShippingAddress');
+    const dNote = document.getElementById('drawerOrderNote');
+
+    const mName = document.getElementById('orderCustomerName');
+    const mPhone = document.getElementById('orderCustomerPhone');
+    const mAddr = document.getElementById('orderShippingAddress');
+    const mNote = document.getElementById('orderNote');
+
+    if (mName && dName) dName.value = mName.value;
+    if (mPhone && dPhone) dPhone.value = mPhone.value;
+    if (mAddr && dAddr) dAddr.value = mAddr.value;
+    if (mNote && dNote) dNote.value = mNote.value;
 }
 
 function updateCartUI() {
@@ -1312,13 +1359,21 @@ function openCheckoutModal() {
 
     toggleCartDrawer(false);
 
+    // Sync any pre-entered fields from drawer
+    syncDrawerToCheckout();
+
     // Pre-fill user data if logged in
     const user = getCurrentUser();
     if (user) {
-        document.getElementById('orderCustomerName').value = user.name || '';
-        document.getElementById('orderCustomerPhone').value = user.phone || '';
-        document.getElementById('orderCustomerEmail').value = user.email || '';
-        document.getElementById('orderShippingAddress').value = user.address || '';
+        const mName = document.getElementById('orderCustomerName');
+        const mPhone = document.getElementById('orderCustomerPhone');
+        const mEmail = document.getElementById('orderCustomerEmail');
+        const mAddr = document.getElementById('orderShippingAddress');
+        if (mName && !mName.value) mName.value = user.name || '';
+        if (mPhone && !mPhone.value) mPhone.value = user.phone || '';
+        if (mEmail && !mEmail.value) mEmail.value = user.email || '';
+        if (mAddr && !mAddr.value) mAddr.value = user.address || '';
+        syncCheckoutToDrawer();
     }
 
     document.getElementById('checkoutItemCount').textContent = `${count} món`;
@@ -1337,13 +1392,32 @@ async function submitCheckout(e) {
     e.preventDefault();
     const { items, total } = getCartTotals();
 
-    const customer_name = document.getElementById('orderCustomerName').value;
-    const customer_phone = document.getElementById('orderCustomerPhone').value;
-    const customer_email = document.getElementById('orderCustomerEmail').value;
-    const shipping_address = document.getElementById('orderShippingAddress').value;
-    const note = document.getElementById('orderNote').value;
+    // Sync any updates from drawer or inputs
+    syncDrawerToCheckout();
+
+    const customer_name = (document.getElementById('orderCustomerName')?.value || '').trim();
+    const customer_phone = (document.getElementById('orderCustomerPhone')?.value || '').trim();
+    const customer_email = (document.getElementById('orderCustomerEmail')?.value || '').trim();
+    const shipping_address = (document.getElementById('orderShippingAddress')?.value || '').trim();
+    const note = (document.getElementById('orderNote')?.value || '').trim();
     const paymentMethodEl = document.querySelector('input[name="paymentMethod"]:checked');
     const payment_method = paymentMethodEl ? paymentMethodEl.value : 'COD';
+
+    if (!customer_name) {
+        showToast('warning', 'Vui lòng nhập họ và tên người nhận hàng!');
+        document.getElementById('orderCustomerName')?.focus();
+        return;
+    }
+    if (!customer_phone) {
+        showToast('warning', 'Vui lòng cung cấp số điện thoại nhận hàng!');
+        document.getElementById('orderCustomerPhone')?.focus();
+        return;
+    }
+    if (!shipping_address) {
+        showToast('warning', 'Vui lòng cung cấp địa chỉ giao hàng chi tiết!');
+        document.getElementById('orderShippingAddress')?.focus();
+        return;
+    }
 
     const user = getCurrentUser();
 
@@ -1368,36 +1442,63 @@ async function submitCheckout(e) {
         closeCheckoutModal();
         clearCart();
 
+        // Clear notes after ordering
+        const dNote = document.getElementById('drawerOrderNote');
+        const mNote = document.getElementById('orderNote');
+        if (dNote) dNote.value = '';
+        if (mNote) mNote.value = '';
+
         // If online payment (VietQR, MOMO, CARD, etc.) -> Launch Payment Gateway Modal
         if (payment_method !== 'COD') {
             openPaymentGateway(res.order);
             return;
         }
 
-        // Beautiful order success modal with marketplace sync notice for COD
+        // Beautiful order success modal with customer delivery details & marketplace sync notice
         Swal.fire({
             icon: 'success',
             title: 'Đặt Hàng Thành Công! 🎉',
             html: `
-                <div class="text-left text-sm space-y-2 mt-3">
-                    <p>Mã đơn hàng: <strong class="text-emerald-600 font-bold">${res.order.order_code}</strong></p>
-                    <p>Người nhận: <strong>${customer_name}</strong> - ${customer_phone}</p>
-                    <p>Địa chỉ: ${shipping_address}</p>
-                    <p>Phương thức: <strong>Trả tiền mặt khi nhận hàng (COD)</strong></p>
-                    <p>Trạng thái thanh toán: <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full">Chờ thanh toán khi nhận</span></p>
-                    <p class="text-emerald-600 font-black text-base pt-2 border-t">Tổng thanh toán: ${formatCurrency(res.order.total_amount)}</p>
-                    
-                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 mt-2 space-y-1">
+                <div class="text-left text-xs space-y-2 mt-3">
+                    <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5">
+                        <div class="flex justify-between items-center pb-1.5 border-b border-slate-200">
+                            <span class="text-slate-500 font-semibold">Mã đơn hàng:</span>
+                            <strong class="text-emerald-700 font-black text-sm">${res.order.order_code}</strong>
+                        </div>
+                        <div class="text-slate-700">
+                            <span class="text-slate-400 font-semibold">Người nhận & SĐT:</span>
+                            <strong class="ml-1">${customer_name}</strong> - <span class="text-emerald-600 font-bold">${customer_phone}</span>
+                        </div>
+                        <div class="text-slate-700 flex items-start space-x-1.5">
+                            <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0"></i>
+                            <div><span class="text-slate-400 font-semibold">Địa chỉ nhận hàng:</span> <span class="font-medium text-slate-800">${shipping_address}</span></div>
+                        </div>
+                        <div class="text-slate-700 flex items-start space-x-1.5">
+                            <i class="fa-solid fa-note-sticky text-amber-500 mt-0.5 shrink-0"></i>
+                            <div><span class="text-slate-400 font-semibold">Ghi chú đơn:</span> <span class="italic text-amber-800 font-medium">${note ? `"${note}"` : 'Không có ghi chú'}</span></div>
+                        </div>
+                        <div class="flex justify-between pt-1 border-t border-slate-200 text-slate-600">
+                            <span>Phương thức:</span>
+                            <strong>Trả tiền mặt khi nhận hàng (COD)</strong>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center text-sm font-black text-slate-800 px-1 pt-1">
+                        <span>Tổng tiền thanh toán:</span>
+                        <span class="text-emerald-600 text-base">${formatCurrency(res.order.total_amount)}</span>
+                    </div>
+
+                    <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-800 mt-2 space-y-1">
                         <div class="font-bold flex items-center text-emerald-700">
                             <i class="fa-solid fa-arrows-rotate mr-1.5 text-emerald-600 animate-spin" style="animation-duration: 3s"></i>
-                            Đã khấu trừ kho trên Shopee & Lazada!
+                            Đã khấu trừ tồn kho trên Shopee & Lazada!
                         </div>
                         <div class="text-[11px] text-emerald-600">
                             Hệ thống đã tự động gọi API cập nhật giảm tồn kho tương ứng trên 2 sàn thương mại điện tử.
                         </div>
                     </div>
 
-                    <p class="text-xs text-slate-400 mt-2 italic">Nhân viên MintMart sẽ sớm liên hệ qua số điện thoại để xác nhận đơn hàng.</p>
+                    <p class="text-[11px] text-slate-400 mt-2 italic text-center">MintMart sẽ liên hệ qua số điện thoại <strong>${customer_phone}</strong> để xác nhận và giao hàng nhanh nhất.</p>
                 </div>
             `,
             confirmButtonText: 'Tiếp tục mua hàng',
@@ -1445,7 +1546,7 @@ function ensurePaymentGatewayModal() {
                 </div>
 
                 <!-- Order Info Bar -->
-                <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 p-3 rounded-2xl border border-emerald-100 mb-4 flex items-center justify-between">
+                <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 p-3 rounded-2xl border border-emerald-100 mb-3 flex items-center justify-between">
                     <div>
                         <span class="text-[11px] text-slate-500 block">Mã đơn hàng:</span>
                         <strong class="text-sm font-black text-slate-800 font-mono" id="pgOrderCode">MM-00000</strong>
@@ -1453,6 +1554,22 @@ function ensurePaymentGatewayModal() {
                     <div class="text-right">
                         <span class="text-[11px] text-slate-500 block">Số tiền thanh toán:</span>
                         <strong class="text-base font-black text-emerald-600" id="pgOrderAmount">0 ₫</strong>
+                    </div>
+                </div>
+
+                <!-- Customer & Delivery Summary -->
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 mb-4 text-xs space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400 font-semibold"><i class="fa-solid fa-user text-slate-400 mr-1"></i> Người nhận:</span>
+                        <strong class="text-slate-800" id="pgCustomerInfo">--</strong>
+                    </div>
+                    <div class="flex items-start justify-between">
+                        <span class="text-slate-400 font-semibold shrink-0 mr-2"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i> Giao đến:</span>
+                        <span class="text-slate-700 font-medium text-right max-w-xs leading-tight" id="pgShippingAddress">--</span>
+                    </div>
+                    <div class="flex items-start justify-between" id="pgOrderNoteRow">
+                        <span class="text-slate-400 font-semibold shrink-0 mr-2"><i class="fa-solid fa-note-sticky text-amber-500 mr-1"></i> Ghi chú:</span>
+                        <span class="text-amber-800 italic text-right max-w-xs leading-tight" id="pgOrderNote">--</span>
                     </div>
                 </div>
 
@@ -1634,6 +1751,23 @@ function openPaymentGateway(order) {
     if (amtEl) amtEl.textContent = formatCurrency(order.total_amount);
     if (copyAmtEl) copyAmtEl.textContent = formatCurrency(order.total_amount);
     if (copyMemoEl) copyMemoEl.textContent = order.order_code;
+
+    // Populate Customer info, Delivery address, and Order note
+    const custInfoEl = document.getElementById('pgCustomerInfo');
+    const addrEl = document.getElementById('pgShippingAddress');
+    const noteEl = document.getElementById('pgOrderNote');
+    const noteRow = document.getElementById('pgOrderNoteRow');
+
+    if (custInfoEl) custInfoEl.textContent = `${order.customer_name || 'Khách hàng'} - ${order.customer_phone || ''}`;
+    if (addrEl) addrEl.textContent = order.shipping_address || 'Chưa cung cấp địa chỉ';
+    if (noteEl && noteRow) {
+        if (order.note && order.note.trim()) {
+            noteEl.textContent = `"${order.note}"`;
+            noteRow.classList.remove('hidden');
+        } else {
+            noteRow.classList.add('hidden');
+        }
+    }
 
     // Generate VietQR
     const qrUrl = `https://img.vietqr.io/image/MB-19006868888-compact2.png?amount=${order.total_amount}&addInfo=${encodeURIComponent(order.order_code)}&accountName=CONG%20TY%20CO%20PHAN%20MINTMART%20VN`;
@@ -1961,23 +2095,47 @@ async function openOrderHistoryModal() {
             return;
         }
 
-        // For demo, fetch recent orders from customer
-        list.innerHTML = `
-            <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div class="flex justify-between font-bold text-slate-700">
-                    <span>Mã đơn: #MM-98214</span>
-                    <span class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px]">Đã giao thành công</span>
+        // Fetch user's orders
+        const res = await apiFetch('/api/orders/my-orders');
+        const orders = res && res.orders ? res.orders : [];
+
+        if (orders.length === 0) {
+            list.innerHTML = `
+                <div class="text-center py-8 text-slate-400">
+                    <i class="fa-solid fa-box-open text-3xl mb-2 text-slate-300"></i>
+                    <p>Bạn chưa có đơn hàng nào.</p>
                 </div>
-                <div class="text-slate-500 text-[11px] mt-1">Tai nghe Bluetooth Không Dây Mint Sound Pro x 1</div>
-                <div class="flex justify-between items-center text-slate-800 font-extrabold mt-2 pt-2 border-t border-slate-200">
-                    <span>Tổng: 890.000 ₫</span>
-                    <span class="text-[10px] text-slate-400 font-normal">Thanh toán: COD</span>
+            `;
+            return;
+        }
+
+        list.innerHTML = orders.map(o => `
+            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                <div class="flex justify-between items-center pb-1.5 border-b border-slate-200">
+                    <span class="font-black text-emerald-700">${o.order_code}</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeClass(o.status)}">
+                        ${getStatusText(o.status)}
+                    </span>
+                </div>
+                <div class="text-slate-700 text-xs space-y-1">
+                    <div><strong>${o.customer_name}</strong> - <span class="text-emerald-600 font-bold">${o.customer_phone}</span></div>
+                    <div class="text-slate-500 flex items-start space-x-1">
+                        <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0 text-[11px]"></i>
+                        <span>${o.shipping_address}</span>
+                    </div>
+                    ${o.note && o.note.trim() ? `
+                        <div class="text-amber-800 bg-amber-50 p-1.5 rounded-lg border border-amber-200/60 italic text-[11px] flex items-start space-x-1">
+                            <i class="fa-solid fa-note-sticky text-amber-500 mt-0.5 shrink-0 text-[10px]"></i>
+                            <span>${o.note}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="flex justify-between items-center text-slate-800 font-extrabold pt-2 border-t border-slate-200">
+                    <span>Tổng: <span class="text-emerald-600">${formatCurrency(o.total_amount)}</span></span>
+                    <span class="text-[10px] text-slate-500 font-normal">PTTT: ${o.payment_method || 'COD'}</span>
                 </div>
             </div>
-            <div class="text-center text-[11px] text-slate-400 pt-2">
-                Đang hiển thị đơn hàng mới nhất của bạn.
-            </div>
-        `;
+        `).join('');
     } catch (e) {
         list.innerHTML = `<p class="text-slate-400 text-center py-4">Chưa có đơn hàng nào</p>`;
     }

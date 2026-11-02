@@ -427,24 +427,39 @@ async function loadDashboardStats() {
         const recentOrdersBody = document.getElementById('dashboardRecentOrdersBody');
         if (recentOrdersBody) {
             if (s.recentOrders.length === 0) {
-                recentOrdersBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">Chưa có đơn hàng nào</td></tr>`;
+                recentOrdersBody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-400">Chưa có đơn hàng nào</td></tr>`;
             } else {
                 recentOrdersBody.innerHTML = s.recentOrders.map(o => `
-                    <tr class="hover:bg-slate-50">
-                        <td class="py-2.5 px-3 font-bold text-emerald-700">${o.order_code}</td>
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="py-2.5 px-3 font-bold text-emerald-700 whitespace-nowrap">${o.order_code}</td>
                         <td class="py-2.5 px-3">
                             <div class="font-bold text-slate-700">${o.customer_name}</div>
-                            <div class="text-[10px] text-slate-400">${o.customer_phone}</div>
+                            <div class="text-[10px] text-emerald-600 font-semibold flex items-center">
+                                <i class="fa-solid fa-phone text-[9px] mr-1"></i>${o.customer_phone}
+                            </div>
                         </td>
-                        <td class="py-2.5 px-3 font-bold text-slate-800">${formatCurrency(o.total_amount)}</td>
                         <td class="py-2.5 px-3">
+                            <div class="text-slate-600 text-[11px] truncate max-w-[170px] flex items-center" title="${o.shipping_address || ''}">
+                                <i class="fa-solid fa-location-dot text-rose-500 mr-1 text-[10px] shrink-0"></i>
+                                <span>${o.shipping_address || '<span class="text-slate-300 italic">Chưa có</span>'}</span>
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-3">
+                            ${o.note && o.note.trim() ? `
+                                <div class="text-amber-800 text-[10px] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 truncate max-w-[130px]" title="${o.note}">
+                                    <i class="fa-solid fa-note-sticky text-amber-500 mr-1 text-[9px]"></i>${o.note}
+                                </div>
+                            ` : `<span class="text-slate-300 text-[10px] italic">Không</span>`}
+                        </td>
+                        <td class="py-2.5 px-3 font-bold text-slate-800 whitespace-nowrap">${formatCurrency(o.total_amount)}</td>
+                        <td class="py-2.5 px-3 whitespace-nowrap">
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeClass(o.status)}">
                                 ${getStatusText(o.status)}
                             </span>
                         </td>
-                        <td class="py-2.5 px-3 text-right">
-                            <button onclick="viewOrderDetail(${o.id})" class="text-emerald-600 hover:text-emerald-800 font-bold">
-                                Chi tiết
+                        <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                            <button onclick="viewOrderDetail(${o.id})" class="text-emerald-600 hover:text-emerald-800 font-bold text-xs flex items-center ml-auto">
+                                <i class="fa-solid fa-eye mr-1 text-[10px]"></i> Chi tiết
                             </button>
                         </td>
                     </tr>
@@ -1538,20 +1553,43 @@ function renderAdminOrdersTable(orders) {
     if (!tbody) return;
 
     if (orders.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">Không có đơn hàng nào trong mục này</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-400">Không có đơn hàng nào trong mục này</td></tr>`;
         return;
     }
 
     tbody.innerHTML = orders.map(o => `
         <tr class="hover:bg-slate-50 transition">
-            <td class="py-3 px-4 font-black text-emerald-700">${o.order_code}</td>
+            <td class="py-3 px-3 font-black text-emerald-700 whitespace-nowrap">${o.order_code}</td>
             <td class="py-3 px-3">
-                <div class="font-bold text-slate-800">${o.customer_name}</div>
-                <div class="text-[10px] text-slate-400 truncate max-w-xs">${o.shipping_address}</div>
+                <div class="font-bold text-slate-800 flex items-center">
+                    <i class="fa-solid fa-user text-slate-400 mr-1.5 text-[11px]"></i>${o.customer_name}
+                </div>
+                <div class="text-[11px] text-emerald-600 font-bold mt-0.5 flex items-center">
+                    <i class="fa-solid fa-phone text-[10px] mr-1 text-emerald-500"></i>
+                    <a href="tel:${o.customer_phone}" class="hover:underline">${o.customer_phone}</a>
+                </div>
+                ${o.customer_email ? `<div class="text-[10px] text-slate-400 truncate max-w-[150px]"><i class="fa-regular fa-envelope text-[9px] mr-1"></i>${o.customer_email}</div>` : ''}
             </td>
-            <td class="py-3 px-3 text-slate-600 font-medium">${o.customer_phone}</td>
-            <td class="py-3 px-3 font-extrabold text-slate-800">${formatCurrency(o.total_amount)}</td>
             <td class="py-3 px-3">
+                <div class="text-slate-700 leading-relaxed text-xs max-w-xs flex items-start space-x-1.5">
+                    <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0 text-xs"></i>
+                    <span class="font-medium">${o.shipping_address || '<span class="text-slate-300 italic">Chưa có địa chỉ</span>'}</span>
+                </div>
+            </td>
+            <td class="py-3 px-3">
+                ${o.note && o.note.trim() ? `
+                    <div class="bg-amber-50/90 border border-amber-200 text-amber-900 text-xs p-2 rounded-xl flex items-start space-x-1.5 max-w-xs shadow-sm">
+                        <i class="fa-solid fa-note-sticky text-amber-500 mt-0.5 shrink-0 text-xs"></i>
+                        <span class="italic font-medium leading-tight">${o.note}</span>
+                    </div>
+                ` : `
+                    <span class="text-slate-400 text-[11px] italic flex items-center">
+                        <i class="fa-regular fa-comment-dots mr-1 text-slate-300"></i> Không có ghi chú
+                    </span>
+                `}
+            </td>
+            <td class="py-3 px-3 font-extrabold text-slate-800 whitespace-nowrap">${formatCurrency(o.total_amount)}</td>
+            <td class="py-3 px-3 whitespace-nowrap">
                 <div class="flex flex-col gap-1 items-start">
                     <span class="text-[10px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
                         ${o.payment_method || 'COD'}
@@ -1562,15 +1600,15 @@ function renderAdminOrdersTable(orders) {
                     }
                 </div>
             </td>
-            <td class="py-3 px-3">
+            <td class="py-3 px-3 whitespace-nowrap">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeClass(o.status)}">
                     ${getStatusText(o.status)}
                 </span>
             </td>
-            <td class="py-3 px-3 text-slate-400 text-[11px]">${formatDate(o.created_at)}</td>
-            <td class="py-3 px-4 text-right">
-                <button onclick="viewOrderDetail(${o.id})" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-xs transition">
-                    Xử lý
+            <td class="py-3 px-3 text-slate-400 text-[11px] whitespace-nowrap">${formatDate(o.created_at)}</td>
+            <td class="py-3 px-3 text-right whitespace-nowrap">
+                <button onclick="viewOrderDetail(${o.id})" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-xs transition border border-emerald-200/60 shadow-sm flex items-center ml-auto">
+                    <i class="fa-solid fa-eye mr-1 text-[11px]"></i> Chi tiết
                 </button>
             </td>
         </tr>
@@ -1612,15 +1650,64 @@ async function viewOrderDetail(orderId) {
                     </span>
                 </div>
 
-                <!-- Customer Details -->
-                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-1.5">
-                    <div class="font-bold text-slate-700">Thông tin người nhận:</div>
-                    <div class="text-slate-600">Họ và tên: <strong>${order.customer_name}</strong></div>
-                    <div class="text-slate-600">Số điện thoại: <strong>${order.customer_phone}</strong></div>
-                    ${order.customer_email ? `<div class="text-slate-600">Email: ${order.customer_email}</div>` : ''}
-                    <div class="text-slate-600">Địa chỉ giao: <strong>${order.shipping_address}</strong></div>
-                    <div class="text-slate-600">Phương thức: <strong>${order.payment_method}</strong></div>
-                    ${order.note ? `<div class="text-amber-700 italic bg-amber-50 p-2 rounded-lg mt-1">Ghi chú: "${order.note}"</div>` : ''}
+                <!-- Customer Details Card -->
+                <div class="bg-gradient-to-br from-slate-50 via-emerald-50/20 to-slate-50 p-4 rounded-2xl border border-emerald-100/80 space-y-3">
+                    <div class="font-extrabold text-xs uppercase tracking-wider text-emerald-800 flex items-center border-b border-emerald-100 pb-2">
+                        <i class="fa-solid fa-id-card text-emerald-600 mr-2 text-sm"></i> Thông tin khách hàng & Giao hàng
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <span class="text-slate-400 block text-[10px] font-bold uppercase">Họ và tên khách hàng:</span>
+                            <strong class="text-slate-800 text-sm font-bold flex items-center mt-0.5">
+                                <i class="fa-solid fa-user text-slate-400 mr-1.5 text-xs"></i>${order.customer_name}
+                            </strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[10px] font-bold uppercase">Số điện thoại nhận hàng:</span>
+                            <strong class="text-emerald-700 text-sm font-black flex items-center mt-0.5">
+                                <i class="fa-solid fa-phone text-emerald-500 mr-1.5 text-xs"></i>
+                                <a href="tel:${order.customer_phone}" class="hover:underline">${order.customer_phone}</a>
+                            </strong>
+                        </div>
+                    </div>
+                    ${order.customer_email ? `
+                        <div class="text-xs">
+                            <span class="text-slate-400 block text-[10px] font-bold uppercase">Email khách hàng:</span>
+                            <span class="text-slate-700 font-medium">${order.customer_email}</span>
+                        </div>
+                    ` : ''}
+                    <div>
+                        <span class="text-slate-400 block text-[10px] font-bold uppercase">Địa chỉ nhận hàng chi tiết:</span>
+                        <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 mt-1 flex items-start space-x-2 shadow-sm">
+                            <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0 text-sm"></i>
+                            <span class="leading-relaxed">${order.shipping_address || 'Chưa cung cấp địa chỉ giao hàng'}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px] font-bold uppercase">Ghi chú đơn hàng của khách:</span>
+                        ${order.note && order.note.trim() ? `
+                            <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-xl text-xs mt-1 flex items-start space-x-2 shadow-sm">
+                                <i class="fa-solid fa-note-sticky text-amber-500 mt-0.5 shrink-0 text-sm"></i>
+                                <span class="italic font-medium leading-relaxed">${order.note}</span>
+                            </div>
+                        ` : `
+                            <div class="bg-white border border-slate-100 p-2 rounded-xl text-slate-400 italic text-xs mt-1">
+                                (Khách hàng không để lại ghi chú)
+                            </div>
+                        `}
+                    </div>
+                    <div class="text-xs pt-1 flex items-center justify-between">
+                        <div>
+                            <span class="text-slate-400 text-[10px] font-bold uppercase mr-1">Phương thức thanh toán:</span>
+                            <strong class="text-slate-700">${order.payment_method || 'COD'}</strong>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 text-[10px] font-bold uppercase mr-1">Trạng thái thanh toán:</span>
+                            <span class="font-bold ${order.payment_status === 'paid' ? 'text-emerald-600' : 'text-amber-600'}">
+                                ${order.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Items List -->
