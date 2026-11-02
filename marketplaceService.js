@@ -31,7 +31,7 @@ class MarketplaceService {
         const {
             shopee_enabled, shopee_partner_id, shopee_shop_id, shopee_partner_key,
             lazada_enabled, lazada_app_key, lazada_app_secret, lazada_seller_id,
-            sync_on_order
+            sync_on_order, lazada_hidden
         } = data;
 
         await runQuery(`
@@ -44,18 +44,20 @@ class MarketplaceService {
                 lazada_app_key = ?,
                 lazada_app_secret = ?,
                 lazada_seller_id = ?,
-                sync_on_order = ?
+                sync_on_order = ?,
+                lazada_hidden = ?
             WHERE id = 1
         `, [
             shopee_enabled !== undefined ? Number(shopee_enabled) : 1,
             shopee_partner_id || '',
             shopee_shop_id || '',
             shopee_partner_key || '',
-            lazada_enabled !== undefined ? Number(lazada_enabled) : 1,
+            lazada_enabled !== undefined ? Number(lazada_enabled) : 0,
             lazada_app_key || '',
             lazada_app_secret || '',
             lazada_seller_id || '',
-            sync_on_order !== undefined ? Number(sync_on_order) : 1
+            sync_on_order !== undefined ? Number(sync_on_order) : 1,
+            lazada_hidden !== undefined ? Number(lazada_hidden) : 1
         ]);
 
         return this.getSettings();
@@ -197,9 +199,11 @@ class MarketplaceService {
             await runQuery(`
                 UPDATE products 
                 SET shopee_stock = ?,
-                    lazada_stock = ?
+                    lazada_stock = ?,
+                    shopee_sold_count = COALESCE(shopee_sold_count, 0) + ?,
+                    lazada_sold_count = COALESCE(lazada_sold_count, 0) + ?
                 WHERE id = ?
-            `, [newShopeeStock, newLazadaStock, product.id]);
+            `, [newShopeeStock, newLazadaStock, quantity, quantity, product.id]);
 
             // 1. Đồng bộ gọi API Shopee
             if (settings.shopee_enabled) {
@@ -233,8 +237,8 @@ class MarketplaceService {
                 syncResults.push(shopeeRes);
             }
 
-            // 2. Đồng bộ gọi API Lazada
-            if (settings.lazada_enabled) {
+            // 2. Đồng bộ gọi API Lazada (Nếu không bị tạm ẩn)
+            if (settings.lazada_enabled && !settings.lazada_hidden) {
                 const lazadaRes = await this.callLazadaUpdateStock({
                     lazadaItemId: product.lazada_item_id || `LAZ-${2000000 + product.id}`,
                     newStock: newLazadaStock,
@@ -263,6 +267,24 @@ class MarketplaceService {
                 ]);
 
                 syncResults.push(lazadaRes);
+            } else if (settings.lazada_hidden) {
+                // Ghi log Lazada tạm ẩn
+                await runQuery(`
+                    INSERT INTO marketplace_sync_logs 
+                    (order_code, product_id, product_name, platform, action, quantity_deducted, previous_stock, remaining_stock, status, message)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    orderCode,
+                    product.id,
+                    product.name,
+                    'Lazada',
+                    'Paused (API Tạm Ẩn)',
+                    quantity,
+                    prevLazadaStock,
+                    newLazadaStock,
+                    'paused',
+                    `API Lazada đang tạm ẩn theo yêu cầu quản trị viên. Đã lưu trữ số lượng trừ (${quantity} sp).`
+                ]);
             }
         }
 
@@ -353,6 +375,106 @@ class MarketplaceService {
             success: true,
             total_synced: count,
             message: `Đã đồng bộ thành công toàn bộ ${count} mặt hàng sang Shopee & Lazada!`
+        };
+    }
+
+    /**
+     * BÁO CÁO DOANH THU & SỐ LƯỢNG ĐẶT HÀNG RÀNG BUỘC CHO 2 SÀN SHOPEE & LAZADA
+     * Tách riêng 2 bảng dữ liệu liên kết số lượng đặt hàng để theo dõi chi tiết
+     */
+    async getMarketplaceRevenueReport() {
+        const settings = await this.getSettings();
+        const products = await allQuery(`
+            SELECT id, name, price, stock,
+                   COALESCE(shopee_item_id, 'SHP-' || id) as shopee_item_id,
+                   COALESCE(shopee_stock, stock) as shopee_stock,
+                   COALESCE(shopee_sold_count, 0) as shopee_sold_count,
+                   COALESCE(lazada_item_id, 'LAZ-' || id) as lazada_item_id,
+                   COALESCE(lazada_stock, stock) as lazada_stock,
+                   COALESCE(lazada_sold_count, 0) as lazada_sold_count,
+                   image_url
+            FROM products
+            WHERE is_active = 1
+            ORDER BY id ASC
+        `);
+
+        // 1. Tính toán cho Sàn Shopee
+        let shopeeTotalRevenue = 0;
+        let shopeeTotalOrders = 0;
+        let shopeeTotalUnits = 0;
+
+        const shopeeItems = products.map(p => {
+            const sold = Number(p.shopee_sold_count) || 0;
+            const rev = sold * Number(p.price);
+            shopeeTotalRevenue += rev;
+            shopeeTotalUnits += sold;
+            if (sold > 0) shopeeTotalOrders++;
+
+            return {
+                id: p.id,
+                name: p.name,
+                image_url: p.image_url,
+                price: p.price,
+                shopee_item_id: p.shopee_item_id,
+                shopee_stock: p.shopee_stock,
+                order_quantity: sold,
+                revenue: rev,
+                status: 'Đang liên kết & đồng bộ'
+            };
+        });
+
+        // 2. Tính toán cho Sàn Lazada
+        let lazadaTotalRevenue = 0;
+        let lazadaTotalOrders = 0;
+        let lazadaTotalUnits = 0;
+
+        const lazadaItems = products.map(p => {
+            const sold = Number(p.lazada_sold_count) || 0;
+            const rev = sold * Number(p.price);
+            lazadaTotalRevenue += rev;
+            lazadaTotalUnits += sold;
+            if (sold > 0) lazadaTotalOrders++;
+
+            return {
+                id: p.id,
+                name: p.name,
+                image_url: p.image_url,
+                price: p.price,
+                lazada_item_id: p.lazada_item_id,
+                lazada_stock: p.lazada_stock,
+                order_quantity: sold,
+                revenue: rev,
+                status: settings.lazada_hidden ? 'Tạm ẩn API (Dữ liệu lưu kho)' : 'Đang kết nối API'
+            };
+        });
+
+        return {
+            success: true,
+            shopee: {
+                platform: 'Shopee',
+                shop_name: 'MintMart Official Store (Shopee Mall)',
+                partner_id: settings.shopee_partner_id,
+                shop_id: settings.shopee_shop_id,
+                status: settings.shopee_enabled ? 'active' : 'disabled',
+                status_label: 'Đang hoạt động',
+                total_revenue: shopeeTotalRevenue,
+                total_orders: shopeeTotalOrders,
+                total_units_sold: shopeeTotalUnits,
+                items: shopeeItems
+            },
+            lazada: {
+                platform: 'Lazada',
+                shop_name: 'MintMart LazMall Flagship Store',
+                seller_id: settings.lazada_seller_id,
+                app_key: settings.lazada_app_key,
+                status: 'temporarily_hidden',
+                status_label: 'Tạm ẩn theo yêu cầu quản trị viên',
+                is_temporarily_hidden: true,
+                total_revenue: lazadaTotalRevenue,
+                total_orders: lazadaTotalOrders,
+                total_units_sold: lazadaTotalUnits,
+                items: lazadaItems
+            }
         };
     }
 }

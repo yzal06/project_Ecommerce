@@ -431,6 +431,32 @@ async function handleMockApi(endpoint, options = {}) {
         return { success: true, categories };
     }
 
+    // A2. DELETE CATEGORY (ADMIN)
+    const delCatMatch = path.match(/^\/api\/categories\/(\d+)$/);
+    if (delCatMatch && method === 'DELETE') {
+        const id = parseInt(delCatMatch[1], 10);
+        let categories = getMockCategories();
+        const cat = categories.find(c => c.id === id);
+        if (!cat) throw new Error('Không tìm thấy danh mục cần xóa');
+        categories = categories.filter(c => c.id !== id);
+        localStorage.setItem(MOCK_CATEGORIES_KEY, JSON.stringify(categories));
+
+        // Unlink products in this category
+        const prods = getMockProducts();
+        prods.forEach(p => {
+            if (p.category_id === id) {
+                p.category_id = null;
+                p.category_name = 'Khác';
+            }
+        });
+        saveMockProducts(prods);
+
+        return {
+            success: true,
+            message: `Đã xóa danh mục "${cat.name}" thành công! Các sản phẩm liên quan đã được chuyển sang danh mục mặc định và đồng bộ tức thì với trang web khách hàng.`
+        };
+    }
+
     // B. HOT PRODUCTS
     if (path === '/api/products/hot') {
         let prods = getMockProducts().filter(p => p.is_active == 1);
@@ -494,9 +520,9 @@ async function handleMockApi(endpoint, options = {}) {
         if (!isNaN(maxPrice)) prods = prods.filter(p => p.price <= maxPrice);
 
         // Sorting
-        if (sort === 'price-asc') prods.sort((a, b) => a.price - b.price);
-        else if (sort === 'price-desc') prods.sort((a, b) => b.price - a.price);
-        else if (sort === 'best-seller') prods.sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
+        if (sort === 'price-asc' || sort === 'price_asc') prods.sort((a, b) => a.price - b.price);
+        else if (sort === 'price-desc' || sort === 'price_desc') prods.sort((a, b) => b.price - a.price);
+        else if (sort === 'best-seller' || sort === 'popular') prods.sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
         else if (sort === 'discount') {
             prods.sort((a, b) => {
                 const discA = a.original_price ? (a.original_price - a.price) / a.original_price : 0;
@@ -663,6 +689,7 @@ async function handleMockApi(endpoint, options = {}) {
         const orders = getMockOrders();
         const items = body.items || [];
         const total = items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
+        const payment_status = body.payment_status || 'pending';
 
         const newOrder = {
             id: orders.length + 1,
@@ -672,6 +699,7 @@ async function handleMockApi(endpoint, options = {}) {
             customer_email: body.customer_email || '',
             shipping_address: body.shipping_address || '',
             payment_method: body.payment_method || 'COD',
+            payment_status: payment_status,
             total_amount: total,
             status: 'pending',
             note: body.note || '',
@@ -681,28 +709,37 @@ async function handleMockApi(endpoint, options = {}) {
         orders.unshift(newOrder);
         saveMockOrders(orders);
 
-        // Deduct mock product stock
+        // Deduct mock product stock & increment marketplace sold counts
         const prods = getMockProducts();
         items.forEach(it => {
             const p = prods.find(item => item.id === it.id);
             if (p) {
                 p.stock = Math.max(0, p.stock - it.quantity);
                 p.sold_count = (p.sold_count || 0) + it.quantity;
+                p.shopee_stock = Math.max(0, (p.shopee_stock !== undefined ? p.shopee_stock : p.stock) - it.quantity);
+                p.lazada_stock = Math.max(0, (p.lazada_stock !== undefined ? p.lazada_stock : p.stock) - it.quantity);
+                p.shopee_sold_count = (p.shopee_sold_count || 0) + it.quantity;
+                p.lazada_sold_count = (p.lazada_sold_count || 0) + it.quantity;
             }
         });
         saveMockProducts(prods);
 
-        return { success: true, message: 'Đặt hàng thành công!', order_code: orderCode };
+        return {
+            success: true,
+            message: 'Đặt hàng thành công!',
+            order: newOrder,
+            order_code: orderCode
+        };
     }
 
     // M. GET ORDERS
     if (path === '/api/orders' || path === '/api/orders/my-orders') {
-        return { success: true, orders: getMockOrders() };
+        return { success: true, count: getMockOrders().length, orders: getMockOrders() };
     }
 
-    // N. UPDATE ORDER STATUS
+    // N. UPDATE ORDER STATUS & PAYMENT
     const orderStatusMatch = path.match(/^\/api\/orders\/(\d+)\/status$/);
-    if (orderStatusMatch && method === 'PATCH') {
+    if (orderStatusMatch && (method === 'PATCH' || method === 'PUT')) {
         const id = parseInt(orderStatusMatch[1], 10);
         const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
         const orders = getMockOrders();
@@ -710,6 +747,17 @@ async function handleMockApi(endpoint, options = {}) {
         if (o) o.status = body.status;
         saveMockOrders(orders);
         return { success: true, message: 'Cập nhật trạng thái đơn hàng thành công!' };
+    }
+
+    const orderPaymentMatch = path.match(/^\/api\/orders\/(\d+)\/payment$/);
+    if (orderPaymentMatch && (method === 'PATCH' || method === 'PUT')) {
+        const id = parseInt(orderPaymentMatch[1], 10);
+        const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+        const orders = getMockOrders();
+        const o = orders.find(item => item.id === id);
+        if (o) o.payment_status = body.payment_status;
+        saveMockOrders(orders);
+        return { success: true, message: `Đã cập nhật trạng thái thanh toán sang: ${body.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}` };
     }
 
     // O. REVENUE STATS
@@ -735,9 +783,83 @@ async function handleMockApi(endpoint, options = {}) {
         };
     }
 
-    // P. MARKETPLACE LOGS & SETTINGS
+    // P. MARKETPLACE REVENUE REPORT (SHOPEE & LAZADA 2 BẢNG RIÊNG BIỆT)
+    if (path === '/api/marketplace/revenue-report') {
+        const prods = getMockProducts().filter(p => p.is_active == 1);
+        let shopeeTotal = 0, shopeeUnits = 0, shopeeOrders = 0;
+        let lazadaTotal = 0, lazadaUnits = 0, lazadaOrders = 0;
+
+        const shopeeItems = prods.map(p => {
+            const sold = p.shopee_sold_count || Math.floor((p.sold_count || 10) * 0.55);
+            const rev = sold * p.price;
+            shopeeTotal += rev;
+            shopeeUnits += sold;
+            if (sold > 0) shopeeOrders++;
+            return {
+                id: p.id,
+                name: p.name,
+                image_url: p.image_url,
+                price: p.price,
+                shopee_item_id: p.shopee_item_id || `SHP-${p.id * 1234}`,
+                shopee_stock: p.shopee_stock !== undefined ? p.shopee_stock : p.stock,
+                order_quantity: sold,
+                revenue: rev,
+                status: 'Đang liên kết & đồng bộ'
+            };
+        });
+
+        const lazadaItems = prods.map(p => {
+            const sold = p.lazada_sold_count || Math.floor((p.sold_count || 10) * 0.40);
+            const rev = sold * p.price;
+            lazadaTotal += rev;
+            lazadaUnits += sold;
+            if (sold > 0) lazadaOrders++;
+            return {
+                id: p.id,
+                name: p.name,
+                image_url: p.image_url,
+                price: p.price,
+                lazada_item_id: p.lazada_item_id || `LAZ-${p.id * 4321}`,
+                lazada_stock: p.lazada_stock !== undefined ? p.lazada_stock : p.stock,
+                order_quantity: sold,
+                revenue: rev,
+                status: 'Tạm ẩn API (Dữ liệu lưu kho)'
+            };
+        });
+
+        return {
+            success: true,
+            shopee: {
+                platform: 'Shopee',
+                shop_name: 'MintMart Official Store (Shopee Mall)',
+                partner_id: '2005831',
+                shop_id: '98273615',
+                status: 'active',
+                status_label: 'Đang hoạt động',
+                total_revenue: shopeeTotal,
+                total_orders: shopeeOrders,
+                total_units_sold: shopeeUnits,
+                items: shopeeItems
+            },
+            lazada: {
+                platform: 'Lazada',
+                shop_name: 'MintMart LazMall Flagship Store',
+                seller_id: 'VN_SELLER_88371',
+                app_key: '109283',
+                status: 'temporarily_hidden',
+                status_label: 'Tạm ẩn theo yêu cầu quản trị viên',
+                is_temporarily_hidden: true,
+                total_revenue: lazadaTotal,
+                total_orders: lazadaOrders,
+                total_units_sold: lazadaUnits,
+                items: lazadaItems
+            }
+        };
+    }
+
+    // Q. MARKETPLACE LOGS & SETTINGS
     if (path === '/api/marketplace/logs') {
-        return { success: true, logs: getMockLogs() };
+        return { success: true, count: getMockLogs().length, logs: getMockLogs() };
     }
     if (path === '/api/marketplace/settings') {
         return {
@@ -746,10 +868,18 @@ async function handleMockApi(endpoint, options = {}) {
                 shopee_enabled: 1,
                 shopee_partner_id: '2005831',
                 shopee_shop_id: '98273615',
-                lazada_enabled: 1,
+                lazada_enabled: 0,
+                lazada_hidden: 1,
                 lazada_seller_id: 'VN_SELLER_88371',
                 sync_on_order: 1
             }
+        };
+    }
+    if (path === '/api/marketplace/lazada/toggle-hide') {
+        return {
+            success: true,
+            lazada_hidden: 1,
+            message: 'Đã cập nhật trạng thái tạm ẩn API Lazada!'
         };
     }
     if (path === '/api/marketplace/sync-all') {

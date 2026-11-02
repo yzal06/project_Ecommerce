@@ -338,16 +338,29 @@
 
         <!-- Featured Products Preview Grid -->
         <section class="mb-10">
-            <div class="flex items-center justify-between mb-4 sm:mb-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 sm:mb-5 gap-3">
                 <div>
                     <h2 class="text-lg sm:text-2xl font-black text-slate-800 tracking-tight flex items-center">
-                        <span class="w-2.5 h-6 bg-teal-500 rounded mr-2.5"></span> Sản Phẩm Bán Chạy Nhất
+                        <span class="w-2.5 h-6 bg-teal-500 rounded mr-2.5"></span> Sản Phẩm Nổi Bật & Mới Nhất
                     </h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Các mặt hàng được khách hàng tin dùng và đánh giá cao</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Sản phẩm vừa cập nhật vào cửa hàng và các mặt hàng bán chạy tại MintMart</p>
                 </div>
-                <a href="products.html" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition flex items-center border border-emerald-200">
-                    Xem Tất Cả <i class="fa-solid fa-arrow-right ml-1.5 text-[10px]"></i>
-                </a>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="inline-flex bg-slate-100 p-1 rounded-xl text-xs font-bold" id="homeFeaturedTabs">
+                        <button type="button" onclick="switchHomeFeaturedTab('newest')" id="tabNewestBtn" class="px-3 py-1.5 rounded-lg transition bg-white text-emerald-700 shadow-sm flex items-center font-bold text-xs">
+                            <i class="fa-solid fa-sparkles mr-1 text-emerald-500"></i> Mới nhất
+                        </button>
+                        <button type="button" onclick="switchHomeFeaturedTab('popular')" id="tabPopularBtn" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center font-medium text-xs">
+                            <i class="fa-solid fa-fire mr-1 text-amber-500"></i> Bán chạy
+                        </button>
+                        <button type="button" onclick="switchHomeFeaturedTab('discount')" id="tabDiscountBtn" class="px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center font-medium text-xs">
+                            <i class="fa-solid fa-tag mr-1 text-rose-500"></i> Giảm sốc
+                        </button>
+                    </div>
+                    <a href="products.html" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2 rounded-xl transition flex items-center border border-emerald-200">
+                        Xem Tất Cả <i class="fa-solid fa-arrow-right ml-1.5 text-[10px]"></i>
+                    </a>
+                </div>
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5" id="homeFeaturedGrid">
@@ -565,15 +578,23 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Phương thức thanh toán</label>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Phương thức thanh toán <span class="text-rose-500">*</span></label>
                     <div class="grid grid-cols-2 gap-2 text-xs">
-                        <label class="flex items-center p-2.5 border border-emerald-500 bg-emerald-50/50 rounded-xl cursor-pointer">
+                        <label class="flex items-center p-2.5 border border-emerald-500 bg-emerald-50/50 rounded-xl cursor-pointer hover:border-emerald-600 transition">
                             <input type="radio" name="paymentMethod" value="COD" checked class="text-emerald-600 focus:ring-emerald-500 mr-2">
-                            <span><i class="fa-solid fa-money-bill-wave text-emerald-600 mr-1"></i> Trả tiền mặt (COD)</span>
+                            <span><i class="fa-solid fa-money-bill-wave text-emerald-600 mr-1.5"></i> Tiền mặt (COD)</span>
                         </label>
-                        <label class="flex items-center p-2.5 border border-slate-200 hover:border-emerald-500 rounded-xl cursor-pointer">
-                            <input type="radio" name="paymentMethod" value="Chuyển khoản QR" class="text-emerald-600 focus:ring-emerald-500 mr-2">
-                            <span><i class="fa-solid fa-qrcode text-emerald-600 mr-1"></i> Quét mã QR</span>
+                        <label class="flex items-center p-2.5 border border-slate-200 hover:border-emerald-500 rounded-xl cursor-pointer transition">
+                            <input type="radio" name="paymentMethod" value="VietQR" class="text-emerald-600 focus:ring-emerald-500 mr-2">
+                            <span><i class="fa-solid fa-qrcode text-indigo-600 mr-1.5"></i> Quét VietQR 24/7</span>
+                        </label>
+                        <label class="flex items-center p-2.5 border border-slate-200 hover:border-emerald-500 rounded-xl cursor-pointer transition">
+                            <input type="radio" name="paymentMethod" value="MOMO" class="text-emerald-600 focus:ring-emerald-500 mr-2">
+                            <span><i class="fa-solid fa-wallet text-pink-600 mr-1.5"></i> Ví MoMo / VNPay</span>
+                        </label>
+                        <label class="flex items-center p-2.5 border border-slate-200 hover:border-emerald-500 rounded-xl cursor-pointer transition">
+                            <input type="radio" name="paymentMethod" value="CARD" class="text-emerald-600 focus:ring-emerald-500 mr-2">
+                            <span><i class="fa-solid fa-credit-card text-blue-600 mr-1.5"></i> Thẻ Visa / Master</span>
                         </label>
                     </div>
                 </div>

@@ -206,6 +206,17 @@
                 </div>
 
                 <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- LOA THÔNG BÁO BẠN CÓ ĐƠN HÀNG (QUYỀN ADMIN) -->
+                    <div class="flex items-center space-x-1">
+                        <button id="speakerToggleBtn" onclick="toggleSpeakerSound()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition shadow-sm" title="Bật/Tắt loa phát thanh thông báo đơn hàng">
+                            <i class="fa-solid fa-volume-high text-emerald-600" id="speakerIcon"></i>
+                            <span id="speakerLabel" class="hidden sm:inline">Loa: Bật</span>
+                        </button>
+                        <button onclick="testOrderSound()" class="hidden md:inline-flex items-center text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition" title="Bấm để thử âm thanh loa">
+                            <i class="fa-solid fa-play text-[9px] mr-1 text-emerald-600"></i> Thử Loa
+                        </button>
+                    </div>
+
                     <!-- Quick Add Product Button -->
                     <button onclick="openProductModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 sm:px-4 py-2 rounded-xl shadow-md transition flex items-center">
                         <i class="fa-solid fa-plus sm:mr-1.5"></i>
@@ -222,7 +233,33 @@
             </header>
 
             <!-- Dynamic Views Container -->
-            <main class="flex-1 p-6">
+            <main class="flex-1 p-6 relative">
+                
+                <!-- Live Order Audio Alert Toast (Kèm Loa Thông Báo) -->
+                <div id="liveOrderAlertBanner" class="hidden fixed bottom-6 right-6 z-50 bg-white border-2 border-emerald-500 rounded-3xl p-4 sm:p-5 shadow-2xl max-w-sm flex items-start space-x-3.5 transition-all duration-300 transform scale-100 animate-bounce">
+                    <div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl flex-shrink-0 shadow-sm">
+                        <i class="fa-solid fa-bullhorn text-emerald-600 animate-pulse"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black text-emerald-700 uppercase tracking-wide flex items-center">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-1.5"></span>
+                                BẠN CÓ ĐƠN HÀNG MỚI!
+                            </span>
+                            <button onclick="dismissOrderAlert()" class="text-slate-400 hover:text-slate-600 p-1 -mr-1">
+                                <i class="fa-solid fa-xmark text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="text-xs font-bold text-slate-800 truncate mt-1" id="alertOrderCustomer">Khách hàng mới</div>
+                        <div class="text-xs font-black text-emerald-600" id="alertOrderAmount">0 ₫</div>
+                        <div class="text-[10px] text-slate-400 mt-1 flex items-center">
+                            <i class="fa-solid fa-volume-high mr-1 text-emerald-500"></i> Loa thông báo đã phát
+                        </div>
+                        <button onclick="switchAdminTab('orders'); dismissOrderAlert();" class="mt-2 w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[11px] transition shadow">
+                            Xem chi tiết đơn hàng
+                        </button>
+                    </div>
+                </div>
                 
                 <!-- TAB 1: DASHBOARD OVERVIEW -->
                 <div id="tabContent-dashboard" class="space-y-6">
@@ -467,6 +504,7 @@
                                             <th class="py-2.5 px-3">Tên Danh Mục</th>
                                             <th class="py-2.5 px-3">Slug</th>
                                             <th class="py-2.5 px-3">Số Mặt Hàng</th>
+                                            <th class="py-2.5 px-3 text-right">Thao Tác</th>
                                         </tr>
                                     </thead>
                                     <tbody id="adminCategoriesTableBody" class="divide-y divide-slate-100">
@@ -609,9 +647,9 @@
                             </div>
                         </div>
 
-                        <!-- Lazada Open Platform API Card -->
+                        <!-- Lazada Open Platform API Card (TẠM ẨN THEO YÊU CẦU QUẢN TRỊ VIÊN) -->
                         <div class="bg-white rounded-2xl p-5 border border-blue-200/80 shadow-sm relative overflow-hidden flex flex-col justify-between">
-                            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
                                 <div class="flex items-center space-x-2.5">
                                     <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl font-bold shadow-sm">
                                         <i class="fa-solid fa-heart"></i>
@@ -621,31 +659,195 @@
                                         <span class="text-[11px] text-slate-400">Endpoint: /product/price_quantity/update</span>
                                     </div>
                                 </div>
-                                <span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Đang Kết Nối
+                                <span id="lazadaStatusBadge" class="bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center">
+                                    <i class="fa-solid fa-eye-slash mr-1"></i> Tạm Ẩn API
                                 </span>
                             </div>
 
-                            <div class="space-y-3 text-xs flex-1">
+                            <!-- Alert Box Tạm Ẩn API Lazada -->
+                            <div class="p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-amber-900 text-xs mb-3 flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-triangle-exclamation text-amber-600 text-sm"></i>
+                                    <span>API Lazada đang được <strong>tạm ẩn</strong> theo yêu cầu quản trị viên.</span>
+                                </div>
+                                <button onclick="toggleLazadaApiHide()" id="lazadaToggleBtn" class="px-2.5 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 font-bold rounded-lg text-[10px] transition flex items-center">
+                                    <i class="fa-solid fa-rotate mr-1"></i> Bật lại
+                                </button>
+                            </div>
+
+                            <div class="space-y-3 text-xs flex-1 opacity-75">
                                 <div>
                                     <label class="block font-bold text-slate-600 mb-1">App Key</label>
-                                    <input type="text" id="lazadaAppKey" value="109283" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono">
+                                    <input type="text" id="lazadaAppKey" value="109283" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono text-slate-500" disabled>
                                 </div>
                                 <div>
                                     <label class="block font-bold text-slate-600 mb-1">Seller ID</label>
-                                    <input type="text" id="lazadaSellerId" value="VN_SELLER_88371" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono">
+                                    <input type="text" id="lazadaSellerId" value="VN_SELLER_88371" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono text-slate-500" disabled>
                                 </div>
                                 <div>
                                     <label class="block font-bold text-slate-600 mb-1">App Secret (Bí mật)</label>
-                                    <input type="password" id="lazadaAppSecret" value="lazada_live_app_secret_d49e8a" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono">
+                                    <input type="password" id="lazadaAppSecret" value="lazada_live_app_secret_d49e8a" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl outline-none font-mono text-slate-500" disabled>
                                 </div>
                             </div>
 
                             <div class="pt-4 border-t border-slate-100 flex items-center justify-between mt-4">
-                                <button onclick="testMarketplaceApi('lazada')" class="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-bold rounded-xl text-xs transition flex items-center">
-                                    <i class="fa-solid fa-plug-circle-check mr-1.5"></i> Test Kết Nối Lazada
+                                <button onclick="toggleLazadaApiHide()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center">
+                                    <i class="fa-solid fa-eye mr-1.5"></i> Quản Lý Trạng Thái Ẩn
                                 </button>
-                                <span class="text-[11px] text-slate-400 font-medium" id="lazadaTestStatus">Độ trễ: ~62ms</span>
+                                <span class="text-[11px] text-amber-600 font-semibold" id="lazadaTestStatus">Đang tạm ngưng kết nối</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ======================================================== -->
+                    <!-- RÀNG BUỘC DOANH THU 2 SÀN SHOPEE & LAZADA (2 BẢNG RIÊNG BIỆT) -->
+                    <!-- ======================================================== -->
+                    <div class="space-y-5">
+                        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                            <div>
+                                <h3 class="text-base font-extrabold text-slate-800 flex items-center">
+                                    <i class="fa-solid fa-chart-line text-emerald-600 mr-2"></i>
+                                    Theo Dõi Doanh Thu Ràng Buộc & Số Lượng Đặt Hàng 2 Sàn (Shopee & Lazada)
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Dữ liệu phân tách riêng biệt từng sàn, đồng bộ tự động với số lượng đặt hàng thực tế</p>
+                            </div>
+                            <button onclick="loadMarketplaceRevenueTables()" class="px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-xs transition flex items-center border border-emerald-200">
+                                <i class="fa-solid fa-arrows-rotate mr-1.5 text-emerald-600"></i> Cập Nhật Báo Cáo
+                            </button>
+                        </div>
+
+                        <!-- 4 Summary KPI Cards for Marketplaces -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Shopee Revenue -->
+                            <div class="p-4 bg-orange-50/70 border border-orange-200 rounded-2xl flex items-center justify-between">
+                                <div>
+                                    <span class="text-[11px] font-bold uppercase text-orange-700">Doanh Thu Shopee</span>
+                                    <div class="text-xl font-black text-orange-950 mt-1" id="mktShopeeTotalRevenue">0 ₫</div>
+                                    <span class="text-[10px] text-orange-600 font-semibold mt-0.5 block" id="mktShopeeTotalUnits">0 sản phẩm đã đặt</span>
+                                </div>
+                                <div class="w-10 h-10 bg-orange-500 text-white rounded-xl flex items-center justify-center text-lg shadow-sm">
+                                    <i class="fa-solid fa-bag-shopping"></i>
+                                </div>
+                            </div>
+
+                            <!-- Shopee Orders -->
+                            <div class="p-4 bg-orange-50/70 border border-orange-200 rounded-2xl flex items-center justify-between">
+                                <div>
+                                    <span class="text-[11px] font-bold uppercase text-orange-700">Mặt Hàng Shopee</span>
+                                    <div class="text-xl font-black text-orange-950 mt-1" id="mktShopeeActiveItems">0</div>
+                                    <span class="text-[10px] text-emerald-600 font-semibold mt-0.5 block">Đang liên kết & đồng bộ</span>
+                                </div>
+                                <div class="w-10 h-10 bg-orange-100 text-orange-700 rounded-xl flex items-center justify-center text-lg">
+                                    <i class="fa-solid fa-cubes-stacked"></i>
+                                </div>
+                            </div>
+
+                            <!-- Lazada Revenue (Tạm Ẩn) -->
+                            <div class="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl flex items-center justify-between">
+                                <div>
+                                    <span class="text-[11px] font-bold uppercase text-blue-700">Doanh Thu Lazada</span>
+                                    <div class="text-xl font-black text-blue-950 mt-1" id="mktLazadaTotalRevenue">0 ₫</div>
+                                    <span class="text-[10px] text-blue-600 font-semibold mt-0.5 block" id="mktLazadaTotalUnits">0 sản phẩm đã đặt</span>
+                                </div>
+                                <div class="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center text-lg shadow-sm">
+                                    <i class="fa-solid fa-heart"></i>
+                                </div>
+                            </div>
+
+                            <!-- Lazada Orders / Status -->
+                            <div class="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl flex items-center justify-between">
+                                <div>
+                                    <span class="text-[11px] font-bold uppercase text-amber-700">Trạng Thái Lazada</span>
+                                    <div class="text-sm font-black text-amber-900 mt-1 flex items-center">
+                                        <i class="fa-solid fa-eye-slash mr-1.5 text-amber-600"></i> TẠM ẨN API
+                                    </div>
+                                    <span class="text-[10px] text-amber-700 font-semibold mt-0.5 block">Lưu trữ tồn kho an toàn</span>
+                                </div>
+                                <div class="w-10 h-10 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center text-lg">
+                                    <i class="fa-solid fa-shield"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BẢNG 1: DOANH THU & SỐ LƯỢNG ĐẶT HÀNG SÀN SHOPEE -->
+                        <div class="bg-white rounded-2xl border-2 border-orange-200 shadow-sm overflow-hidden">
+                            <div class="p-4 bg-orange-500 text-white flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-8 h-8 rounded-lg bg-white text-orange-600 flex items-center justify-center font-bold text-base shadow-sm">
+                                        <i class="fa-solid fa-bag-shopping"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-extrabold text-sm text-white">BẢNG 1: DOANH THU & SỐ LƯỢNG ĐẶT HÀNG SÀN SHOPEE</h4>
+                                        <span class="text-[11px] text-orange-100 font-medium">Kênh bán hàng hoạt động - MintMart Official Store (Shopee Mall)</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2 text-xs">
+                                    <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg font-bold">Tổng DT: <span id="shopeeTableRevenueBadge" class="font-black text-yellow-200">0 ₫</span></span>
+                                    <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg font-bold">Tổng Đặt: <span id="shopeeTableOrdersBadge" class="font-black">0 sp</span></span>
+                                </div>
+                            </div>
+
+                            <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-orange-50 border-b border-orange-200 text-orange-950 font-bold text-[11px] sticky top-0 z-10">
+                                        <tr>
+                                            <th class="py-3 px-4">Sản Phẩm</th>
+                                            <th class="py-3 px-3">Mã Shopee Item ID</th>
+                                            <th class="py-3 px-3">Giá Bán Shopee</th>
+                                            <th class="py-3 px-3">Số Lượng Đặt Hàng (Đã bán)</th>
+                                            <th class="py-3 px-3">Doanh Thu Ràng Buộc</th>
+                                            <th class="py-3 px-3">Kho Shopee Còn</th>
+                                            <th class="py-3 px-4 text-right">Trạng Thái Ràng Buộc</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="shopeeRevenueTableBody" class="divide-y divide-slate-100">
+                                        <!-- Injected via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- BẢNG 2: DOANH THU & SỐ LƯỢNG ĐẶT HÀNG SÀN LAZADA (TẠM ẨN) -->
+                        <div class="bg-white rounded-2xl border-2 border-blue-200 shadow-sm overflow-hidden">
+                            <div class="p-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-8 h-8 rounded-lg bg-white text-blue-600 flex items-center justify-center font-bold text-base shadow-sm">
+                                        <i class="fa-solid fa-heart"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center space-x-2">
+                                            <h4 class="font-extrabold text-sm text-white">BẢNG 2: DOANH THU & SỐ LƯỢNG ĐẶT HÀNG SÀN LAZADA</h4>
+                                            <span class="bg-amber-400 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm flex items-center">
+                                                <i class="fa-solid fa-eye-slash mr-1"></i> TẠM ẨN API
+                                            </span>
+                                        </div>
+                                        <span class="text-[11px] text-blue-100 font-medium">MintMart LazMall Flagship Store (Dữ liệu lưu trữ ràng buộc)</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2 text-xs">
+                                    <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg font-bold">Tổng DT: <span id="lazadaTableRevenueBadge" class="font-black text-yellow-200">0 ₫</span></span>
+                                    <span class="bg-white/20 text-white px-2.5 py-1 rounded-lg font-bold">Tổng Đặt: <span id="lazadaTableOrdersBadge" class="font-black">0 sp</span></span>
+                                </div>
+                            </div>
+
+                            <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                                <table class="w-full text-left text-xs">
+                                    <thead class="bg-blue-50 border-b border-blue-200 text-blue-950 font-bold text-[11px] sticky top-0 z-10">
+                                        <tr>
+                                            <th class="py-3 px-4">Sản Phẩm</th>
+                                            <th class="py-3 px-3">Mã Lazada SKU / Item</th>
+                                            <th class="py-3 px-3">Giá Bán Lazada</th>
+                                            <th class="py-3 px-3">Số Lượng Đặt Hàng (Đã bán)</th>
+                                            <th class="py-3 px-3">Doanh Thu Ràng Buộc</th>
+                                            <th class="py-3 px-3">Kho Lazada Còn</th>
+                                            <th class="py-3 px-4 text-right">Trạng Thái Ràng Buộc</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lazadaRevenueTableBody" class="divide-y divide-slate-100">
+                                        <!-- Injected via JS -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 

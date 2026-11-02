@@ -77,17 +77,197 @@ async function handleAdminLogin(e) {
     }
 }
 
+// Speaker Notification State
+let speakerEnabled = localStorage.getItem('mintmart_speaker_enabled') !== 'false';
+let lastKnownOrderIds = new Set();
+let isWatcherInitialized = false;
+let watcherInterval = null;
+
+// BẬT / TẮT LOA THÔNG BÁO BẠN CÓ ĐƠN HÀNG
+function toggleSpeakerSound() {
+    speakerEnabled = !speakerEnabled;
+    localStorage.setItem('mintmart_speaker_enabled', speakerEnabled ? 'true' : 'false');
+    updateSpeakerUI();
+    if (speakerEnabled) {
+        showToast('success', 'Đã bật loa thông báo đơn hàng!');
+        playDingDongChime();
+    } else {
+        showToast('info', 'Đã tắt loa thông báo đơn hàng');
+    }
+}
+
+function updateSpeakerUI() {
+    const icon = document.getElementById('speakerIcon');
+    const label = document.getElementById('speakerLabel');
+    const btn = document.getElementById('speakerToggleBtn');
+    if (!btn) return;
+
+    if (speakerEnabled) {
+        btn.className = 'flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition shadow-sm';
+        if (icon) icon.className = 'fa-solid fa-volume-high text-emerald-600 animate-pulse';
+        if (label) label.textContent = 'Loa: Bật';
+    } else {
+        btn.className = 'flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200 transition shadow-sm';
+        if (icon) icon.className = 'fa-solid fa-volume-xmark text-slate-400';
+        if (label) label.textContent = 'Loa: Tắt';
+    }
+}
+
+// Âm thanh chuông báo (Ding-dong chime Web Audio API)
+function playDingDongChime() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        // Tone 1: 587.33Hz (D5)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(587.33, now);
+        gain1.gain.setValueAtTime(0.35, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.35);
+
+        // Tone 2: 880Hz (A5)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880, now + 0.12);
+        gain2.gain.setValueAtTime(0.45, now + 0.12);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.12);
+        osc2.stop(now + 0.7);
+    } catch (e) {
+        console.warn('Web Audio error:', e);
+    }
+}
+
+// Giọng nói tiếng Việt phát thanh: "Bạn có đơn hàng mới!"
+function speakOrderAlert(text = 'Bạn có đơn hàng mới!') {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'vi-VN';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1;
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+// Kích hoạt chuông + giọng nói + banner thông báo
+function triggerNewOrderAlert(order) {
+    if (speakerEnabled) {
+        playDingDongChime();
+        setTimeout(() => {
+            const customer = order ? order.customer_name : '';
+            const msg = customer ? `Bạn có đơn hàng mới từ ${customer}!` : 'Bạn có đơn hàng mới!';
+            speakOrderAlert(msg);
+        }, 300);
+    }
+
+    // Hiển thị banner góc phải
+    const banner = document.getElementById('liveOrderAlertBanner');
+    if (banner) {
+        const custEl = document.getElementById('alertOrderCustomer');
+        const amtEl = document.getElementById('alertOrderAmount');
+        if (custEl && order) custEl.textContent = `${order.customer_name} (${order.order_code})`;
+        if (amtEl && order) amtEl.textContent = formatCurrency(order.total_amount);
+        banner.classList.remove('hidden');
+    }
+}
+
+function dismissOrderAlert() {
+    const banner = document.getElementById('liveOrderAlertBanner');
+    if (banner) banner.classList.add('hidden');
+}
+
+function testOrderSound() {
+    playDingDongChime();
+    setTimeout(() => {
+        speakOrderAlert('Kiểm tra loa thông báo: Bạn có đơn hàng mới!');
+    }, 300);
+    showToast('info', '🔊 Đang phát thông báo qua loa: "Bạn có đơn hàng mới!"');
+}
+
+// Tự động kiểm tra đơn hàng mới trong nền
+function startOrderNotificationWatcher() {
+    if (isWatcherInitialized) return;
+    isWatcherInitialized = true;
+
+    // Load initial orders
+    apiFetch('/api/orders').then(res => {
+        const orders = res.orders || [];
+        orders.forEach(o => lastKnownOrderIds.add(o.id || o.order_code));
+    }).catch(() => {});
+
+    // Poll every 6 seconds
+    if (watcherInterval) clearInterval(watcherInterval);
+    watcherInterval = setInterval(async () => {
+        try {
+            const res = await apiFetch('/api/orders');
+            const orders = res.orders || [];
+            let foundNew = false;
+            let latestOrder = null;
+
+            for (const o of orders) {
+                const key = o.id || o.order_code;
+                if (!lastKnownOrderIds.has(key)) {
+                    lastKnownOrderIds.add(key);
+                    foundNew = true;
+                    latestOrder = o;
+                }
+            }
+
+            if (foundNew && latestOrder) {
+                triggerNewOrderAlert(latestOrder);
+                // Refresh views
+                if (currentAdminTab === 'orders') loadAdminOrders();
+                if (currentAdminTab === 'dashboard') loadDashboardStats();
+                if (currentAdminTab === 'marketplace') loadMarketplaceRevenueTables();
+            }
+        } catch (e) {}
+    }, 6000);
+
+    // Also listen to storage events
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'mintmart_mock_orders_v2') {
+            try {
+                const orders = JSON.parse(e.newValue || '[]');
+                if (orders.length > 0) {
+                    const latest = orders[0];
+                    const key = latest.id || latest.order_code;
+                    if (!lastKnownOrderIds.has(key)) {
+                        lastKnownOrderIds.add(key);
+                        triggerNewOrderAlert(latest);
+                        if (currentAdminTab === 'orders') loadAdminOrders();
+                    }
+                }
+            } catch (err) {}
+        }
+    });
+}
+
 // Handle Admin Logout
 function handleAdminLogout() {
     clearAuth();
+    if (watcherInterval) clearInterval(watcherInterval);
     showToast('info', 'Đã đăng xuất khỏi cổng quản trị');
     checkAdminAuth();
 }
 
 // Initialize Admin Portal
 async function initAdminDashboard() {
+    updateSpeakerUI();
     await loadAdminCategories();
     switchAdminTab('dashboard');
+    startOrderNotificationWatcher();
 }
 
 // Switch Tabs
@@ -757,7 +937,15 @@ async function openProductModal(productId = null) {
         titleEl.textContent = 'Chỉnh Sửa Mặt Hàng #' + productId;
         document.getElementById('editProductId').value = productId;
 
-        const p = cachedProducts.find(item => item.id === productId);
+        let p = cachedProducts.find(item => item.id === productId);
+        if (!p) {
+            try {
+                const res = await apiFetch(`/api/products/${productId}`);
+                p = res.product;
+            } catch (err) {
+                console.error('Không tìm thấy thông tin sản phẩm:', err);
+            }
+        }
         if (p) {
             document.getElementById('prodName').value = p.name || '';
             document.getElementById('prodCategory').value = p.category_id || '';
@@ -990,22 +1178,62 @@ function renderAdminCategories() {
     const tbody = document.getElementById('adminCategoriesTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = cachedCategories.map(c => `
-        <tr class="hover:bg-slate-50">
+    if (cachedCategories.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Chưa có danh mục nào</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = cachedCategories.map(c => {
+        const safeName = (c.name || '').replace(/'/g, "\\'");
+        return `
+        <tr class="hover:bg-slate-50 transition">
             <td class="py-2.5 px-3">
                 <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
                     <i class="fa-solid ${c.icon || 'fa-tag'}"></i>
                 </div>
             </td>
             <td class="py-2.5 px-3 font-bold text-slate-800">${c.name}</td>
-            <td class="py-2.5 px-3 text-slate-400 font-mono">${c.slug}</td>
+            <td class="py-2.5 px-3 text-slate-400 font-mono text-[11px]">${c.slug}</td>
             <td class="py-2.5 px-3">
                 <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
                     ${c.product_count || 0} sản phẩm
                 </span>
             </td>
+            <td class="py-2.5 px-3 text-right">
+                <button onclick="deleteCategory(${c.id}, '${safeName}')" class="px-2.5 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-lg transition inline-flex items-center" title="Xóa danh mục này">
+                    <i class="fa-regular fa-trash-can mr-1"></i> Xóa
+                </button>
+            </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
+}
+
+// XÓA DANH MỤC (ĐỒNG BỘ VỚI WEBSITE KHÁCH HÀNG)
+function deleteCategory(id, name) {
+    Swal.fire({
+        title: 'Xóa danh mục sản phẩm?',
+        html: `Bạn có chắc muốn xóa danh mục <strong>"${name}"</strong>?<br><span class="text-xs text-slate-500 mt-2 block">Thao tác này sẽ đồng bộ ngay lập tức với trang web khách hàng. Các sản phẩm thuộc danh mục này sẽ được chuyển sang mục "Khác".</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#64748B',
+        confirmButtonText: 'Đồng ý xóa danh mục',
+        cancelButtonText: 'Hủy'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const res = await apiFetch(`/api/categories/${id}`, { method: 'DELETE' });
+                showToast('success', res.message || `Đã xóa danh mục "${name}" thành công!`);
+                await loadAdminCategories();
+                renderAdminCategories();
+                loadAdminProducts();
+                loadDashboardStats();
+            } catch (err) {
+                showToast('error', err.message || 'Lỗi khi xóa danh mục');
+            }
+        }
+    });
 }
 
 async function handleAddCategory(e) {
@@ -1079,9 +1307,15 @@ function renderAdminOrdersTable(orders) {
             <td class="py-3 px-3 text-slate-600 font-medium">${o.customer_phone}</td>
             <td class="py-3 px-3 font-extrabold text-slate-800">${formatCurrency(o.total_amount)}</td>
             <td class="py-3 px-3">
-                <span class="text-[10px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                    ${o.payment_method || 'COD'}
-                </span>
+                <div class="flex flex-col gap-1 items-start">
+                    <span class="text-[10px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
+                        ${o.payment_method || 'COD'}
+                    </span>
+                    ${o.payment_status === 'paid'
+                        ? `<button onclick="toggleOrderPaymentStatus(${o.id}, 'pending')" class="text-[9px] font-black bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-1.5 py-0.5 rounded-full flex items-center transition" title="Bấm để đổi sang Chờ thanh toán"><i class="fa-solid fa-check mr-1 text-emerald-600"></i>Đã TT</button>`
+                        : `<button onclick="toggleOrderPaymentStatus(${o.id}, 'paid')" class="text-[9px] font-black bg-amber-100 text-amber-800 hover:bg-amber-200 px-1.5 py-0.5 rounded-full flex items-center transition" title="Bấm để xác nhận Đã thanh toán"><i class="fa-regular fa-clock mr-1 text-amber-600"></i>Chờ TT</button>`
+                    }
+                </div>
             </td>
             <td class="py-3 px-3">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeClass(o.status)}">
@@ -1096,6 +1330,21 @@ function renderAdminOrdersTable(orders) {
             </td>
         </tr>
     `).join('');
+}
+
+// CẬP NHẬT TRẠNG THÁI THANH TOÁN (ADMIN)
+async function toggleOrderPaymentStatus(orderId, newStatus) {
+    try {
+        await apiFetch(`/api/orders/${orderId}/payment`, {
+            method: 'PUT',
+            body: JSON.stringify({ payment_status: newStatus })
+        });
+        showToast('success', `Đã cập nhật trạng thái: ${newStatus === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}`);
+        loadAdminOrders();
+        loadDashboardStats();
+    } catch (err) {
+        showToast('error', err.message || 'Lỗi cập nhật thanh toán');
+    }
 }
 
 // View Order Detail & Update Status
@@ -1286,11 +1535,138 @@ async function loadMarketplaceTab() {
             if (lazadaApp) lazadaApp.value = s.lazada_app_key || '';
             const lazadaSeller = document.getElementById('lazadaSellerId');
             if (lazadaSeller) lazadaSeller.value = s.lazada_seller_id || '';
+
+            // Cập nhật giao diện trạng thái tạm ẩn API Lazada
+            const badge = document.getElementById('lazadaStatusBadge');
+            const toggleBtn = document.getElementById('lazadaToggleBtn');
+            const statusEl = document.getElementById('lazadaTestStatus');
+
+            if (s.lazada_hidden) {
+                if (badge) badge.innerHTML = `<i class="fa-solid fa-eye-slash mr-1"></i> Tạm Ẩn API`;
+                if (badge) badge.className = 'bg-amber-100 text-amber-800 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center';
+                if (toggleBtn) toggleBtn.innerHTML = `<i class="fa-solid fa-rotate mr-1"></i> Bật lại`;
+                if (statusEl) statusEl.textContent = 'Đang tạm ngưng kết nối API';
+            } else {
+                if (badge) badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span> Đang Kết Nối`;
+                if (badge) badge.className = 'bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center';
+                if (toggleBtn) toggleBtn.innerHTML = `<i class="fa-solid fa-eye-slash mr-1"></i> Tạm ẩn`;
+                if (statusEl) statusEl.textContent = 'Đã kích hoạt';
+            }
         }
 
+        await loadMarketplaceRevenueTables();
         await loadMarketplaceLogs();
     } catch (e) {
         showToast('error', 'Lỗi tải cấu hình sàn');
+    }
+}
+
+// BÁO CÁO DOANH THU & SỐ LƯỢNG ĐẶT HÀNG 2 SÀN SHOPEE & LAZADA
+async function loadMarketplaceRevenueTables() {
+    try {
+        const res = await apiFetch('/api/marketplace/revenue-report');
+        if (!res) return;
+
+        const shopee = res.shopee || {};
+        const lazada = res.lazada || {};
+
+        // 1. Cập nhật thống kê Shopee
+        const shpRevEl = document.getElementById('mktShopeeTotalRevenue');
+        const shpUnitEl = document.getElementById('mktShopeeTotalUnits');
+        const shpActiveEl = document.getElementById('mktShopeeActiveItems');
+        const shpBadgeRev = document.getElementById('shopeeTableRevenueBadge');
+        const shpBadgeOrders = document.getElementById('shopeeTableOrdersBadge');
+
+        if (shpRevEl) shpRevEl.textContent = formatCurrency(shopee.total_revenue || 0);
+        if (shpUnitEl) shpUnitEl.textContent = `${shopee.total_units_sold || 0} sản phẩm đã đặt`;
+        if (shpActiveEl) shpActiveEl.textContent = `${(shopee.items || []).length} sản phẩm`;
+        if (shpBadgeRev) shpBadgeRev.textContent = formatCurrency(shopee.total_revenue || 0);
+        if (shpBadgeOrders) shpBadgeOrders.textContent = `${shopee.total_units_sold || 0} sp`;
+
+        const shpTable = document.getElementById('shopeeRevenueTableBody');
+        if (shpTable) {
+            if (!shopee.items || shopee.items.length === 0) {
+                shpTable.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">Chưa có sản phẩm liên kết Shopee</td></tr>`;
+            } else {
+                shpTable.innerHTML = shopee.items.map(item => `
+                    <tr class="hover:bg-orange-50/40 transition">
+                        <td class="py-3 px-4 flex items-center space-x-2.5">
+                            <img src="${item.image_url}" class="w-9 h-9 rounded-lg object-cover border border-slate-200 bg-white shadow-sm flex-shrink-0">
+                            <div class="font-bold text-slate-800 truncate max-w-xs">${item.name}</div>
+                        </td>
+                        <td class="py-3 px-3 font-mono text-slate-500 text-[11px]">${item.shopee_item_id}</td>
+                        <td class="py-3 px-3 font-semibold text-slate-700">${formatCurrency(item.price)}</td>
+                        <td class="py-3 px-3">
+                            <span class="px-2 py-0.5 rounded text-xs font-black bg-orange-100 text-orange-800 border border-orange-200">
+                                ${item.order_quantity} sp đã đặt
+                            </span>
+                        </td>
+                        <td class="py-3 px-3 font-black text-orange-600">${formatCurrency(item.revenue)}</td>
+                        <td class="py-3 px-3 font-bold text-slate-700">${item.shopee_stock} sp</td>
+                        <td class="py-3 px-4 text-right">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <i class="fa-solid fa-circle-check mr-1 text-emerald-600"></i> ${item.status}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // 2. Cập nhật thống kê Lazada (Tạm Ẩn API)
+        const lazRevEl = document.getElementById('mktLazadaTotalRevenue');
+        const lazUnitEl = document.getElementById('mktLazadaTotalUnits');
+        const lazBadgeRev = document.getElementById('lazadaTableRevenueBadge');
+        const lazBadgeOrders = document.getElementById('lazadaTableOrdersBadge');
+
+        if (lazRevEl) lazRevEl.textContent = formatCurrency(lazada.total_revenue || 0);
+        if (lazUnitEl) lazUnitEl.textContent = `${lazada.total_units_sold || 0} sản phẩm đã đặt`;
+        if (lazBadgeRev) lazBadgeRev.textContent = formatCurrency(lazada.total_revenue || 0);
+        if (lazBadgeOrders) lazBadgeOrders.textContent = `${lazada.total_units_sold || 0} sp`;
+
+        const lazTable = document.getElementById('lazadaRevenueTableBody');
+        if (lazTable) {
+            if (!lazada.items || lazada.items.length === 0) {
+                lazTable.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">Chưa có sản phẩm liên kết Lazada</td></tr>`;
+            } else {
+                lazTable.innerHTML = lazada.items.map(item => `
+                    <tr class="hover:bg-blue-50/40 transition">
+                        <td class="py-3 px-4 flex items-center space-x-2.5">
+                            <img src="${item.image_url}" class="w-9 h-9 rounded-lg object-cover border border-slate-200 bg-white shadow-sm flex-shrink-0">
+                            <div class="font-bold text-slate-800 truncate max-w-xs">${item.name}</div>
+                        </td>
+                        <td class="py-3 px-3 font-mono text-slate-500 text-[11px]">${item.lazada_item_id}</td>
+                        <td class="py-3 px-3 font-semibold text-slate-700">${formatCurrency(item.price)}</td>
+                        <td class="py-3 px-3">
+                            <span class="px-2 py-0.5 rounded text-xs font-black bg-blue-100 text-blue-800 border border-blue-200">
+                                ${item.order_quantity} sp đã đặt
+                            </span>
+                        </td>
+                        <td class="py-3 px-3 font-black text-blue-600">${formatCurrency(item.revenue)}</td>
+                        <td class="py-3 px-3 font-bold text-slate-700">${item.lazada_stock} sp</td>
+                        <td class="py-3 px-4 text-right">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                <i class="fa-solid fa-eye-slash mr-1 text-amber-600"></i> ${item.status}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+    } catch (err) {
+        console.error('Lỗi tải bảng báo cáo doanh thu 2 sàn:', err);
+    }
+}
+
+// TẠM ẨN / MỞ LẠI API LAZADA
+async function toggleLazadaApiHide() {
+    try {
+        const res = await apiFetch('/api/marketplace/lazada/toggle-hide', { method: 'PATCH' });
+        showToast('success', res.message || 'Đã cập nhật trạng thái tạm ẩn API Lazada!');
+        await loadMarketplaceTab();
+    } catch (err) {
+        showToast('error', err.message || 'Lỗi khi cập nhật trạng thái tạm ẩn');
     }
 }
 

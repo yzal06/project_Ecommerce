@@ -830,16 +830,42 @@ function openZaloChat() {
 /* ========================================================
    HOME PAGE SPECIFIC HELPERS
    ======================================================== */
-async function loadHomeFeatured() {
+let activeHomeTab = 'newest';
+
+async function loadHomeFeatured(sortType = 'newest') {
+    activeHomeTab = sortType;
     try {
-        const res = await apiFetch('/api/products?sort=popular');
+        let endpoint = `/api/products?sort=${sortType}`;
+        if (sortType === 'discount') {
+            endpoint = '/api/products?on_sale=1&sort=discount';
+        }
+        const res = await apiFetch(endpoint);
         const products = (res.products || []).slice(0, 8);
         const container = document.getElementById('homeFeaturedGrid');
         if (!container) return;
         renderProductsIntoGrid(container, products);
+        updateHomeTabButtons(sortType);
     } catch (err) {
         console.error('Không thể tải sản phẩm nổi bật:', err);
     }
+}
+
+function switchHomeFeaturedTab(sortType) {
+    loadHomeFeatured(sortType);
+}
+
+function updateHomeTabButtons(activeTab) {
+    const tabs = ['newest', 'popular', 'discount'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}Btn`);
+        if (btn) {
+            if (t === activeTab) {
+                btn.className = 'px-3 py-1.5 rounded-lg transition bg-white text-emerald-700 shadow-sm flex items-center font-bold text-xs';
+            } else {
+                btn.className = 'px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center font-medium text-xs';
+            }
+        }
+    });
 }
 
 async function loadFlashSale() {
@@ -1328,6 +1354,7 @@ async function submitCheckout(e) {
             customer_email,
             shipping_address,
             payment_method,
+            payment_status: 'pending',
             note,
             items,
             user_id: user ? user.id : null
@@ -1341,7 +1368,13 @@ async function submitCheckout(e) {
         closeCheckoutModal();
         clearCart();
 
-        // Beautiful order success modal with marketplace sync notice
+        // If online payment (VietQR, MOMO, CARD, etc.) -> Launch Payment Gateway Modal
+        if (payment_method !== 'COD') {
+            openPaymentGateway(res.order);
+            return;
+        }
+
+        // Beautiful order success modal with marketplace sync notice for COD
         Swal.fire({
             icon: 'success',
             title: 'Đặt Hàng Thành Công! 🎉',
@@ -1350,7 +1383,8 @@ async function submitCheckout(e) {
                     <p>Mã đơn hàng: <strong class="text-emerald-600 font-bold">${res.order.order_code}</strong></p>
                     <p>Người nhận: <strong>${customer_name}</strong> - ${customer_phone}</p>
                     <p>Địa chỉ: ${shipping_address}</p>
-                    <p>Phương thức: <strong>${payment_method}</strong></p>
+                    <p>Phương thức: <strong>Trả tiền mặt khi nhận hàng (COD)</strong></p>
+                    <p>Trạng thái thanh toán: <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full">Chờ thanh toán khi nhận</span></p>
                     <p class="text-emerald-600 font-black text-base pt-2 border-t">Tổng thanh toán: ${formatCurrency(res.order.total_amount)}</p>
                     
                     <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 mt-2 space-y-1">
@@ -1373,6 +1407,388 @@ async function submitCheckout(e) {
     } catch (err) {
         showToast('error', err.message || 'Lỗi khi tạo đơn hàng');
     }
+}
+
+/* ========================================================
+   CỔNG THANH TOÁN TRỰC TUYẾN MINTMART PAY (VIETQR / MOMO / CARD)
+   ======================================================== */
+let currentGatewayOrder = null;
+let paymentCountdownTimer = null;
+
+function ensurePaymentGatewayModal() {
+    let modal = document.getElementById('paymentGatewayModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'paymentGatewayModal';
+        modal.className = 'fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-900/75 backdrop-blur-sm overflow-y-auto';
+        modal.innerHTML = `
+            <div class="bg-white rounded-3xl max-w-xl w-full my-6 p-5 sm:p-6 shadow-2xl relative border border-emerald-100 animate-in fade-in zoom-in duration-200">
+                <!-- Header -->
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center font-bold shadow-md shadow-emerald-500/20">
+                            <i class="fa-solid fa-shield-halved text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h3 class="font-extrabold text-slate-800 text-base">Cổng Thanh Toán MintMart Pay</h3>
+                                <span class="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center">
+                                    <i class="fa-solid fa-lock text-[9px] mr-1"></i> SSL 256-Bit
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-slate-400">Tự động đối soát & kích hoạt đơn hàng trong 30 giây</p>
+                        </div>
+                    </div>
+                    <button onclick="closePaymentGatewayModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Order Info Bar -->
+                <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 p-3 rounded-2xl border border-emerald-100 mb-4 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] text-slate-500 block">Mã đơn hàng:</span>
+                        <strong class="text-sm font-black text-slate-800 font-mono" id="pgOrderCode">MM-00000</strong>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[11px] text-slate-500 block">Số tiền thanh toán:</span>
+                        <strong class="text-base font-black text-emerald-600" id="pgOrderAmount">0 ₫</strong>
+                    </div>
+                </div>
+
+                <!-- Payment Methods Tabs -->
+                <div class="flex border-b border-slate-200 mb-4 text-xs font-bold space-x-1" id="pgTabContainer">
+                    <button onclick="switchPgTab('vietqr')" id="pgTabBtn-vietqr" class="py-2 px-3 border-b-2 border-emerald-600 text-emerald-600 flex items-center">
+                        <i class="fa-solid fa-qrcode mr-1.5 text-emerald-500"></i> Quét VietQR 24/7
+                    </button>
+                    <button onclick="switchPgTab('momo')" id="pgTabBtn-momo" class="py-2 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center">
+                        <i class="fa-solid fa-wallet mr-1.5 text-pink-500"></i> MoMo / VNPay
+                    </button>
+                    <button onclick="switchPgTab('card')" id="pgTabBtn-card" class="py-2 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center">
+                        <i class="fa-solid fa-credit-card mr-1.5 text-blue-500"></i> Thẻ Quốc Tế
+                    </button>
+                </div>
+
+                <!-- Content: VietQR Tab -->
+                <div id="pgTabContent-vietqr" class="space-y-4">
+                    <div class="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div class="bg-white p-2.5 rounded-2xl shadow-md border border-slate-200 flex-shrink-0 flex flex-col items-center">
+                            <img id="pgVietQrImage" src="" alt="VietQR MintMart" class="w-36 h-36 object-contain rounded-xl">
+                            <span class="text-[10px] text-slate-400 font-bold mt-1.5 flex items-center">
+                                <i class="fa-solid fa-camera mr-1 text-emerald-500"></i> Mở App Ngân hàng quét
+                            </span>
+                        </div>
+                        <div class="flex-grow space-y-2 text-xs w-full">
+                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                                <span class="text-slate-400">Ngân hàng:</span>
+                                <strong class="text-slate-700">MB Bank (Quân Đội)</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                                <span class="text-slate-400">Số tài khoản:</span>
+                                <div class="flex items-center space-x-1.5">
+                                    <strong class="text-slate-800 font-mono font-bold text-sm">19006868888</strong>
+                                    <button type="button" onclick="copyPaymentText('19006868888', 'Số tài khoản')" class="text-emerald-600 hover:text-emerald-700 p-1" title="Sao chép">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                                <span class="text-slate-400">Chủ tài khoản:</span>
+                                <strong class="text-slate-700 text-[11px]">CONG TY CO PHAN MINTMART VN</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                                <span class="text-slate-400">Số tiền:</span>
+                                <div class="flex items-center space-x-1.5">
+                                    <strong class="text-rose-600 font-extrabold" id="pgCopyAmount">0 ₫</strong>
+                                    <button type="button" onclick="copyPaymentAmount()" class="text-emerald-600 hover:text-emerald-700 p-1" title="Sao chép số tiền">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center py-1">
+                                <span class="text-slate-400">Nội dung CK:</span>
+                                <div class="flex items-center space-x-1.5">
+                                    <strong class="text-emerald-700 font-mono font-bold bg-emerald-100 px-2 py-0.5 rounded text-xs" id="pgCopyMemo">MM-00000</strong>
+                                    <button type="button" onclick="copyPaymentMemo()" class="text-emerald-600 hover:text-emerald-700 p-1" title="Sao chép nội dung">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-800 flex items-start space-x-2">
+                        <i class="fa-solid fa-clock text-amber-600 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold">Thời gian giữ đơn: </span>
+                            <span class="font-mono font-bold text-amber-700" id="pgCountdown">15:00</span>
+                            <p class="text-[11px] text-amber-700/80 mt-0.5">Vui lòng nhập đúng chính xác nội dung chuyển khoản để hệ thống đối soát tự động trong 30 giây.</p>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="confirmOrderPaymentNow()" id="pgConfirmPaidBtn" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl font-bold text-xs sm:text-sm shadow-lg shadow-emerald-600/20 transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-circle-check text-base"></i>
+                        <span>Tôi Đã Chuyển Khoản Thành Công</span>
+                    </button>
+                </div>
+
+                <!-- Content: MoMo Tab -->
+                <div id="pgTabContent-momo" class="hidden space-y-4">
+                    <div class="bg-pink-50/50 p-4 rounded-2xl border border-pink-100 text-center">
+                        <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-500 text-white flex items-center justify-center text-xl shadow-md mb-2">
+                            <i class="fa-solid fa-wallet"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-sm">Thanh toán qua Ví MoMo / VNPay (Sandbox)</h4>
+                        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Môi trường thanh toán thử nghiệm. Bạn có thể bấm xác nhận thanh toán trực tiếp bên dưới.</p>
+                        <div class="my-4 inline-block p-3 bg-white rounded-2xl border border-pink-200 shadow-sm">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=MINTMART-MOMO-SANDBOX-PAYMENT" alt="MoMo Sandbox QR" class="w-32 h-32 mx-auto rounded-lg">
+                            <span class="text-[10px] text-pink-600 font-bold block mt-1">Quét mã bằng App MoMo</span>
+                        </div>
+                        <button type="button" onclick="simulateSandboxPayment('MoMo')" class="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-bold text-xs transition shadow-md flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Mô Phỏng Quét Thanh Toán MoMo Thành Công</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content: Credit Card Tab -->
+                <div id="pgTabContent-card" class="hidden space-y-4">
+                    <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 text-xs">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-bold text-slate-700 flex items-center">
+                                <i class="fa-brands fa-cc-visa text-blue-600 text-lg mr-1.5"></i> Thẻ Tín Dụng / Ghi Nợ Quốc Tế
+                            </span>
+                            <button type="button" onclick="fillTestCard()" class="text-[11px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-lg hover:bg-blue-200 transition">
+                                Điền thẻ Test mẫu
+                            </button>
+                        </div>
+                        <div class="space-y-2.5">
+                            <div>
+                                <label class="block text-[11px] text-slate-500 font-bold mb-1">Số thẻ (16 chữ số)</label>
+                                <input type="text" id="pgCardNumber" placeholder="4532 0000 0000 8899" maxlength="19" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-mono bg-white">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-slate-500 font-bold mb-1">Ngày hết hạn (MM/YY)</label>
+                                    <input type="text" id="pgCardExpiry" placeholder="12/28" maxlength="5" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-mono bg-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-500 font-bold mb-1">Mã bảo mật CVV</label>
+                                    <input type="password" id="pgCardCvv" placeholder="321" maxlength="4" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-blue-500 font-mono bg-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 font-bold mb-1">Tên in trên thẻ</label>
+                                <input type="text" id="pgCardHolder" placeholder="NGUYEN VAN A" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-blue-500 uppercase bg-white">
+                            </div>
+                        </div>
+                        <button type="button" onclick="simulateCardPayment()" class="w-full mt-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition shadow-md flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-lock mr-1"></i>
+                            <span>Thanh Toán Ngay Qua Cổng Quốc Tế</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Footer: Dismiss & Pay Later -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                    <span class="flex items-center">
+                        <i class="fa-solid fa-circle-info text-emerald-500 mr-1"></i> Đơn hàng đã được lưu an toàn
+                    </span>
+                    <button type="button" onclick="closePaymentGatewayModal()" class="text-slate-500 hover:text-slate-800 font-bold hover:underline">
+                        Tôi sẽ thanh toán sau (Giữ đơn hàng)
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    return modal;
+}
+
+function switchPgTab(tab) {
+    ['vietqr', 'momo', 'card'].forEach(t => {
+        const btn = document.getElementById(`pgTabBtn-${t}`);
+        const content = document.getElementById(`pgTabContent-${t}`);
+        if (btn && content) {
+            if (t === tab) {
+                btn.className = 'py-2 px-3 border-b-2 border-emerald-600 text-emerald-600 flex items-center font-bold';
+                content.classList.remove('hidden');
+            } else {
+                btn.className = 'py-2 px-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center font-bold';
+                content.classList.add('hidden');
+            }
+        }
+    });
+}
+
+function openPaymentGateway(order) {
+    currentGatewayOrder = order;
+    const modal = ensurePaymentGatewayModal();
+
+    const codeEl = document.getElementById('pgOrderCode');
+    const amtEl = document.getElementById('pgOrderAmount');
+    const copyAmtEl = document.getElementById('pgCopyAmount');
+    const copyMemoEl = document.getElementById('pgCopyMemo');
+
+    if (codeEl) codeEl.textContent = order.order_code;
+    if (amtEl) amtEl.textContent = formatCurrency(order.total_amount);
+    if (copyAmtEl) copyAmtEl.textContent = formatCurrency(order.total_amount);
+    if (copyMemoEl) copyMemoEl.textContent = order.order_code;
+
+    // Generate VietQR
+    const qrUrl = `https://img.vietqr.io/image/MB-19006868888-compact2.png?amount=${order.total_amount}&addInfo=${encodeURIComponent(order.order_code)}&accountName=CONG%20TY%20CO%20PHAN%20MINTMART%20VN`;
+    const qrImg = document.getElementById('pgVietQrImage');
+    if (qrImg) qrImg.src = qrUrl;
+
+    // Reset countdown (15 minutes)
+    startPaymentCountdown(15 * 60);
+
+    // Switch tab matching payment_method if specified
+    if (order.payment_method === 'MOMO') {
+        switchPgTab('momo');
+    } else if (order.payment_method === 'CARD') {
+        switchPgTab('card');
+    } else {
+        switchPgTab('vietqr');
+    }
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closePaymentGatewayModal() {
+    const modal = document.getElementById('paymentGatewayModal');
+    if (modal) modal.classList.add('hidden');
+    document.body.style.overflow = '';
+    if (paymentCountdownTimer) clearInterval(paymentCountdownTimer);
+}
+
+function startPaymentCountdown(seconds) {
+    if (paymentCountdownTimer) clearInterval(paymentCountdownTimer);
+    let remaining = seconds;
+    const countEl = document.getElementById('pgCountdown');
+    paymentCountdownTimer = setInterval(() => {
+        if (remaining <= 0) {
+            clearInterval(paymentCountdownTimer);
+            if (countEl) countEl.textContent = '00:00 (Hết hạn)';
+            return;
+        }
+        remaining--;
+        const m = Math.floor(remaining / 60);
+        const s = remaining % 60;
+        if (countEl) countEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }, 1000);
+}
+
+function copyPaymentText(text, label) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+        showToast('success', `Đã sao chép ${label}: ${text}`);
+    } else {
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showToast('success', `Đã sao chép ${label}: ${text}`);
+    }
+}
+
+function copyPaymentAmount() {
+    if (currentGatewayOrder) {
+        copyPaymentText(String(currentGatewayOrder.total_amount), 'Số tiền');
+    }
+}
+
+function copyPaymentMemo() {
+    if (currentGatewayOrder) {
+        copyPaymentText(currentGatewayOrder.order_code, 'Nội dung chuyển khoản');
+    }
+}
+
+function fillTestCard() {
+    const num = document.getElementById('pgCardNumber');
+    const exp = document.getElementById('pgCardExpiry');
+    const cvv = document.getElementById('pgCardCvv');
+    const name = document.getElementById('pgCardHolder');
+    if (num) num.value = '4532 8888 6666 9999';
+    if (exp) exp.value = '12/28';
+    if (cvv) cvv.value = '888';
+    if (name) name.value = 'NGUYEN VAN A';
+    showToast('info', 'Đã tự động điền thẻ VISA Test Sandbox');
+}
+
+async function confirmOrderPaymentNow() {
+    if (!currentGatewayOrder) return;
+    const btn = document.getElementById('pgConfirmPaidBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin mr-2"></i> Đang xác nhận thanh toán...`;
+    }
+
+    try {
+        await apiFetch(`/api/orders/${currentGatewayOrder.id}/payment`, {
+            method: 'PUT',
+            body: JSON.stringify({ payment_status: 'paid' })
+        });
+
+        // Broadcast storage event for admin live watcher
+        try {
+            localStorage.setItem('mintmart_last_paid_order', JSON.stringify({
+                id: currentGatewayOrder.id,
+                order_code: currentGatewayOrder.order_code,
+                timestamp: Date.now()
+            }));
+        } catch(e) {}
+
+        closePaymentGatewayModal();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Thanh Toán Thành Công! 🎉',
+            html: `
+                <div class="text-left text-sm space-y-2 mt-3">
+                    <p>Mã đơn hàng: <strong class="text-emerald-600 font-bold">${currentGatewayOrder.order_code}</strong></p>
+                    <p>Số tiền đã thanh toán: <strong class="text-emerald-600 font-bold">${formatCurrency(currentGatewayOrder.total_amount)}</strong></p>
+                    <p>Trạng thái thanh toán: <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full"><i class="fa-solid fa-check mr-1"></i> Đã thanh toán (Paid)</span></p>
+                    <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 mt-2 space-y-1">
+                        <i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i>
+                        Hệ thống đã tự động gạch nợ thành công và đồng bộ kho 2 sàn Shopee & Lazada.
+                    </div>
+                </div>
+            `,
+            confirmButtonText: 'Tiếp tục mua sắm',
+            confirmButtonColor: '#10B981'
+        });
+    } catch (err) {
+        showToast('error', err.message || 'Lỗi khi xác nhận thanh toán');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-circle-check text-base"></i> <span>Tôi Đã Chuyển Khoản Thành Công</span>`;
+        }
+    }
+}
+
+async function simulateSandboxPayment(method) {
+    if (!currentGatewayOrder) return;
+    showToast('info', `Đang mô phỏng kết nối cổng ${method}...`);
+    setTimeout(() => {
+        confirmOrderPaymentNow();
+    }, 800);
+}
+
+async function simulateCardPayment() {
+    const num = document.getElementById('pgCardNumber')?.value || '';
+    if (num.replace(/\\s/g, '').length < 12) {
+        showToast('warning', 'Vui lòng nhập số thẻ hợp lệ (hoặc bấm "Điền thẻ Test mẫu")');
+        return;
+    }
+    showToast('info', 'Đang xử lý xác thực thẻ quốc tế qua ngân hàng...');
+    setTimeout(() => {
+        confirmOrderPaymentNow();
+    }, 1000);
 }
 
 // User UI & Dropdown

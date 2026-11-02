@@ -172,15 +172,41 @@ async function initDatabase() {
             await runQuery(`ALTER TABLE products ADD COLUMN auto_sync_marketplace INTEGER DEFAULT 1`);
         }
 
-        // Initialize shopee and lazada stock equal to current stock if unset
+        if (!colNames.includes('shopee_sold_count')) {
+            await runQuery(`ALTER TABLE products ADD COLUMN shopee_sold_count INTEGER DEFAULT 0`);
+        }
+        if (!colNames.includes('lazada_sold_count')) {
+            await runQuery(`ALTER TABLE products ADD COLUMN lazada_sold_count INTEGER DEFAULT 0`);
+        }
+
+        // Check orders table for payment_status
+        const orderCols = await allQuery(`PRAGMA table_info(orders)`);
+        const orderColNames = orderCols.map(c => c.name);
+        if (!orderColNames.includes('payment_status')) {
+            await runQuery(`ALTER TABLE orders ADD COLUMN payment_status TEXT DEFAULT 'pending'`);
+        }
+
+        // Check marketplace_settings for lazada_hidden
+        const mktCols = await allQuery(`PRAGMA table_info(marketplace_settings)`);
+        const mktColNames = mktCols.map(c => c.name);
+        if (!mktColNames.includes('lazada_hidden')) {
+            await runQuery(`ALTER TABLE marketplace_settings ADD COLUMN lazada_hidden INTEGER DEFAULT 1`);
+        }
+
+        // Ensure lazada_hidden is set to 1 and lazada_enabled is 0 (Tạm ẩn API Lazada theo yêu cầu)
+        await runQuery(`UPDATE marketplace_settings SET lazada_enabled = 0, lazada_hidden = 1 WHERE id = 1`);
+
+        // Initialize shopee and lazada stock & sold counts
         await runQuery(`
             UPDATE products 
             SET shopee_item_id = COALESCE(shopee_item_id, 'SHP-' || (10000000 + id * 1234)),
                 shopee_stock = CASE WHEN shopee_stock IS NULL OR shopee_stock = 0 THEN stock ELSE shopee_stock END,
                 lazada_item_id = COALESCE(lazada_item_id, 'LAZ-' || (20000000 + id * 4321)),
                 lazada_stock = CASE WHEN lazada_stock IS NULL OR lazada_stock = 0 THEN stock ELSE lazada_stock END,
+                shopee_sold_count = CASE WHEN shopee_sold_count IS NULL OR shopee_sold_count = 0 THEN CAST(COALESCE(sold_count, 10) * 0.55 AS INT) ELSE shopee_sold_count END,
+                lazada_sold_count = CASE WHEN lazada_sold_count IS NULL OR lazada_sold_count = 0 THEN CAST(COALESCE(sold_count, 10) * 0.40 AS INT) ELSE lazada_sold_count END,
                 auto_sync_marketplace = 1
-            WHERE shopee_item_id IS NULL OR shopee_stock = 0
+            WHERE shopee_item_id IS NULL OR shopee_stock = 0 OR shopee_sold_count IS NULL OR shopee_sold_count = 0
         `);
     } catch (migErr) {
         console.error('Lỗi kiểm tra migration marketplace:', migErr);
