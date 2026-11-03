@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -10,7 +11,7 @@ const marketplaceService = require('./marketplaceService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = 'mintmart-secret-key-2026-safe-e-commerce';
+const JWT_SECRET = process.env.JWT_SECRET || 'mintmart-secret-key-2026-safe-e-commerce';
 
 // Ensure uploads folder exists
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -212,6 +213,76 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         res.json({ success: true, user });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Lỗi server' });
+    }
+});
+
+// Change Admin / User credentials (Email, Name, Password)
+app.put('/api/auth/change-credentials', authenticateToken, async (req, res) => {
+    try {
+        const { currentPassword, newEmail, newPassword, newName, phone, address } = req.body;
+        const user = await getQuery(`SELECT * FROM users WHERE id = ?`, [req.user.id]);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản người dùng!' });
+        }
+
+        // If current password provided, verify it (unless mock token)
+        if (currentPassword && user.password) {
+            const isMatch = await bcrypt.compare(currentPassword, user.password);
+            if (!isMatch) {
+                return res.status(400).json({ success: false, message: 'Mật khẩu hiện tại không chính xác!' });
+            }
+        }
+
+        let updatedEmail = user.email;
+        if (newEmail && newEmail.toLowerCase().trim() !== user.email) {
+            const checkEmail = newEmail.toLowerCase().trim();
+            const existing = await getQuery(`SELECT id FROM users WHERE email = ? AND id != ?`, [checkEmail, user.id]);
+            if (existing) {
+                return res.status(400).json({ success: false, message: 'Email này đã được tài khoản khác sử dụng!' });
+            }
+            updatedEmail = checkEmail;
+        }
+
+        let updatedName = (newName && newName.trim()) ? newName.trim() : user.name;
+        let updatedPhone = phone !== undefined ? phone : (user.phone || '');
+        let updatedAddress = address !== undefined ? address : (user.address || '');
+
+        let updatedPassHash = user.password;
+        if (newPassword && newPassword.trim()) {
+            if (newPassword.trim().length < 6) {
+                return res.status(400).json({ success: false, message: 'Mật khẩu mới phải có tối thiểu 6 ký tự!' });
+            }
+            updatedPassHash = await bcrypt.hash(newPassword.trim(), 10);
+        }
+
+        await runQuery(
+            `UPDATE users SET email = ?, password = ?, name = ?, phone = ?, address = ? WHERE id = ?`,
+            [updatedEmail, updatedPassHash, updatedName, updatedPhone, updatedAddress, user.id]
+        );
+
+        // Generate new JWT Token with updated credentials
+        const token = jwt.sign(
+            { id: user.id, email: updatedEmail, role: user.role, name: updatedName },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.json({
+            success: true,
+            message: 'Cập nhật tài khoản và mật khẩu thành công!',
+            token,
+            user: {
+                id: user.id,
+                email: updatedEmail,
+                name: updatedName,
+                role: user.role,
+                phone: updatedPhone,
+                address: updatedAddress
+            }
+        });
+    } catch (err) {
+        console.error('Lỗi cập nhật thông tin tài khoản:', err);
+        res.status(500).json({ success: false, message: 'Lỗi máy chủ khi cập nhật tài khoản!' });
     }
 });
 

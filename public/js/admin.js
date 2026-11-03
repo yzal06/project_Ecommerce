@@ -77,6 +77,79 @@ async function handleAdminLogin(e) {
     }
 }
 
+// OPEN / CLOSE CHANGE PASSWORD MODAL
+function openChangePasswordModal() {
+    const user = getAuthUser();
+    if (user) {
+        const nameInput = document.getElementById('adminNewNameInput');
+        const emailInput = document.getElementById('adminNewEmailInput');
+        if (nameInput) nameInput.value = user.name || '';
+        if (emailInput) emailInput.value = user.email || '';
+    }
+    const currentPass = document.getElementById('adminCurrentPasswordInput');
+    const newPass = document.getElementById('adminNewPasswordInput');
+    const confirmPass = document.getElementById('adminConfirmPasswordInput');
+    if (currentPass) currentPass.value = '';
+    if (newPass) newPass.value = '';
+    if (confirmPass) confirmPass.value = '';
+
+    const modal = document.getElementById('adminChangePasswordModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeChangePasswordModal() {
+    const modal = document.getElementById('adminChangePasswordModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function handleChangePasswordSubmit(e) {
+    e.preventDefault();
+    const newName = document.getElementById('adminNewNameInput').value.trim();
+    const newEmail = document.getElementById('adminNewEmailInput').value.trim();
+    const currentPassword = document.getElementById('adminCurrentPasswordInput').value;
+    const newPassword = document.getElementById('adminNewPasswordInput').value;
+    const confirmPassword = document.getElementById('adminConfirmPasswordInput').value;
+
+    if (newPassword && newPassword.length < 6) {
+        showToast('error', 'Mật khẩu mới phải có tối thiểu 6 ký tự!');
+        return;
+    }
+
+    if (newPassword && newPassword !== confirmPassword) {
+        showToast('error', 'Mật khẩu mới và xác nhận mật khẩu không khớp!');
+        return;
+    }
+
+    try {
+        const res = await apiFetch('/api/auth/change-credentials', {
+            method: 'PUT',
+            body: JSON.stringify({
+                newName,
+                newEmail,
+                currentPassword,
+                newPassword: newPassword || undefined
+            })
+        });
+
+        if (res.token && res.user) {
+            setAuth(res.token, res.user);
+        }
+
+        const sidebarName = document.getElementById('sidebarAdminName');
+        if (sidebarName && res.user) {
+            sidebarName.textContent = res.user.name;
+        }
+
+        closeChangePasswordModal();
+        showToast('success', 'Đã cập nhật thông tin tài khoản và mật khẩu thành công!');
+        if (typeof currentAdminTab !== 'undefined' && currentAdminTab === 'users') {
+            loadAdminUsers();
+        }
+    } catch (err) {
+        showToast('error', err.message || 'Lỗi khi cập nhật tài khoản!');
+    }
+}
+
 // Speaker Notification State
 let speakerEnabled = localStorage.getItem('mintmart_speaker_enabled') !== 'false';
 let lastKnownOrderIds = new Set();

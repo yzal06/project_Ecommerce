@@ -1,3 +1,4 @@
+require('dotenv').config();
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -213,13 +214,15 @@ async function initDatabase() {
     }
 
     // Check if admin user exists, if not seed default users
-    const adminUser = await getQuery(`SELECT * FROM users WHERE email = ?`, ['admin@mintmart.vn']);
+    const defaultAdminEmail = (process.env.ADMIN_EMAIL || 'admin@mintmart.vn').toLowerCase().trim();
+    const defaultAdminPass = process.env.ADMIN_PASSWORD || 'admin123';
+    const adminUser = await getQuery(`SELECT * FROM users WHERE role = 'admin' OR email = ?`, [defaultAdminEmail]);
     if (!adminUser) {
         console.log('Tạo tài khoản quản trị viên mặc định...');
-        const adminPassHash = await bcrypt.hash('admin123', 10);
+        const adminPassHash = await bcrypt.hash(defaultAdminPass, 10);
         await runQuery(
             `INSERT INTO users (email, password, name, phone, address, role) VALUES (?, ?, ?, ?, ?, ?)`,
-            ['admin@mintmart.vn', adminPassHash, 'Quản Trị Viên (Admin)', '0901234567', 'Hà Nội, Việt Nam', 'admin']
+            [defaultAdminEmail, adminPassHash, 'Quản Trị Viên (Admin)', '0901234567', 'Hà Nội, Việt Nam', 'admin']
         );
 
         const customerPassHash = await bcrypt.hash('123456', 10);

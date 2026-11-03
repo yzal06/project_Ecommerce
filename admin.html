@@ -65,7 +65,7 @@
                     <label class="block text-xs font-bold text-slate-700 mb-1">Email Quản Trị Viên</label>
                     <div class="relative">
                         <i class="fa-regular fa-envelope absolute left-3.5 top-3 text-slate-400 text-xs"></i>
-                        <input type="email" id="adminEmailInput" required value="admin@mintmart.vn" class="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white font-medium">
+                        <input type="email" id="adminEmailInput" required placeholder="Nhập email quản trị viên" class="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white font-medium">
                     </div>
                 </div>
 
@@ -73,13 +73,8 @@
                     <label class="block text-xs font-bold text-slate-700 mb-1">Mật Khẩu</label>
                     <div class="relative">
                         <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-xs"></i>
-                        <input type="password" id="adminPasswordInput" required value="admin123" class="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white font-medium">
+                        <input type="password" id="adminPasswordInput" required placeholder="Nhập mật khẩu quản trị" class="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white font-medium">
                     </div>
-                </div>
-
-                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-xs text-emerald-800 space-y-1">
-                    <div class="font-bold flex items-center"><i class="fa-solid fa-circle-info mr-1.5 text-emerald-600"></i> Thông tin quản trị mặc định:</div>
-                    <div class="text-[11px] text-emerald-700">Email: <strong>admin@mintmart.vn</strong> | Pass: <strong>admin123</strong></div>
                 </div>
 
                 <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg transition flex items-center justify-center">
@@ -182,9 +177,14 @@
                             <div class="text-[10px] text-emerald-400 font-medium">Toàn quyền Quản trị</div>
                         </div>
                     </div>
-                    <button onclick="handleAdminLogout()" title="Đăng xuất" class="text-slate-400 hover:text-rose-400 p-1.5 transition">
-                        <i class="fa-solid fa-power-off"></i>
-                    </button>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="openChangePasswordModal()" title="Đổi tài khoản / mật khẩu quản trị" class="text-slate-400 hover:text-amber-400 p-1.5 transition">
+                            <i class="fa-solid fa-key"></i>
+                        </button>
+                        <button onclick="handleAdminLogout()" title="Đăng xuất" class="text-slate-400 hover:text-rose-400 p-1.5 transition">
+                            <i class="fa-solid fa-power-off"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -216,6 +216,12 @@
                             <i class="fa-solid fa-play text-[9px] mr-1 text-emerald-600"></i> Thử Loa
                         </button>
                     </div>
+
+                    <!-- Change Admin Password Button -->
+                    <button onclick="openChangePasswordModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center" title="Đổi thông tin & mật khẩu Quản trị">
+                        <i class="fa-solid fa-key sm:mr-1.5 text-amber-600"></i>
+                        <span class="hidden sm:inline">Đổi Mật Khẩu</span>
+                    </button>
 
                     <!-- Quick Add Product Button -->
                     <button onclick="openProductModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 sm:px-4 py-2 rounded-xl shadow-md transition flex items-center">
@@ -703,6 +709,9 @@
                                 <h3 class="font-bold text-slate-800 text-sm">Danh Sách Tài Khoản & Phân Quyền</h3>
                                 <p class="text-xs text-slate-400">Bạn có thể phân quyền Quản Trị Viên (Admin) hoặc Khách Hàng (Customer)</p>
                             </div>
+                            <button onclick="openChangePasswordModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow transition flex items-center">
+                                <i class="fa-solid fa-key mr-1.5"></i> Đổi Mật Khẩu / Tài Khoản Admin
+                            </button>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-xs">
@@ -1259,6 +1268,61 @@
             <div id="orderDetailContent">
                 <!-- Injected via JS -->
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ĐỔI THÔNG TIN TÀI KHOẢN VÀ MẬT KHẨU ADMIN -->
+    <div id="adminChangePasswordModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeChangePasswordModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center space-x-3 mb-5">
+                <div class="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-lg shadow-sm">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 text-base">Đổi Tài Khoản / Mật Khẩu</h3>
+                    <p class="text-xs text-slate-400">Cập nhật tài khoản và mật khẩu Quản Trị Viên mới</p>
+                </div>
+            </div>
+
+            <form id="adminChangePasswordForm" onsubmit="handleChangePasswordSubmit(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tên Quản Trị Viên</label>
+                    <input type="text" id="adminNewNameInput" required placeholder="Quản Trị Viên (Admin)" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-medium">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Email Quản Trị Viên Mới</label>
+                    <input type="email" id="adminNewEmailInput" required placeholder="admin@mintmart.vn" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 font-medium">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Mật Khẩu Hiện Tại</label>
+                    <input type="password" id="adminCurrentPasswordInput" placeholder="Nhập mật khẩu admin hiện tại (nếu có)" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Mật Khẩu Mới (Tối thiểu 6 ký tự)</label>
+                    <input type="password" id="adminNewPasswordInput" placeholder="Để trống nếu không muốn đổi mật khẩu" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Xác Nhận Mật Khẩu Mới</label>
+                    <input type="password" id="adminConfirmPasswordInput" placeholder="Nhập lại mật khẩu mới" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
+                </div>
+
+                <div class="flex items-center space-x-2 pt-2">
+                    <button type="button" onclick="closeChangePasswordModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+                        Hủy
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition">
+                        Lưu Cập Nhật
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 

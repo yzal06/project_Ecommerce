@@ -32,14 +32,16 @@ Sau khi khởi động, mở trình duyệt và truy cập:
 
 ---
 
-## 🔑 Tài Khoản Đăng Nhập Mặc Định
+## ⚙️ Cấu Hình Môi Trường (.env) & Quản Trị
 
-| Vai trò | Email | Mật khẩu | Quyền hạn |
-| :--- | :--- | :--- | :--- |
-| **Quản Trị Viên (Admin)** | `admin@mintmart.vn` | `admin123` | Toàn quyền thêm, sửa, xóa sản phẩm, tải ảnh lên, xem doanh thu, duyệt đơn hàng, phân quyền người dùng |
-| **Khách Hàng (Customer)** | `khachhang@gmail.com` | `123456` | Mua hàng, xem lịch sử đơn, giỏ hàng |
+Dự án sử dụng file `.env` để quản lý bảo mật biến môi trường (API Shopee, Lazada, VietQR, JWT Secret và tài khoản Admin). File `.env` đã được cấu hình loại trừ trong `.gitignore` để tránh rò rỉ dữ liệu khi đẩy lên GitHub/Public.
 
-*(Hệ thống có nút đăng nhập 1 chạm nhanh trên giao diện để thuận tiện thử nghiệm).*
+1. Sao chép file `.env.example` thành `.env` (nếu tải mới về):
+   ```bash
+   cp .env.example .env
+   ```
+2. Cấu hình các tham số API và mật khẩu trong file `.env`.
+3. Quản trị viên có thể đổi email và mật khẩu trực tiếp trong giao diện Quản Trị (`/admin` -> Nút **"Đổi Mật Khẩu"**).
 
 ---
 

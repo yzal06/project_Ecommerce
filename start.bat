@@ -7,9 +7,7 @@ echo.
 echo  Giao diện Khách hàng: http://localhost:3000
 echo  Giao diện Quản trị viên (Admin): http://localhost:3000/admin
 echo.
-echo  Tài khoản Quản Trị mặc định:
-echo  - Email: admin@mintmart.vn
-echo  - Mật khẩu: admin123
+echo  Cấu hình bảo mật: Vui lòng xem và quản lý trong file .env
 echo.
 echo ========================================================
 npm start

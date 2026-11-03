@@ -646,12 +646,16 @@ async function handleMockApi(endpoint, options = {}) {
         const email = (body.email || '').toLowerCase().trim();
         const pass = body.password || '';
 
-        if (email === 'admin@mintmart.vn' && pass === 'admin123') {
+        const adminSavedEmail = (localStorage.getItem('mock_admin_email') || 'admin@mintmart.vn').toLowerCase().trim();
+        const adminSavedPass = localStorage.getItem('mock_admin_pass') || 'admin123';
+        const adminSavedName = localStorage.getItem('mock_admin_name') || 'Quản Trị Viên (Admin)';
+
+        if (email === adminSavedEmail && pass === adminSavedPass) {
             return {
                 success: true,
                 message: 'Đăng nhập Quản Trị Viên thành công!',
                 token: 'mock-admin-token-' + Date.now(),
-                user: { id: 1, email: 'admin@mintmart.vn', name: 'Quản Trị Viên (Admin)', role: 'admin' }
+                user: { id: 1, email: adminSavedEmail, name: adminSavedName, role: 'admin' }
             };
         } else if (email === 'khachhang@gmail.com' && pass === '123456') {
             return {
@@ -669,6 +673,25 @@ async function handleMockApi(endpoint, options = {}) {
                 user: { id: 99, email: email, name: email.split('@')[0], role: email.includes('admin') ? 'admin' : 'customer' }
             };
         }
+    }
+
+    // J2. AUTH CHANGE CREDENTIALS
+    if (path === '/api/auth/change-credentials' && method === 'PUT') {
+        const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+        const { newName, newEmail, newPassword } = body;
+        if (newEmail) localStorage.setItem('mock_admin_email', newEmail);
+        if (newPassword) localStorage.setItem('mock_admin_pass', newPassword);
+        if (newName) localStorage.setItem('mock_admin_name', newName);
+
+        const currentEmail = newEmail || localStorage.getItem('mock_admin_email') || 'admin@mintmart.vn';
+        const currentName = newName || localStorage.getItem('mock_admin_name') || 'Quản Trị Viên (Admin)';
+
+        return {
+            success: true,
+            message: 'Cập nhật tài khoản và mật khẩu thành công!',
+            token: 'mock-admin-token-' + Date.now(),
+            user: { id: 1, email: currentEmail, name: currentName, role: 'admin' }
+        };
     }
 
     // K. AUTH REGISTER

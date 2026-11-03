@@ -2011,16 +2011,6 @@ function switchAuthTab(tab) {
     }
 }
 
-// Quick fill for testing
-function fillQuickAuth(role) {
-    if (role === 'admin') {
-        document.getElementById('loginEmail').value = 'admin@mintmart.vn';
-        document.getElementById('loginPassword').value = 'admin123';
-    } else {
-        document.getElementById('loginEmail').value = 'khachhang@gmail.com';
-        document.getElementById('loginPassword').value = '123456';
-    }
-}
 
 // Submit Login
 async function handleLoginSubmit(e) {

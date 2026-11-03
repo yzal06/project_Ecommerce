@@ -3,6 +3,7 @@
  * Đồng bộ tồn kho đa kênh Omnichannel thời gian thực giữa Website, Shopee và Lazada
  */
 
+require('dotenv').config();
 const crypto = require('crypto');
 const { runQuery, getQuery, allQuery } = require('./database');
 
@@ -14,11 +15,20 @@ class MarketplaceService {
     async getSettings() {
         let settings = await getQuery(`SELECT * FROM marketplace_settings WHERE id = 1`);
         if (!settings) {
+            const shopeeEnabled = process.env.SHOPEE_ENABLED !== undefined ? Number(process.env.SHOPEE_ENABLED) : 1;
+            const shopeePartnerId = process.env.SHOPEE_PARTNER_ID || '2005831';
+            const shopeeShopId = process.env.SHOPEE_SHOP_ID || '98273615';
+            const shopeePartnerKey = process.env.SHOPEE_PARTNER_KEY || 'shopee_live_partner_key_prod_89a7f3';
+            const lazadaEnabled = process.env.LAZADA_ENABLED !== undefined ? Number(process.env.LAZADA_ENABLED) : 0;
+            const lazadaAppKey = process.env.LAZADA_APP_KEY || '109283';
+            const lazadaAppSecret = process.env.LAZADA_APP_SECRET || 'lazada_live_app_secret_d49e8a';
+            const lazadaSellerId = process.env.LAZADA_SELLER_ID || 'VN_SELLER_88371';
+
             await runQuery(`
                 INSERT INTO marketplace_settings 
                 (id, shopee_enabled, shopee_partner_id, shopee_shop_id, shopee_partner_key, lazada_enabled, lazada_app_key, lazada_app_secret, lazada_seller_id, sync_on_order)
-                VALUES (1, 1, '2005831', '98273615', 'shopee_live_partner_key_prod_89a7f3', 1, '109283', 'lazada_live_app_secret_d49e8a', 'VN_SELLER_88371', 1)
-            `);
+                VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            `, [shopeeEnabled, shopeePartnerId, shopeeShopId, shopeePartnerKey, lazadaEnabled, lazadaAppKey, lazadaAppSecret, lazadaSellerId]);
             settings = await getQuery(`SELECT * FROM marketplace_settings WHERE id = 1`);
         }
         return settings;
