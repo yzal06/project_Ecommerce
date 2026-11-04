@@ -1,7 +1,11 @@
 {
-  "updated_at": "2026-11-04T04:37:34.332Z",
-  "version": 2,
-  "source": "MintMart Static Cloud Store",
+  "updated_at": "2026-11-04T11:50:33.851Z",
+  "version": 3,
+  "source": "MintMart Official Cloud Store (Cleaned)",
+  "deleted_product_ids": [
+    13,
+    14
+  ],
   "products": [
     {
       "id": 1,
@@ -278,52 +282,6 @@
       "auto_sync_marketplace": 1,
       "shopee_sold_count": 134,
       "lazada_sold_count": 98
-    },
-    {
-      "id": 13,
-      "name": "Cây Bạc Hà Thủy Canh Phong Thủy Mint Garden",
-      "slug": "cay-bac-ha-thuy-canh-phong-thuy-mint-garden-1793360133850",
-      "category_id": 3,
-      "price": 180000,
-      "original_price": 250000,
-      "stock": 50,
-      "image_url": "https://images.unsplash.com/photo-1545241047-6083a3684587?w=800&auto=format&fit=crop&q=80",
-      "badge": "HOT DEAL",
-      "rating": 5,
-      "sold_count": 0,
-      "description": "Cây bạc hà tự nhiên thanh lọc không khí, mang lại hương thơm tươi mát cho bàn làm việc.",
-      "is_active": 1,
-      "created_at": "2026-10-30 11:35:33",
-      "shopee_item_id": "SHP-10016042",
-      "shopee_stock": 50,
-      "lazada_item_id": "LAZ-20056173",
-      "lazada_stock": 50,
-      "auto_sync_marketplace": 1,
-      "shopee_sold_count": 0,
-      "lazada_sold_count": 0
-    },
-    {
-      "id": 14,
-      "name": "Bình Giữ Nhiệt Mint Smart 2026 (Bản Nâng Cấp)",
-      "slug": "bnh-gi-nhit-mint-smart-2026-1793607406737",
-      "category_id": 1,
-      "price": 320000,
-      "original_price": 450000,
-      "stock": 98,
-      "image_url": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&auto=format&fit=crop&q=80",
-      "badge": "SALE SỐC 320K",
-      "rating": 5,
-      "sold_count": 2,
-      "description": "Sản phẩm mới thêm vào cửa hàng để kiểm tra hiển thị phía người dùng, ruột Inox 316 giữ nhiệt 24 giờ cao cấp.",
-      "is_active": 1,
-      "created_at": "2026-11-02 08:16:46",
-      "shopee_item_id": "SHP-7406737",
-      "shopee_stock": 78,
-      "lazada_item_id": "LAZ-7406737",
-      "lazada_stock": 68,
-      "auto_sync_marketplace": 1,
-      "shopee_sold_count": 2,
-      "lazada_sold_count": 2
     }
   ],
   "categories": [
@@ -368,13 +326,6 @@
       "slug": "sach-van-phong",
       "icon": "fa-book-open",
       "description": "Sách kỹ năng, kinh doanh, sổ tay cao cấp"
-    },
-    {
-      "id": 7,
-      "name": "Danh M?c Test",
-      "slug": "danh-mc-test-1793607372793",
-      "icon": "fa-tag",
-      "description": "Test"
     }
   ]
 }

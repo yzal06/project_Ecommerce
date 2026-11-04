@@ -1453,11 +1453,11 @@ async function handleSaveProduct(e) {
     }
 }
 
-// Delete Product
+// Delete Product (Vĩnh viễn & Đồng bộ lên Đám mây)
 function deleteProduct(id, name) {
     Swal.fire({
         title: 'Xóa vĩnh viễn mặt hàng?',
-        html: `Bạn có chắc muốn xóa <strong>"${name}"</strong> khỏi cơ sở dữ liệu? Thao tác này không thể hoàn tác.<br><span class="text-xs text-rose-500 mt-1 block">Mẹo: Nếu chỉ muốn ẩn sản phẩm khỏi web, hãy dùng nút "Gỡ bán".</span>`,
+        html: `Bạn có chắc muốn xóa <strong>"${name}"</strong> khỏi hệ thống? Thao tác này sẽ đồng bộ lên Đám Mây và xóa vĩnh viễn trên mọi thiết bị.<br><span class="text-xs text-rose-500 mt-1 block">Mẹo: Nếu chỉ muốn ẩn sản phẩm khỏi web, hãy dùng nút "Gỡ bán".</span>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#EF4444',
@@ -1467,35 +1467,16 @@ function deleteProduct(id, name) {
     }).then(async (result) => {
         if (result.isConfirmed) {
             try {
+                if (typeof window.recordDeletedProductId === 'function') {
+                    window.recordDeletedProductId(id);
+                }
                 await apiFetch(`/api/products/${id}`, { method: 'DELETE' });
-                showToast('success', 'Đã xóa mặt hàng thành công!');
-                loadAdminProducts();
-                loadDashboardStats();
-            } catch (err) {
-                showToast('error', err.message || 'Lỗi khi xóa sản phẩm');
-            }
-        }
-    });
-}
-
-// Delete Product
-function deleteProduct(id, name) {
-    Swal.fire({
-        title: 'Xóa mặt hàng này?',
-        html: `Bạn có chắc muốn xóa <strong>"${name}"</strong> khỏi cửa hàng? Thao tác này không thể hoàn tác.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#EF4444',
-        cancelButtonColor: '#64748B',
-        confirmButtonText: 'Đồng ý xóa',
-        cancelButtonText: 'Hủy'
-    }).then(async (result) => {
-        if (result.isConfirmed) {
-            try {
-                await apiFetch(`/api/products/${id}`, { method: 'DELETE' });
-                showToast('success', 'Đã xóa mặt hàng thành công!');
-                loadAdminProducts();
-                loadDashboardStats();
+                if (typeof window.syncToCloud === 'function') {
+                    await window.syncToCloud();
+                }
+                showToast('success', 'Đã xóa mặt hàng thành công và đồng bộ vĩnh viễn lên Đám Mây!');
+                await loadAdminProducts();
+                if (typeof loadDashboardStats === 'function') loadDashboardStats();
             } catch (err) {
                 showToast('error', err.message || 'Lỗi khi xóa sản phẩm');
             }

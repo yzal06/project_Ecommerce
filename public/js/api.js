@@ -12,8 +12,38 @@ const USER_KEY = 'mintmart_user';
 const CART_KEY = 'mintmart_cart';
 const MOCK_PRODUCTS_KEY = 'mintmart_mock_products_v2';
 const MOCK_CATEGORIES_KEY = 'mintmart_mock_categories_v2';
+const MOCK_DELETED_PRODUCTS_KEY = 'mintmart_deleted_products_v2';
+const MOCK_DELETED_CATEGORIES_KEY = 'mintmart_deleted_categories_v2';
 const MOCK_ORDERS_KEY = 'mintmart_mock_orders_v2';
 const MOCK_LOGS_KEY = 'mintmart_mock_logs_v2';
+
+// Danh sách sản phẩm đã bị xóa vĩnh viễn (Tombstones - Ngăn sản phẩm cũ hồi sinh)
+function getDeletedProductIds() {
+    try {
+        const stored = localStorage.getItem(MOCK_DELETED_PRODUCTS_KEY);
+        const list = stored ? JSON.parse(stored) : [];
+        // Mặc định luôn ghi nhớ các ID sản phẩm demo/test đã xóa vĩnh viễn (id: 13, 14)
+        if (!list.includes(13)) list.push(13);
+        if (!list.includes(14)) list.push(14);
+        return list;
+    } catch (e) {
+        return [13, 14];
+    }
+}
+
+function recordDeletedProductId(id) {
+    try {
+        const list = getDeletedProductIds();
+        const numId = Number(id);
+        if (!list.includes(numId)) {
+            list.push(numId);
+            localStorage.setItem(MOCK_DELETED_PRODUCTS_KEY, JSON.stringify(list));
+        }
+        return list;
+    } catch (e) {
+        return [13, 14];
+    }
+}
 
 // Cấu hình Đồng Bộ Đám Mây Đa Thiết Bị (Cross-Device Cloud Sync)
 // Đảm bảo khi Admin sửa/thêm/xóa sản phẩm trên máy tính, tất cả các máy khác (điện thoại, máy tính khác)
@@ -36,15 +66,14 @@ function getCloudStorageUrl() {
     }
 }
 
-// 1. Initial Seed Data for Static / GitHub Pages Mode (Dữ liệu 14 sản phẩm thực tế)
+// 1. Initial Seed Data for Static / GitHub Pages Mode (12 sản phẩm chuẩn chính hãng)
 const SEED_CATEGORIES = [
-    { id: 1, name: 'Công nghệ & Điện tử', slug: 'cong-nghe-dien-tu', icon: 'fa-laptop', description: 'Điện thoại, laptop, tai nghe và phụ kiện chính hãng', product_count: 5 },
+    { id: 1, name: 'Công nghệ & Điện tử', slug: 'cong-nghe-dien-tu', icon: 'fa-laptop', description: 'Điện thoại, laptop, tai nghe và phụ kiện chính hãng', product_count: 4 },
     { id: 2, name: 'Thời trang & Phụ kiện', slug: 'thoi-trang', icon: 'fa-shirt', description: 'Trang phục thời trang nam nữ, túi xách, đồng hồ', product_count: 2 },
-    { id: 3, name: 'Nhà cửa & Đời sống', slug: 'nha-cua-doi-song', icon: 'fa-couch', description: 'Nội thất, đèn ngủ, thiết bị gia dụng tiện ích', product_count: 3 },
+    { id: 3, name: 'Nhà cửa & Đời sống', slug: 'nha-cua-doi-song', icon: 'fa-couch', description: 'Nội thất, đèn ngủ, thiết bị gia dụng tiện ích', product_count: 2 },
     { id: 4, name: 'Làm đẹp & Sức khỏe', slug: 'lam-dep-suc-khoe', icon: 'fa-spa', description: 'Mỹ phẩm hữu cơ, kem dưỡng da, nước hoa tự nhiên', product_count: 1 },
     { id: 5, name: 'Đồ gia dụng thông minh', slug: 'do-gia-dung', icon: 'fa-blender', description: 'Nồi chiên không dầu, robot hút bụi, máy xay sinh tố', product_count: 2 },
-    { id: 6, name: 'Sách & Văn phòng phẩm', slug: 'sach-van-phong', icon: 'fa-book-open', description: 'Sách kỹ năng, kinh doanh, sổ tay cao cấp', product_count: 1 },
-    { id: 7, name: 'Danh Mục Mới', slug: 'danh-muc-moi', icon: 'fa-tag', description: 'Danh mục sản phẩm mở rộng', product_count: 0 }
+    { id: 6, name: 'Sách & Văn phòng phẩm', slug: 'sach-van-phong', icon: 'fa-book-open', description: 'Sách kỹ năng, kinh doanh, sổ tay cao cấp', product_count: 1 }
 ];
 
 const SEED_PRODUCTS = [
@@ -299,48 +328,6 @@ const SEED_PRODUCTS = [
         lazada_item_id: 'LAZ-20051852',
         lazada_stock: 28,
         auto_sync_marketplace: 1
-    },
-    {
-        id: 13,
-        name: 'Cây Bạc Hà Thủy Canh Phong Thủy Mint Garden',
-        slug: 'cay-bac-ha-thuy-canh-phong-thuy-mint-garden',
-        category_id: 3,
-        category_name: 'Nhà cửa & Đời sống',
-        price: 180000,
-        original_price: 250000,
-        stock: 50,
-        image_url: 'https://images.unsplash.com/photo-1545241047-6083a3684587?w=800&auto=format&fit=crop&q=80',
-        badge: 'HOT DEAL',
-        rating: 5.0,
-        sold_count: 0,
-        description: 'Cây bạc hà tự nhiên thanh lọc không khí, mang lại hương thơm tươi mát cho bàn làm việc.',
-        is_active: 1,
-        shopee_item_id: 'SHP-10016042',
-        shopee_stock: 50,
-        lazada_item_id: 'LAZ-20056173',
-        lazada_stock: 50,
-        auto_sync_marketplace: 1
-    },
-    {
-        id: 14,
-        name: 'Bình Giữ Nhiệt Mint Smart 2026 (Bản Nâng Cấp)',
-        slug: 'binh-giu-nhiet-mint-smart-2026',
-        category_id: 1,
-        category_name: 'Công nghệ & Điện tử',
-        price: 320000,
-        original_price: 450000,
-        stock: 98,
-        image_url: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&auto=format&fit=crop&q=80',
-        badge: 'SALE SỐC 320K',
-        rating: 5.0,
-        sold_count: 2,
-        description: 'Sản phẩm mới thêm vào cửa hàng để kiểm tra hiển thị phía người dùng, ruột Inox 316 giữ nhiệt 24 giờ cao cấp.',
-        is_active: 1,
-        shopee_item_id: 'SHP-7406737',
-        shopee_stock: 78,
-        lazada_item_id: 'LAZ-7406737',
-        lazada_stock: 68,
-        auto_sync_marketplace: 1
     }
 ];
 
@@ -377,18 +364,31 @@ const SEED_ORDERS = [
 
 // Helper to access LocalStorage Mock DB
 function getMockProducts() {
+    const deletedIds = getDeletedProductIds();
+    let prods = [];
     try {
         const stored = localStorage.getItem(MOCK_PRODUCTS_KEY);
-        if (stored) return JSON.parse(stored);
-    } catch (e) {}
-    localStorage.setItem(MOCK_PRODUCTS_KEY, JSON.stringify(SEED_PRODUCTS));
-    return SEED_PRODUCTS;
+        if (stored) {
+            prods = JSON.parse(stored);
+        } else {
+            prods = [...SEED_PRODUCTS];
+        }
+    } catch (e) {
+        prods = [...SEED_PRODUCTS];
+    }
+
+    // Lọc bỏ vĩnh viễn các sản phẩm đã xóa hoặc có thuộc tính is_deleted / deleted
+    const cleanProds = prods.filter(p => p && !deletedIds.includes(Number(p.id)) && !p.is_deleted && p.deleted !== true);
+    localStorage.setItem(MOCK_PRODUCTS_KEY, JSON.stringify(cleanProds));
+    return cleanProds;
 }
 
 function saveMockProducts(prods) {
-    localStorage.setItem(MOCK_PRODUCTS_KEY, JSON.stringify(prods));
+    const deletedIds = getDeletedProductIds();
+    const cleanProds = prods.filter(p => p && !deletedIds.includes(Number(p.id)) && !p.is_deleted && p.deleted !== true);
+    localStorage.setItem(MOCK_PRODUCTS_KEY, JSON.stringify(cleanProds));
     // Tự động đồng bộ lên Đám Mây để các máy khác cập nhật ngay lập tức
-    syncToCloud({ products: prods });
+    syncToCloud({ products: cleanProds });
     if (typeof resetCloudCountdown === 'function') resetCloudCountdown(30);
 }
 
@@ -442,21 +442,34 @@ async function syncFromCloud(force = false) {
             } catch (staticErr) {}
         }
 
-        if (data && Array.isArray(data.products) && data.products.length > 0) {
-            const localProducts = localStorage.getItem(MOCK_PRODUCTS_KEY);
-            const cloudProductsStr = JSON.stringify(data.products);
-
-            if (force || !localProducts || localProducts !== cloudProductsStr) {
-                localStorage.setItem(MOCK_PRODUCTS_KEY, cloudProductsStr);
-                if (Array.isArray(data.categories) && data.categories.length > 0) {
-                    localStorage.setItem(MOCK_CATEGORIES_KEY, JSON.stringify(data.categories));
-                }
-                const syncTime = data.updated_at || new Date().toISOString();
-                localStorage.setItem('mintmart_last_cloud_sync', syncTime);
-                console.log(`[Cloud Sync] Đã đồng bộ thành công ${data.products.length} sản phẩm từ Đám Mây liên thiết bị!`);
-                window.dispatchEvent(new CustomEvent('mintmart-cloud-synced', { detail: data }));
+        if (data) {
+            // Đồng bộ danh sách các ID sản phẩm đã xóa vĩnh viễn (Tombstones)
+            if (Array.isArray(data.deleted_product_ids)) {
+                data.deleted_product_ids.forEach(delId => recordDeletedProductId(delId));
             }
-            return data;
+            const activeDeletedIds = getDeletedProductIds();
+
+            if (Array.isArray(data.products)) {
+                // Lọc bỏ ngay lập tức bất kỳ sản phẩm nào có ID trong danh sách đã xóa hoặc có cờ is_deleted
+                const cleanCloudProducts = data.products.filter(p => 
+                    p && !activeDeletedIds.includes(Number(p.id)) && !p.is_deleted && p.deleted !== true
+                );
+
+                const localProducts = localStorage.getItem(MOCK_PRODUCTS_KEY);
+                const cloudProductsStr = JSON.stringify(cleanCloudProducts);
+
+                if (force || !localProducts || localProducts !== cloudProductsStr) {
+                    localStorage.setItem(MOCK_PRODUCTS_KEY, cloudProductsStr);
+                    if (Array.isArray(data.categories) && data.categories.length > 0) {
+                        localStorage.setItem(MOCK_CATEGORIES_KEY, JSON.stringify(data.categories));
+                    }
+                    const syncTime = data.updated_at || new Date().toISOString();
+                    localStorage.setItem('mintmart_last_cloud_sync', syncTime);
+                    console.log(`[Cloud Sync] Đã đồng bộ thành công ${cleanCloudProducts.length} sản phẩm từ Đám Mây liên thiết bị!`);
+                    window.dispatchEvent(new CustomEvent('mintmart-cloud-synced', { detail: { ...data, products: cleanCloudProducts } }));
+                }
+                return { ...data, products: cleanCloudProducts };
+            }
         }
     } catch (err) {
         console.warn('[Cloud Sync Fetch Error]:', err.message);
@@ -474,13 +487,16 @@ async function syncToCloud(partialData = {}) {
         if (isSyncingToCloud) return;
         isSyncingToCloud = true;
 
-        const prods = partialData.products || getMockProducts();
+        const deletedIds = getDeletedProductIds();
+        const rawProds = partialData.products || getMockProducts();
+        const prods = rawProds.filter(p => p && !deletedIds.includes(Number(p.id)) && !p.is_deleted && p.deleted !== true);
         const cats = partialData.categories || getMockCategories();
 
         const payload = {
             updated_at: new Date().toISOString(),
-            version: 2,
+            version: 3,
             source: 'MintMart Live Sync (Auto 30s)',
+            deleted_product_ids: deletedIds,
             products: prods,
             categories: cats
         };
@@ -499,8 +515,8 @@ async function syncToCloud(partialData = {}) {
         if (res.ok) {
             const syncTime = payload.updated_at;
             localStorage.setItem('mintmart_last_cloud_sync', syncTime);
-            console.log('[Cloud Sync] Đã cập nhật lên đám mây thành công! Mọi máy tính khác sẽ nhận được dữ liệu.');
-            window.dispatchEvent(new CustomEvent('mintmart-cloud-saved', { detail: { syncTime } }));
+            console.log(`[Cloud Sync] Đã lưu ${prods.length} sản phẩm lên Đám Mây thành công! (Đã loại trừ ${deletedIds.length} ID đã xóa)`);
+            window.dispatchEvent(new CustomEvent('mintmart-cloud-saved', { detail: { syncTime, count: prods.length } }));
         } else {
             console.warn('[Cloud Sync Save] Máy chủ báo mã:', res.status);
         }
@@ -562,6 +578,8 @@ if (typeof window !== 'undefined') {
     window.run30sCloudCycle = run30sCloudCycle;
     window.resetCloudCountdown = resetCloudCountdown;
     window.getCloudStorageUrl = getCloudStorageUrl;
+    window.getDeletedProductIds = getDeletedProductIds;
+    window.recordDeletedProductId = recordDeletedProductId;
 }
 
 function getMockCategories() {
@@ -865,9 +883,11 @@ async function handleMockApi(endpoint, options = {}) {
     // H. DELETE PRODUCT (ADMIN)
     if (prodMatch && method === 'DELETE') {
         const id = parseInt(prodMatch[1], 10);
+        recordDeletedProductId(id);
         let prods = getMockProducts();
-        prods = prods.filter(p => p.id !== id);
+        prods = prods.filter(p => Number(p.id) !== id);
         saveMockProducts(prods);
+        await syncToCloud({ products: prods });
         return { success: true, message: 'Đã xóa sản phẩm thành công!' };
     }
 
