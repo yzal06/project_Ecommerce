@@ -2179,19 +2179,25 @@ async function triggerSyncAllMarketplaces() {
    ======================================================== */
 
 async function handleManualCloudSync() {
-    const btn = document.getElementById('cloudSyncBtn');
     const icon = document.getElementById('cloudSyncIcon');
     const label = document.getElementById('cloudSyncLabel');
+    const badge = document.getElementById('cloudSyncCountdownBadge');
 
     if (icon) icon.className = 'fa-solid fa-arrows-rotate fa-spin text-sky-600';
     if (label) label.textContent = 'Đang đồng bộ...';
+    if (badge) badge.textContent = 'Đồng bộ';
 
     try {
-        showToast('info', 'Đang kết nối Đám Mây để tải dữ liệu mới nhất...');
-        if (typeof window.syncFromCloud === 'function') {
-            await window.syncFromCloud(true);
+        showToast('info', 'Đang đẩy dữ liệu lên Đám Mây và đồng bộ 2 chiều...');
+        if (typeof window.run30sCloudCycle === 'function') {
+            await window.run30sCloudCycle();
         } else {
-            await apiFetch('/api/cloud-sync/pull', { method: 'POST' });
+            if (typeof window.syncToCloud === 'function') await window.syncToCloud();
+            if (typeof window.syncFromCloud === 'function') await window.syncFromCloud(true);
+        }
+
+        if (typeof window.resetCloudCountdown === 'function') {
+            window.resetCloudCountdown(30);
         }
 
         await loadAdminProducts();
@@ -2199,8 +2205,8 @@ async function handleManualCloudSync() {
         renderAdminCategories();
         if (typeof loadDashboardStats === 'function') loadDashboardStats();
 
-        updateCloudSyncUI('Đám mây: Đã đồng bộ');
-        showToast('success', 'Đã đồng bộ dữ liệu đám mây thành công! Tất cả thay đổi từ các máy khác đã được cập nhật.');
+        updateCloudSyncUI('Đám mây: Đã lưu');
+        showToast('success', 'Đã cập nhật lên đám mây thành công! Mọi thay đổi từ các máy tính khác đã được đồng bộ.');
     } catch (err) {
         console.error('Lỗi đồng bộ đám mây:', err);
         updateCloudSyncUI('Đám mây: Lỗi kết nối');
@@ -2215,10 +2221,58 @@ function updateCloudSyncUI(text) {
     if (label) {
         const lastSync = localStorage.getItem('mintmart_last_cloud_sync');
         if (lastSync) {
-            const timeStr = new Date(lastSync).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const timeStr = new Date(lastSync).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             label.textContent = `${text} (${timeStr})`;
         } else {
             label.textContent = text;
+        }
+    }
+}
+
+async function handleConfigureCloudUrl() {
+    const currentUrl = typeof getCloudStorageUrl === 'function' ? getCloudStorageUrl() : DEFAULT_CLOUD_URL;
+    const { value: newUrl, isDenied } = await Swal.fire({
+        title: 'Cài Đặt Máy Chủ Đám Mây (Cloud Sync)',
+        html: `
+            <div class="text-left text-xs space-y-2 text-slate-600 mb-3">
+                <p>Hệ thống tự động cập nhật 2 chiều lên Cloud <strong>mỗi 30 giây</strong> để đảm bảo mọi thiết bị (PC, điện thoại) luôn có dữ liệu mới nhất.</p>
+                <div class="text-[11px] text-emerald-800 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 space-y-1">
+                    <p><i class="fa-solid fa-circle-check mr-1 text-emerald-600"></i> Máy chủ mặc định: <strong>api.npoint.io</strong> (Hỗ trợ CORS 100%).</p>
+                    <p><i class="fa-solid fa-shield-halved mr-1 text-emerald-600"></i> Chu kỳ cập nhật: <strong>Tự động 30 giây / lần</strong>.</p>
+                </div>
+            </div>
+            <input id="swalCloudUrlInput" class="swal2-input text-xs" placeholder="URL Cloud Storage" value="${currentUrl}">
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Lưu Cài Đặt',
+        cancelButtonText: 'Đóng',
+        confirmButtonColor: '#10B981',
+        showDenyButton: true,
+        denyButtonText: 'Khôi Phục Mặc Định',
+        denyButtonColor: '#64748B',
+        preConfirm: () => {
+            const input = document.getElementById('swalCloudUrlInput');
+            return input ? input.value.trim() : null;
+        }
+    });
+
+    if (isDenied) {
+        localStorage.removeItem('mintmart_cloud_storage_url');
+        showToast('info', 'Đã đặt lại URL đám mây về mặc định!');
+        if (typeof window.run30sCloudCycle === 'function') window.run30sCloudCycle();
+        return;
+    }
+
+    if (newUrl !== undefined && newUrl !== null) {
+        if (newUrl === '') {
+            localStorage.removeItem('mintmart_cloud_storage_url');
+            showToast('info', 'Đã đặt lại URL đám mây về mặc định!');
+        } else {
+            localStorage.setItem('mintmart_cloud_storage_url', newUrl);
+            showToast('success', 'Đã lưu cấu hình máy chủ đám mây mới!');
+        }
+        if (typeof window.run30sCloudCycle === 'function') {
+            window.run30sCloudCycle();
         }
     }
 }
@@ -2312,8 +2366,41 @@ window.addEventListener('mintmart-cloud-saved', (e) => {
     updateCloudSyncUI('Đám mây: Đã lưu');
 });
 
+// Lắng nghe nhịp đếm ngược 30s (Countdown Ticker)
+window.addEventListener('mintmart-cloud-tick', (e) => {
+    const badge = document.getElementById('cloudSyncCountdownBadge');
+    if (badge) {
+        badge.textContent = `${e.detail.countdown}s`;
+    }
+});
+
+// Bắt đầu chu kỳ đồng bộ 30s
+window.addEventListener('mintmart-cloud-sync-start', () => {
+    const icon = document.getElementById('cloudSyncIcon');
+    const label = document.getElementById('cloudSyncLabel');
+    const badge = document.getElementById('cloudSyncCountdownBadge');
+    if (icon) icon.className = 'fa-solid fa-arrows-rotate fa-spin text-sky-600';
+    if (label) label.textContent = 'Đang đồng bộ...';
+    if (badge) {
+        badge.textContent = 'Lưu...';
+        badge.className = 'px-1.5 py-0.5 text-[10px] font-mono font-black bg-amber-200 text-amber-800 rounded-md';
+    }
+});
+
+// Hoàn tất chu kỳ đồng bộ 30s
+window.addEventListener('mintmart-cloud-cycle-complete', (e) => {
+    const icon = document.getElementById('cloudSyncIcon');
+    const label = document.getElementById('cloudSyncLabel');
+    const badge = document.getElementById('cloudSyncCountdownBadge');
+    if (icon) icon.className = 'fa-solid fa-cloud text-sky-600';
+    if (badge) {
+        badge.className = 'px-1.5 py-0.5 text-[10px] font-mono font-black bg-sky-200 text-sky-800 rounded-md';
+    }
+    updateCloudSyncUI('Đám mây: Đã lưu');
+});
+
 // Cập nhật trạng thái đám mây khi khởi tạo admin
 document.addEventListener('DOMContentLoaded', () => {
-    updateCloudSyncUI('Đám mây: Đã kết nối');
+    updateCloudSyncUI('Đám mây: Tự động 30s');
 });
 

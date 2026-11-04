@@ -206,11 +206,21 @@
                 </div>
 
                 <div class="flex items-center space-x-2 sm:space-x-3">
-                    <!-- NÚT TRẠNG THÁI & ĐỒNG BỘ ĐÁM MÂY ĐA THIẾT BỊ -->
-                    <button id="cloudSyncBtn" onclick="handleManualCloudSync()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition shadow-sm" title="Dữ liệu đồng bộ đám mây liên máy tính - Bấm để tải lại">
-                        <i class="fa-solid fa-cloud text-sky-600" id="cloudSyncIcon"></i>
-                        <span id="cloudSyncLabel" class="hidden sm:inline">Đám mây: Đã đồng bộ</span>
-                    </button>
+                    <!-- NÚT TRẠNG THÁI & ĐỒNG BỘ ĐÁM MÂY ĐA THIẾT BỊ (TỰ ĐỘNG 30S) -->
+                    <div class="flex items-center space-x-1">
+                        <button id="cloudSyncBtn" onclick="handleManualCloudSync()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition shadow-sm" title="Tự động đồng bộ 2 chiều lên & xuống Đám Mây mỗi 30s. Bấm để đẩy và tải dữ liệu ngay!">
+                            <span class="relative flex h-2 w-2 mr-0.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                            </span>
+                            <i class="fa-solid fa-cloud text-sky-600" id="cloudSyncIcon"></i>
+                            <span id="cloudSyncLabel" class="hidden sm:inline">Đám mây: Tự động (30s)</span>
+                            <span id="cloudSyncCountdownBadge" class="px-1.5 py-0.5 text-[10px] font-mono font-black bg-sky-200 text-sky-800 rounded-md">30s</span>
+                        </button>
+                        <button onclick="handleConfigureCloudUrl()" class="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-sky-600 border border-slate-200 rounded-xl text-xs transition" title="Cài đặt máy chủ Cloud Sync">
+                            <i class="fa-solid fa-gear text-[11px]"></i>
+                        </button>
+                    </div>
 
                     <!-- LOA THÔNG BÁO BẠN CÓ ĐƠN HÀNG (QUYỀN ADMIN) -->
                     <div class="flex items-center space-x-1">
@@ -584,9 +594,9 @@
 
                         <!-- Cloud Sync Actions & Add Product -->
                         <div class="flex items-center space-x-2 w-full sm:w-auto">
-                            <!-- Nút Đồng Bộ Đám Mây -->
-                            <button onclick="handleManualCloudSync()" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-bold px-3 py-2.5 rounded-xl transition flex items-center shadow-sm" title="Tải dữ liệu mới nhất từ đám mây (các máy tính khác đã lưu)">
-                                <i class="fa-solid fa-cloud-arrow-down mr-1.5 text-sky-600"></i>
+                            <!-- Nút Đồng Bộ Đám Mây (2 Chiều) -->
+                            <button onclick="handleManualCloudSync()" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-bold px-3 py-2.5 rounded-xl transition flex items-center shadow-sm" title="Đồng bộ 2 chiều: Đẩy dữ liệu lên Cloud và tải về các thay đổi mới (Tự động mỗi 30s)">
+                                <i class="fa-solid fa-cloud-arrow-up mr-1.5 text-sky-600"></i>
                                 <span class="hidden md:inline">Đồng Bộ Đám Mây</span>
                                 <span class="md:hidden">Đồng bộ</span>
                             </button>

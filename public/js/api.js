@@ -19,11 +19,18 @@ const MOCK_LOGS_KEY = 'mintmart_mock_logs_v2';
 // Đảm bảo khi Admin sửa/thêm/xóa sản phẩm trên máy tính, tất cả các máy khác (điện thoại, máy tính khác)
 // và sang ngày hôm sau dữ liệu vẫn được lưu trữ vĩnh viễn, không bị mất và không quay về demo data!
 const CLOUD_STORAGE_URL_KEY = 'mintmart_cloud_storage_url';
-const DEFAULT_CLOUD_URL = 'https://extendsclass.com/api/json-storage/bin/fcebebc';
+const DEFAULT_CLOUD_URL = 'https://api.npoint.io/5d9be062d0b238760026';
+const STATIC_FALLBACK_URL = 'data/cloud-store.json';
 
 function getCloudStorageUrl() {
     try {
-        return localStorage.getItem(CLOUD_STORAGE_URL_KEY) || DEFAULT_CLOUD_URL;
+        const stored = localStorage.getItem(CLOUD_STORAGE_URL_KEY);
+        // Tự động chuyển đổi sang máy chủ npoint có CORS 100% nếu máy còn lưu cache url cũ
+        if (stored && !stored.includes('extendsclass.com')) {
+            return stored;
+        }
+        localStorage.setItem(CLOUD_STORAGE_URL_KEY, DEFAULT_CLOUD_URL);
+        return DEFAULT_CLOUD_URL;
     } catch (e) {
         return DEFAULT_CLOUD_URL;
     }
@@ -382,13 +389,17 @@ function saveMockProducts(prods) {
     localStorage.setItem(MOCK_PRODUCTS_KEY, JSON.stringify(prods));
     // Tự động đồng bộ lên Đám Mây để các máy khác cập nhật ngay lập tức
     syncToCloud({ products: prods });
+    if (typeof resetCloudCountdown === 'function') resetCloudCountdown(30);
 }
 
 // ========================================================
 // HỆ THỐNG ĐỒNG BỘ ĐÁM MÂY (CROSS-DEVICE CLOUD SYNC)
 // ========================================================
 let isSyncingFromCloud = false;
+let isSyncingToCloud = false;
 let pendingCloudSyncTimeout = null;
+let cloudSyncCountdown = 30;
+let cloudCountdownInterval = null;
 
 async function syncFromCloud(force = false) {
     if (isSyncingFromCloud) return null;
@@ -396,20 +407,41 @@ async function syncFromCloud(force = false) {
 
     try {
         const cloudUrl = getCloudStorageUrl();
-        if (!cloudUrl) return null;
+        let data = null;
 
-        const res = await fetch(cloudUrl, {
-            method: 'GET',
-            cache: 'no-cache',
-            headers: { 'Accept': 'application/json' }
-        });
+        // 1. Thử tải dữ liệu từ máy chủ đám mây chính
+        if (cloudUrl) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
+                const res = await fetch(cloudUrl, {
+                    method: 'GET',
+                    cache: 'no-cache',
+                    headers: { 'Accept': 'application/json' },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
 
-        if (!res.ok) {
-            console.warn('[Cloud Sync] Không thể kết nối Cloud Storage, mã lỗi:', res.status);
-            return null;
+                if (res.ok) {
+                    data = await res.json();
+                } else {
+                    console.warn('[Cloud Sync] Máy chủ trả về mã:', res.status);
+                }
+            } catch (fetchErr) {
+                console.warn('[Cloud Sync Fetch Error]:', fetchErr.message);
+            }
         }
 
-        const data = await res.json();
+        // 2. Dự phòng: nếu máy chủ đám mây không tải được, thử tải dữ liệu tĩnh data/cloud-store.json (luôn có trên GitHub Pages)
+        if (!data || !Array.isArray(data.products) || data.products.length === 0) {
+            try {
+                const staticRes = await fetch(STATIC_FALLBACK_URL, { cache: 'no-cache' });
+                if (staticRes.ok) {
+                    data = await staticRes.json();
+                }
+            } catch (staticErr) {}
+        }
+
         if (data && Array.isArray(data.products) && data.products.length > 0) {
             const localProducts = localStorage.getItem(MOCK_PRODUCTS_KEY);
             const cloudProductsStr = JSON.stringify(data.products);
@@ -439,54 +471,97 @@ async function syncToCloud(partialData = {}) {
         const cloudUrl = getCloudStorageUrl();
         if (!cloudUrl) return;
 
-        if (pendingCloudSyncTimeout) clearTimeout(pendingCloudSyncTimeout);
+        if (isSyncingToCloud) return;
+        isSyncingToCloud = true;
 
-        pendingCloudSyncTimeout = setTimeout(async () => {
-            try {
-                const prods = partialData.products || getMockProducts();
-                const cats = partialData.categories || getMockCategories();
+        const prods = partialData.products || getMockProducts();
+        const cats = partialData.categories || getMockCategories();
 
-                const payload = {
-                    updated_at: new Date().toISOString(),
-                    version: 2,
-                    source: 'MintMart Admin Live Sync',
-                    products: prods,
-                    categories: cats
-                };
+        const payload = {
+            updated_at: new Date().toISOString(),
+            version: 2,
+            source: 'MintMart Live Sync (Auto 30s)',
+            products: prods,
+            categories: cats
+        };
 
-                const res = await fetch(cloudUrl, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
 
-                if (res.ok) {
-                    const syncTime = payload.updated_at;
-                    localStorage.setItem('mintmart_last_cloud_sync', syncTime);
-                    console.log('[Cloud Sync] Đã lưu và đồng bộ lên đám mây thành công! Mọi máy tính khác sẽ nhận được dữ liệu.');
-                    window.dispatchEvent(new CustomEvent('mintmart-cloud-saved', { detail: { syncTime } }));
-                } else {
-                    console.warn('[Cloud Sync Save] Cloud báo mã:', res.status);
-                }
-            } catch (saveErr) {
-                console.warn('[Cloud Sync Save Exception]:', saveErr);
-            }
-        }, 150);
-    } catch (e) {
-        console.warn('[Cloud Sync Exception]:', e);
+        const res = await fetch(cloudUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+            const syncTime = payload.updated_at;
+            localStorage.setItem('mintmart_last_cloud_sync', syncTime);
+            console.log('[Cloud Sync] Đã cập nhật lên đám mây thành công! Mọi máy tính khác sẽ nhận được dữ liệu.');
+            window.dispatchEvent(new CustomEvent('mintmart-cloud-saved', { detail: { syncTime } }));
+        } else {
+            console.warn('[Cloud Sync Save] Máy chủ báo mã:', res.status);
+        }
+    } catch (saveErr) {
+        console.warn('[Cloud Sync Save Exception]:', saveErr.message);
+    } finally {
+        isSyncingToCloud = false;
     }
+}
+
+// Chu kỳ tự động đồng bộ 2 chiều lên & xuống Đám Mây (Chu kỳ 30s)
+async function run30sCloudCycle() {
+    try {
+        window.dispatchEvent(new CustomEvent('mintmart-cloud-sync-start'));
+        // 1. Đẩy các thay đổi cục bộ hiện tại lên đám mây
+        await syncToCloud();
+        // 2. Kéo các thay đổi mới nhất từ các máy tính khác về
+        await syncFromCloud();
+        const now = new Date().toISOString();
+        window.dispatchEvent(new CustomEvent('mintmart-cloud-cycle-complete', {
+            detail: { timestamp: now }
+        }));
+    } catch (e) {
+        console.warn('[Cloud 30s Cycle Exception]:', e);
+    }
+}
+
+function resetCloudCountdown(seconds = 30) {
+    cloudSyncCountdown = seconds;
 }
 
 // Tự động khởi chạy đồng bộ nền với Đám Mây khi chạy trang web
 if (typeof window !== 'undefined') {
+    // Tải dữ liệu ban đầu
     setTimeout(() => {
         syncFromCloud().catch(() => {});
-    }, 120);
+    }, 200);
 
-    // Chu kỳ tự động kiểm tra đồng bộ giữa các máy (mỗi 30s)
-    setInterval(() => {
-        syncFromCloud().catch(() => {});
-    }, 30000);
+    // Ticker mỗi 1 giây: đếm ngược 30s và thực hiện đồng bộ 2 chiều khi hết giờ
+    if (cloudCountdownInterval) clearInterval(cloudCountdownInterval);
+    cloudCountdownInterval = setInterval(() => {
+        cloudSyncCountdown--;
+        if (cloudSyncCountdown <= 0) {
+            cloudSyncCountdown = 30;
+            run30sCloudCycle().catch(() => {});
+        }
+        window.dispatchEvent(new CustomEvent('mintmart-cloud-tick', {
+            detail: {
+                countdown: cloudSyncCountdown,
+                total: 30,
+                lastSync: localStorage.getItem('mintmart_last_cloud_sync')
+            }
+        }));
+    }, 1000);
+
+    // Export ra window để sử dụng toàn cục
+    window.syncFromCloud = syncFromCloud;
+    window.syncToCloud = syncToCloud;
+    window.run30sCloudCycle = run30sCloudCycle;
+    window.resetCloudCountdown = resetCloudCountdown;
+    window.getCloudStorageUrl = getCloudStorageUrl;
 }
 
 function getMockCategories() {
