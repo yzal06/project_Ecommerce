@@ -206,6 +206,12 @@
                 </div>
 
                 <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- NÚT TRẠNG THÁI & ĐỒNG BỘ ĐÁM MÂY ĐA THIẾT BỊ -->
+                    <button id="cloudSyncBtn" onclick="handleManualCloudSync()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition shadow-sm" title="Dữ liệu đồng bộ đám mây liên máy tính - Bấm để tải lại">
+                        <i class="fa-solid fa-cloud text-sky-600" id="cloudSyncIcon"></i>
+                        <span id="cloudSyncLabel" class="hidden sm:inline">Đám mây: Đã đồng bộ</span>
+                    </button>
+
                     <!-- LOA THÔNG BÁO BẠN CÓ ĐƠN HÀNG (QUYỀN ADMIN) -->
                     <div class="flex items-center space-x-1">
                         <button id="speakerToggleBtn" onclick="toggleSpeakerSound()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition shadow-sm" title="Bật/Tắt loa phát thanh thông báo đơn hàng">
@@ -576,10 +582,33 @@
                             </select>
                         </div>
 
-                        <!-- Add Product Button (High-visibility for phone and PC) -->
-                        <button onclick="openProductModal()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center justify-center">
-                            <i class="fa-solid fa-plus mr-1.5"></i> Thêm Mặt Hàng Mới
-                        </button>
+                        <!-- Cloud Sync Actions & Add Product -->
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <!-- Nút Đồng Bộ Đám Mây -->
+                            <button onclick="handleManualCloudSync()" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-bold px-3 py-2.5 rounded-xl transition flex items-center shadow-sm" title="Tải dữ liệu mới nhất từ đám mây (các máy tính khác đã lưu)">
+                                <i class="fa-solid fa-cloud-arrow-down mr-1.5 text-sky-600"></i>
+                                <span class="hidden md:inline">Đồng Bộ Đám Mây</span>
+                                <span class="md:hidden">Đồng bộ</span>
+                            </button>
+
+                            <!-- Nút Sao Lưu JSON -->
+                            <button onclick="handleExportBackup()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2.5 rounded-xl transition flex items-center shadow-sm" title="Tải file dự phòng JSON về máy">
+                                <i class="fa-solid fa-file-export mr-1.5 text-slate-500"></i>
+                                <span class="hidden md:inline">Sao Lưu</span>
+                            </button>
+
+                            <!-- Nút Khôi Phục JSON -->
+                            <label class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2.5 rounded-xl transition flex items-center shadow-sm cursor-pointer" title="Nạp file dự phòng JSON vào hệ thống">
+                                <i class="fa-solid fa-file-import mr-1.5 text-slate-500"></i>
+                                <span class="hidden md:inline">Khôi Phục</span>
+                                <input type="file" id="backupFileInput" accept=".json" class="hidden" onchange="handleImportBackup(event)">
+                            </label>
+
+                            <!-- Add Product Button (High-visibility for phone and PC) -->
+                            <button onclick="openProductModal()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center justify-center">
+                                <i class="fa-solid fa-plus mr-1.5"></i> Thêm Mặt Hàng Mới
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Mobile Products Cards View (Visible on Mobile Only) -->

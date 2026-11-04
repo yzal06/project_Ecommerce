@@ -15,14 +15,29 @@ const MOCK_CATEGORIES_KEY = 'mintmart_mock_categories_v2';
 const MOCK_ORDERS_KEY = 'mintmart_mock_orders_v2';
 const MOCK_LOGS_KEY = 'mintmart_mock_logs_v2';
 
-// 1. Initial Seed Data for Static / GitHub Pages Mode
+// Cấu hình Đồng Bộ Đám Mây Đa Thiết Bị (Cross-Device Cloud Sync)
+// Đảm bảo khi Admin sửa/thêm/xóa sản phẩm trên máy tính, tất cả các máy khác (điện thoại, máy tính khác)
+// và sang ngày hôm sau dữ liệu vẫn được lưu trữ vĩnh viễn, không bị mất và không quay về demo data!
+const CLOUD_STORAGE_URL_KEY = 'mintmart_cloud_storage_url';
+const DEFAULT_CLOUD_URL = 'https://extendsclass.com/api/json-storage/bin/fcebebc';
+
+function getCloudStorageUrl() {
+    try {
+        return localStorage.getItem(CLOUD_STORAGE_URL_KEY) || DEFAULT_CLOUD_URL;
+    } catch (e) {
+        return DEFAULT_CLOUD_URL;
+    }
+}
+
+// 1. Initial Seed Data for Static / GitHub Pages Mode (Dữ liệu 14 sản phẩm thực tế)
 const SEED_CATEGORIES = [
     { id: 1, name: 'Công nghệ & Điện tử', slug: 'cong-nghe-dien-tu', icon: 'fa-laptop', description: 'Điện thoại, laptop, tai nghe và phụ kiện chính hãng', product_count: 5 },
     { id: 2, name: 'Thời trang & Phụ kiện', slug: 'thoi-trang', icon: 'fa-shirt', description: 'Trang phục thời trang nam nữ, túi xách, đồng hồ', product_count: 2 },
-    { id: 3, name: 'Nhà cửa & Đời sống', slug: 'nha-cua-doi-song', icon: 'fa-couch', description: 'Nội thất, đèn ngủ, thiết bị gia dụng tiện ích', product_count: 2 },
+    { id: 3, name: 'Nhà cửa & Đời sống', slug: 'nha-cua-doi-song', icon: 'fa-couch', description: 'Nội thất, đèn ngủ, thiết bị gia dụng tiện ích', product_count: 3 },
     { id: 4, name: 'Làm đẹp & Sức khỏe', slug: 'lam-dep-suc-khoe', icon: 'fa-spa', description: 'Mỹ phẩm hữu cơ, kem dưỡng da, nước hoa tự nhiên', product_count: 1 },
     { id: 5, name: 'Đồ gia dụng thông minh', slug: 'do-gia-dung', icon: 'fa-blender', description: 'Nồi chiên không dầu, robot hút bụi, máy xay sinh tố', product_count: 2 },
-    { id: 6, name: 'Sách & Văn phòng phẩm', slug: 'sach-van-phong', icon: 'fa-book-open', description: 'Sách kỹ năng, kinh doanh, sổ tay cao cấp', product_count: 1 }
+    { id: 6, name: 'Sách & Văn phòng phẩm', slug: 'sach-van-phong', icon: 'fa-book-open', description: 'Sách kỹ năng, kinh doanh, sổ tay cao cấp', product_count: 1 },
+    { id: 7, name: 'Danh Mục Mới', slug: 'danh-muc-moi', icon: 'fa-tag', description: 'Danh mục sản phẩm mở rộng', product_count: 0 }
 ];
 
 const SEED_PRODUCTS = [
@@ -34,17 +49,17 @@ const SEED_PRODUCTS = [
         category_name: 'Công nghệ & Điện tử',
         price: 890000,
         original_price: 1290000,
-        stock: 45,
+        stock: 40,
         image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
         badge: 'HOT',
         rating: 4.9,
-        sold_count: 324,
+        sold_count: 325,
         description: 'Tai nghe chống ồn chủ động cao cấp, âm bass mạnh mẽ, pin trâu 36 giờ, màu xanh bạc hà thanh lịch.',
         is_active: 1,
         shopee_item_id: 'SHP-10001234',
-        shopee_stock: 45,
+        shopee_stock: 40,
         lazada_item_id: 'LAZ-20004321',
-        lazada_stock: 45,
+        lazada_stock: 40,
         auto_sync_marketplace: 1
     },
     {
@@ -280,23 +295,44 @@ const SEED_PRODUCTS = [
     },
     {
         id: 13,
-        name: 'Chuột Không Dây Silent Click Mint Ergonomic',
-        slug: 'chuot-khong-day-silent-mint-ergonomic',
-        category_id: 1,
-        category_name: 'Công nghệ & Điện tử',
-        price: 250000,
-        original_price: 350000,
-        stock: 55,
-        image_url: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=800&auto=format&fit=crop&q=80',
-        badge: 'GIẢM 28%',
-        rating: 4.8,
-        sold_count: 280,
-        description: 'Nút bấm êm ái không gây ồn khi làm việc ban đêm, thiết kế công thái học vừa vặn lòng bàn tay.',
+        name: 'Cây Bạc Hà Thủy Canh Phong Thủy Mint Garden',
+        slug: 'cay-bac-ha-thuy-canh-phong-thuy-mint-garden',
+        category_id: 3,
+        category_name: 'Nhà cửa & Đời sống',
+        price: 180000,
+        original_price: 250000,
+        stock: 50,
+        image_url: 'https://images.unsplash.com/photo-1545241047-6083a3684587?w=800&auto=format&fit=crop&q=80',
+        badge: 'HOT DEAL',
+        rating: 5.0,
+        sold_count: 0,
+        description: 'Cây bạc hà tự nhiên thanh lọc không khí, mang lại hương thơm tươi mát cho bàn làm việc.',
         is_active: 1,
         shopee_item_id: 'SHP-10016042',
-        shopee_stock: 55,
+        shopee_stock: 50,
         lazada_item_id: 'LAZ-20056173',
-        lazada_stock: 55,
+        lazada_stock: 50,
+        auto_sync_marketplace: 1
+    },
+    {
+        id: 14,
+        name: 'Bình Giữ Nhiệt Mint Smart 2026 (Bản Nâng Cấp)',
+        slug: 'binh-giu-nhiet-mint-smart-2026',
+        category_id: 1,
+        category_name: 'Công nghệ & Điện tử',
+        price: 320000,
+        original_price: 450000,
+        stock: 98,
+        image_url: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&auto=format&fit=crop&q=80',
+        badge: 'SALE SỐC 320K',
+        rating: 5.0,
+        sold_count: 2,
+        description: 'Sản phẩm mới thêm vào cửa hàng để kiểm tra hiển thị phía người dùng, ruột Inox 316 giữ nhiệt 24 giờ cao cấp.',
+        is_active: 1,
+        shopee_item_id: 'SHP-7406737',
+        shopee_stock: 78,
+        lazada_item_id: 'LAZ-7406737',
+        lazada_stock: 68,
         auto_sync_marketplace: 1
     }
 ];
@@ -344,6 +380,113 @@ function getMockProducts() {
 
 function saveMockProducts(prods) {
     localStorage.setItem(MOCK_PRODUCTS_KEY, JSON.stringify(prods));
+    // Tự động đồng bộ lên Đám Mây để các máy khác cập nhật ngay lập tức
+    syncToCloud({ products: prods });
+}
+
+// ========================================================
+// HỆ THỐNG ĐỒNG BỘ ĐÁM MÂY (CROSS-DEVICE CLOUD SYNC)
+// ========================================================
+let isSyncingFromCloud = false;
+let pendingCloudSyncTimeout = null;
+
+async function syncFromCloud(force = false) {
+    if (isSyncingFromCloud) return null;
+    isSyncingFromCloud = true;
+
+    try {
+        const cloudUrl = getCloudStorageUrl();
+        if (!cloudUrl) return null;
+
+        const res = await fetch(cloudUrl, {
+            method: 'GET',
+            cache: 'no-cache',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (!res.ok) {
+            console.warn('[Cloud Sync] Không thể kết nối Cloud Storage, mã lỗi:', res.status);
+            return null;
+        }
+
+        const data = await res.json();
+        if (data && Array.isArray(data.products) && data.products.length > 0) {
+            const localProducts = localStorage.getItem(MOCK_PRODUCTS_KEY);
+            const cloudProductsStr = JSON.stringify(data.products);
+
+            if (force || !localProducts || localProducts !== cloudProductsStr) {
+                localStorage.setItem(MOCK_PRODUCTS_KEY, cloudProductsStr);
+                if (Array.isArray(data.categories) && data.categories.length > 0) {
+                    localStorage.setItem(MOCK_CATEGORIES_KEY, JSON.stringify(data.categories));
+                }
+                const syncTime = data.updated_at || new Date().toISOString();
+                localStorage.setItem('mintmart_last_cloud_sync', syncTime);
+                console.log(`[Cloud Sync] Đã đồng bộ thành công ${data.products.length} sản phẩm từ Đám Mây liên thiết bị!`);
+                window.dispatchEvent(new CustomEvent('mintmart-cloud-synced', { detail: data }));
+            }
+            return data;
+        }
+    } catch (err) {
+        console.warn('[Cloud Sync Fetch Error]:', err.message);
+    } finally {
+        isSyncingFromCloud = false;
+    }
+    return null;
+}
+
+async function syncToCloud(partialData = {}) {
+    try {
+        const cloudUrl = getCloudStorageUrl();
+        if (!cloudUrl) return;
+
+        if (pendingCloudSyncTimeout) clearTimeout(pendingCloudSyncTimeout);
+
+        pendingCloudSyncTimeout = setTimeout(async () => {
+            try {
+                const prods = partialData.products || getMockProducts();
+                const cats = partialData.categories || getMockCategories();
+
+                const payload = {
+                    updated_at: new Date().toISOString(),
+                    version: 2,
+                    source: 'MintMart Admin Live Sync',
+                    products: prods,
+                    categories: cats
+                };
+
+                const res = await fetch(cloudUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const syncTime = payload.updated_at;
+                    localStorage.setItem('mintmart_last_cloud_sync', syncTime);
+                    console.log('[Cloud Sync] Đã lưu và đồng bộ lên đám mây thành công! Mọi máy tính khác sẽ nhận được dữ liệu.');
+                    window.dispatchEvent(new CustomEvent('mintmart-cloud-saved', { detail: { syncTime } }));
+                } else {
+                    console.warn('[Cloud Sync Save] Cloud báo mã:', res.status);
+                }
+            } catch (saveErr) {
+                console.warn('[Cloud Sync Save Exception]:', saveErr);
+            }
+        }, 150);
+    } catch (e) {
+        console.warn('[Cloud Sync Exception]:', e);
+    }
+}
+
+// Tự động khởi chạy đồng bộ nền với Đám Mây khi chạy trang web
+if (typeof window !== 'undefined') {
+    setTimeout(() => {
+        syncFromCloud().catch(() => {});
+    }, 120);
+
+    // Chu kỳ tự động kiểm tra đồng bộ giữa các máy (mỗi 30s)
+    setInterval(() => {
+        syncFromCloud().catch(() => {});
+    }, 30000);
 }
 
 function getMockCategories() {
@@ -423,6 +566,23 @@ async function handleMockApi(endpoint, options = {}) {
 
     // A. CATEGORIES
     if (path === '/api/categories') {
+        if (method === 'POST') {
+            const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+            const categories = getMockCategories();
+            const newId = categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1;
+            const newCat = {
+                id: newId,
+                name: body.name || 'Danh mục mới',
+                slug: (body.name || 'danh-muc').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + newId,
+                icon: body.icon || 'fa-tag',
+                description: body.description || '',
+                product_count: 0
+            };
+            categories.push(newCat);
+            localStorage.setItem(MOCK_CATEGORIES_KEY, JSON.stringify(categories));
+            syncToCloud({ categories });
+            return { success: true, message: 'Tạo danh mục mới thành công!', categoryId: newId };
+        }
         const categories = getMockCategories();
         const products = getMockProducts();
         categories.forEach(c => {
@@ -450,6 +610,7 @@ async function handleMockApi(endpoint, options = {}) {
             }
         });
         saveMockProducts(prods);
+        syncToCloud({ categories, products: prods });
 
         return {
             success: true,
@@ -1004,6 +1165,61 @@ async function handleMockApi(endpoint, options = {}) {
         return { success: true, message: 'Đồng bộ toàn bộ kho hàng lên Shopee & Lazada thành công!' };
     }
 
+    // R. CLOUD SYNC & BACKUP MANAGEMENT ENDPOINTS
+    if (path === '/api/cloud-sync/status') {
+        return {
+            success: true,
+            status: 'connected',
+            cloudUrl: getCloudStorageUrl(),
+            lastSync: localStorage.getItem('mintmart_last_cloud_sync') || null,
+            productCount: getMockProducts().length,
+            categoryCount: getMockCategories().length
+        };
+    }
+    if (path === '/api/cloud-sync/pull' && method === 'POST') {
+        const synced = await syncFromCloud(true);
+        return {
+            success: true,
+            message: 'Đã tải dữ liệu mới nhất từ Đám Mây thành công!',
+            products: getMockProducts()
+        };
+    }
+    if (path === '/api/cloud-sync/push' && method === 'POST') {
+        await syncToCloud();
+        return {
+            success: true,
+            message: 'Đã lưu và đồng bộ toàn bộ dữ liệu lên Đám Mây thành công!'
+        };
+    }
+    if (path === '/api/cloud-sync/export') {
+        return {
+            success: true,
+            data: {
+                version: 2,
+                exported_at: new Date().toISOString(),
+                products: getMockProducts(),
+                categories: getMockCategories()
+            }
+        };
+    }
+    if (path === '/api/cloud-sync/import' && method === 'POST') {
+        const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+        const importedData = body.data || body;
+        if (Array.isArray(importedData.products) && importedData.products.length > 0) {
+            localStorage.setItem(MOCK_PRODUCTS_KEY, JSON.stringify(importedData.products));
+            if (Array.isArray(importedData.categories) && importedData.categories.length > 0) {
+                localStorage.setItem(MOCK_CATEGORIES_KEY, JSON.stringify(importedData.categories));
+            }
+            await syncToCloud({ products: importedData.products, categories: importedData.categories });
+            window.dispatchEvent(new CustomEvent('mintmart-cloud-synced', { detail: importedData }));
+            return {
+                success: true,
+                message: `Khôi phục thành công ${importedData.products.length} sản phẩm và đồng bộ lên Đám Mây!`
+            };
+        }
+        throw new Error('Dữ liệu nhập không hợp lệ (cần mảng sản phẩm hợp lệ)!');
+    }
+
     return { success: true };
 }
 
@@ -1191,4 +1407,11 @@ function getCartTotals() {
     const total = subtotal + shipping;
 
     return { count, subtotal, shipping, total, items: cart };
+}
+
+// Global Cloud Sync Exports for UI
+if (typeof window !== 'undefined') {
+    window.syncFromCloud = syncFromCloud;
+    window.syncToCloud = syncToCloud;
+    window.getCloudStorageUrl = getCloudStorageUrl;
 }

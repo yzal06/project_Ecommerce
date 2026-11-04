@@ -2134,3 +2134,12 @@ async function openOrderHistoryModal() {
 function closeOrderHistoryModal() {
     document.getElementById('orderHistoryModal').classList.add('hidden');
 }
+
+// Lắng nghe cập nhật sản phẩm từ Đám mây (Đồng bộ đa thiết bị liên tục)
+window.addEventListener('mintmart-cloud-synced', () => {
+    console.log('[Storefront UI] Nhận được dữ liệu sản phẩm mới nhất từ Đám mây!');
+    if (typeof loadProducts === 'function') loadProducts();
+    if (typeof loadHotProducts === 'function') loadHotProducts();
+    if (typeof loadDealsProducts === 'function') loadDealsProducts();
+    if (typeof loadCategories === 'function') loadCategories();
+});

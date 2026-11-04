@@ -413,6 +413,32 @@ async function initDatabase() {
                 rating: 4.8,
                 sold_count: 245,
                 description: 'Âm thanh 360 độ sống động, chống nước chuẩn IPX7, pin nghe nhạc liên tục 15 giờ.'
+            },
+            {
+                name: 'Cây Bạc Hà Thủy Canh Phong Thủy Mint Garden',
+                slug: 'cay-bac-ha-thuy-canh-phong-thuy-mint-garden',
+                category_id: 3,
+                price: 180000,
+                original_price: 250000,
+                stock: 50,
+                image_url: 'https://images.unsplash.com/photo-1545241047-6083a3684587?w=800&auto=format&fit=crop&q=80',
+                badge: 'HOT DEAL',
+                rating: 5.0,
+                sold_count: 0,
+                description: 'Cây bạc hà tự nhiên thanh lọc không khí, mang lại hương thơm tươi mát cho bàn làm việc.'
+            },
+            {
+                name: 'Bình Giữ Nhiệt Mint Smart 2026 (Bản Nâng Cấp)',
+                slug: 'binh-giu-nhiet-mint-smart-2026',
+                category_id: 1,
+                price: 320000,
+                original_price: 450000,
+                stock: 98,
+                image_url: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&auto=format&fit=crop&q=80',
+                badge: 'SALE SỐC 320K',
+                rating: 5.0,
+                sold_count: 2,
+                description: 'Sản phẩm mới thêm vào cửa hàng để kiểm tra hiển thị phía người dùng, ruột Inox 316 giữ nhiệt 24 giờ cao cấp.'
             }
         ];
 

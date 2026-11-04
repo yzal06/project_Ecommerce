@@ -22,11 +22,7 @@ yarn-error.log*
 *.key
 
 # Database (SQLite & data storage)
-*.db
 *.db-journal
-*.sqlite
-*.sqlite3
-ecommerce.db
 
 # Operating System Files
 .DS_Store

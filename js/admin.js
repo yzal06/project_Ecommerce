@@ -2174,3 +2174,146 @@ async function triggerSyncAllMarketplaces() {
     });
 }
 
+/* ========================================================
+   HỆ THỐNG ĐỒNG BỘ ĐÁM MÂY & SAO LƯU DỰ PHÒNG LIÊN MÁY TÍNH
+   ======================================================== */
+
+async function handleManualCloudSync() {
+    const btn = document.getElementById('cloudSyncBtn');
+    const icon = document.getElementById('cloudSyncIcon');
+    const label = document.getElementById('cloudSyncLabel');
+
+    if (icon) icon.className = 'fa-solid fa-arrows-rotate fa-spin text-sky-600';
+    if (label) label.textContent = 'Đang đồng bộ...';
+
+    try {
+        showToast('info', 'Đang kết nối Đám Mây để tải dữ liệu mới nhất...');
+        if (typeof window.syncFromCloud === 'function') {
+            await window.syncFromCloud(true);
+        } else {
+            await apiFetch('/api/cloud-sync/pull', { method: 'POST' });
+        }
+
+        await loadAdminProducts();
+        await loadAdminCategories();
+        renderAdminCategories();
+        if (typeof loadDashboardStats === 'function') loadDashboardStats();
+
+        updateCloudSyncUI('Đám mây: Đã đồng bộ');
+        showToast('success', 'Đã đồng bộ dữ liệu đám mây thành công! Tất cả thay đổi từ các máy khác đã được cập nhật.');
+    } catch (err) {
+        console.error('Lỗi đồng bộ đám mây:', err);
+        updateCloudSyncUI('Đám mây: Lỗi kết nối');
+        showToast('error', 'Không thể kết nối máy chủ đám mây. Vui lòng kiểm tra mạng!');
+    }
+}
+
+function updateCloudSyncUI(text) {
+    const icon = document.getElementById('cloudSyncIcon');
+    const label = document.getElementById('cloudSyncLabel');
+    if (icon) icon.className = 'fa-solid fa-cloud text-sky-600';
+    if (label) {
+        const lastSync = localStorage.getItem('mintmart_last_cloud_sync');
+        if (lastSync) {
+            const timeStr = new Date(lastSync).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            label.textContent = `${text} (${timeStr})`;
+        } else {
+            label.textContent = text;
+        }
+    }
+}
+
+async function handleExportBackup() {
+    try {
+        const res = await apiFetch('/api/cloud-sync/export');
+        const data = res.data || {
+            exported_at: new Date().toISOString(),
+            products: JSON.parse(localStorage.getItem('mintmart_mock_products_v2') || '[]'),
+            categories: JSON.parse(localStorage.getItem('mintmart_mock_categories_v2') || '[]')
+        };
+
+        const jsonString = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+        const downloadAnchor = document.createElement('a');
+        const dateStr = new Date().toISOString().slice(0, 10);
+        downloadAnchor.setAttribute("href", jsonString);
+        downloadAnchor.setAttribute("download", `mintmart_backup_${dateStr}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+
+        showToast('success', 'Đã tải file sao lưu dữ liệu JSON về máy thành công!');
+    } catch (e) {
+        showToast('error', 'Lỗi khi xuất file sao lưu: ' + e.message);
+    }
+}
+
+async function handleImportBackup(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const content = e.target.result;
+            const parsed = JSON.parse(content);
+            const products = parsed.products || (Array.isArray(parsed) ? parsed : null);
+
+            if (!products || !Array.isArray(products) || products.length === 0) {
+                throw new Error('File JSON không chứa danh sách sản phẩm hợp lệ!');
+            }
+
+            Swal.fire({
+                title: 'Xác nhận nạp dữ liệu?',
+                html: `File sao lưu chứa <strong>${products.length} sản phẩm</strong>.<br>Hệ thống sẽ cập nhật và đồng bộ tự động lên Đám Mây cho mọi máy tính khác.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10B981',
+                cancelButtonColor: '#64748B',
+                confirmButtonText: 'Đồng ý nạp & Đồng bộ',
+                cancelButtonText: 'Hủy'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await apiFetch('/api/cloud-sync/import', {
+                        method: 'POST',
+                        body: JSON.stringify(parsed)
+                    });
+
+                    await loadAdminProducts();
+                    await loadAdminCategories();
+                    renderAdminCategories();
+                    if (typeof loadDashboardStats === 'function') loadDashboardStats();
+
+                    showToast('success', `Đã nạp thành công ${products.length} sản phẩm và đồng bộ lên đám mây!`);
+                }
+            });
+        } catch (err) {
+            Swal.fire('Lỗi nhập dữ liệu', err.message, 'error');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.readAsText(file);
+}
+
+// Lắng nghe sự kiện đồng bộ từ đám mây (Cloud Sync Listener)
+window.addEventListener('mintmart-cloud-synced', (e) => {
+    console.log('[Admin UI] Nhận được cập nhật dữ liệu từ Đám mây, đang làm mới bảng...');
+    updateCloudSyncUI('Đám mây: Đã đồng bộ');
+    if (typeof loadAdminProducts === 'function') loadAdminProducts();
+    if (typeof loadAdminCategories === 'function') {
+        loadAdminCategories().then(() => {
+            if (typeof renderAdminCategories === 'function') renderAdminCategories();
+        });
+    }
+    if (typeof loadDashboardStats === 'function') loadDashboardStats();
+});
+
+window.addEventListener('mintmart-cloud-saved', (e) => {
+    updateCloudSyncUI('Đám mây: Đã lưu');
+});
+
+// Cập nhật trạng thái đám mây khi khởi tạo admin
+document.addEventListener('DOMContentLoaded', () => {
+    updateCloudSyncUI('Đám mây: Đã kết nối');
+});
+
