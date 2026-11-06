@@ -1613,20 +1613,20 @@ function ensurePaymentGatewayModal() {
                         <div class="flex-grow space-y-2 text-xs w-full flex flex-col justify-center">
                             <div class="flex justify-between items-center py-1.5 border-b border-slate-200">
                                 <span class="text-slate-400">Ngân hàng:</span>
-                                <strong class="text-slate-800 font-bold">MB Bank (Quân Đội)</strong>
+                                <strong class="text-slate-800 font-bold">Vietcombank (Ngoại Thương Việt Nam)</strong>
                             </div>
                             <div class="flex justify-between items-center py-1.5 border-b border-slate-200">
                                 <span class="text-slate-400">Số tài khoản:</span>
                                 <div class="flex items-center space-x-1.5">
-                                    <strong class="text-slate-900 font-mono font-black text-sm">19006868888</strong>
-                                    <button type="button" onclick="copyPaymentText('19006868888', 'Số tài khoản')" class="text-emerald-600 hover:text-emerald-700 p-1" title="Sao chép">
+                                    <strong class="text-slate-900 font-mono font-black text-sm">9907295665</strong>
+                                    <button type="button" onclick="copyPaymentText('9907295665', 'Số tài khoản')" class="text-emerald-600 hover:text-emerald-700 p-1" title="Sao chép">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
                                 </div>
                             </div>
                             <div class="flex justify-between items-center py-1.5 border-b border-slate-200">
                                 <span class="text-slate-400">Chủ tài khoản:</span>
-                                <strong class="text-slate-700 text-[11px] font-bold">CONG TY CO PHAN MINTMART VN</strong>
+                                <strong class="text-slate-700 text-[11px] font-bold">LE TRAN THIEN HUONG</strong>
                             </div>
                             <div class="flex justify-between items-center py-1.5 border-b border-slate-200">
                                 <span class="text-slate-400">Số tiền:</span>
@@ -1785,7 +1785,7 @@ function openPaymentGateway(order) {
     }
 
     // Generate VietQR
-    const qrUrl = `https://img.vietqr.io/image/MB-19006868888-compact2.png?amount=${order.total_amount}&addInfo=${encodeURIComponent(order.order_code)}&accountName=CONG%20TY%20CO%20PHAN%20MINTMART%20VN`;
+    const qrUrl = `https://img.vietqr.io/image/vietcombank-9907295665-compact2.png?amount=${order.total_amount}&addInfo=${encodeURIComponent(order.order_code)}&accountName=LE%20TRAN%20THIEN%20HUONG`;
     const qrImg = document.getElementById('pgVietQrImage');
     if (qrImg) qrImg.src = qrUrl;
 
