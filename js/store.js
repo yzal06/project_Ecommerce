@@ -1523,7 +1523,7 @@ function ensurePaymentGatewayModal() {
         modal.id = 'paymentGatewayModal';
         modal.className = 'fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-slate-900/75 backdrop-blur-sm overflow-y-auto';
         modal.innerHTML = `
-            <div class="bg-white rounded-3xl max-w-xl w-full my-6 p-5 sm:p-6 shadow-2xl relative border border-emerald-100 animate-in fade-in zoom-in duration-200">
+            <div class="bg-white rounded-3xl max-w-2xl w-full my-6 p-5 sm:p-7 shadow-2xl relative border border-emerald-100 animate-in fade-in zoom-in duration-200">
                 <!-- Header -->
                 <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
                     <div class="flex items-center space-x-2.5">
@@ -1546,7 +1546,7 @@ function ensurePaymentGatewayModal() {
                 </div>
 
                 <!-- Order Info Bar -->
-                <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 p-3 rounded-2xl border border-emerald-100 mb-3 flex items-center justify-between">
+                <div class="bg-gradient-to-r from-emerald-50 via-teal-50 to-slate-50 p-3.5 rounded-2xl border border-emerald-100 mb-3 flex items-center justify-between">
                     <div>
                         <span class="text-[11px] text-slate-500 block">Mã đơn hàng:</span>
                         <strong class="text-sm font-black text-slate-800 font-mono" id="pgOrderCode">MM-00000</strong>
@@ -1588,44 +1588,59 @@ function ensurePaymentGatewayModal() {
 
                 <!-- Content: VietQR Tab -->
                 <div id="pgTabContent-vietqr" class="space-y-4">
-                    <div class="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <div class="bg-white p-2.5 rounded-2xl shadow-md border border-slate-200 flex-shrink-0 flex flex-col items-center">
-                            <img id="pgVietQrImage" src="" alt="VietQR MintMart" class="w-36 h-36 object-contain rounded-xl">
-                            <span class="text-[10px] text-slate-400 font-bold mt-1.5 flex items-center">
-                                <i class="fa-solid fa-camera mr-1 text-emerald-500"></i> Mở App Ngân hàng quét
+                    <div class="flex flex-col md:flex-row items-center md:items-stretch gap-5 bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-100">
+                        <div class="bg-white p-3.5 rounded-2xl shadow-md border border-slate-200 flex-shrink-0 flex flex-col items-center justify-center w-full md:w-72">
+                            <div class="relative group cursor-pointer" onclick="zoomPaymentQr()" title="Bấm để phóng to mã QR">
+                                <img id="pgVietQrImage" src="" alt="VietQR MintMart" class="w-60 h-60 sm:w-64 sm:h-64 object-contain rounded-xl bg-white transition duration-200 group-hover:scale-105">
+                                <div class="absolute inset-0 bg-slate-900/10 opacity-0 group-hover:opacity-100 transition rounded-xl flex items-center justify-center">
+                                    <span class="bg-slate-900/80 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg backdrop-blur-sm flex items-center shadow">
+                                        <i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Bấm để phóng to
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 mt-3 w-full justify-center">
+                                <button type="button" onclick="zoomPaymentQr()" class="flex-1 py-1.5 px-2 text-[11px] text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl font-bold border border-emerald-200 flex items-center justify-center transition">
+                                    <i class="fa-solid fa-expand mr-1 text-[10px]"></i> Phóng to
+                                </button>
+                                <button type="button" onclick="downloadPaymentQr()" class="flex-1 py-1.5 px-2 text-[11px] text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold border border-slate-200 flex items-center justify-center transition">
+                                    <i class="fa-solid fa-download mr-1 text-[10px]"></i> Tải ảnh QR
+                                </button>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-bold mt-2 flex items-center">
+                                <i class="fa-solid fa-camera mr-1 text-emerald-500"></i> Mở App Ngân hàng quét QR
                             </span>
                         </div>
-                        <div class="flex-grow space-y-2 text-xs w-full">
-                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                        <div class="flex-grow space-y-2 text-xs w-full flex flex-col justify-center">
+                            <div class="flex justify-between items-center py-1.5 border-b border-slate-200">
                                 <span class="text-slate-400">Ngân hàng:</span>
-                                <strong class="text-slate-700">MB Bank (Quân Đội)</strong>
+                                <strong class="text-slate-800 font-bold">MB Bank (Quân Đội)</strong>
                             </div>
-                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                            <div class="flex justify-between items-center py-1.5 border-b border-slate-200">
                                 <span class="text-slate-400">Số tài khoản:</span>
                                 <div class="flex items-center space-x-1.5">
-                                    <strong class="text-slate-800 font-mono font-bold text-sm">19006868888</strong>
+                                    <strong class="text-slate-900 font-mono font-black text-sm">19006868888</strong>
                                     <button type="button" onclick="copyPaymentText('19006868888', 'Số tài khoản')" class="text-emerald-600 hover:text-emerald-700 p-1" title="Sao chép">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
                                 </div>
                             </div>
-                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                            <div class="flex justify-between items-center py-1.5 border-b border-slate-200">
                                 <span class="text-slate-400">Chủ tài khoản:</span>
-                                <strong class="text-slate-700 text-[11px]">CONG TY CO PHAN MINTMART VN</strong>
+                                <strong class="text-slate-700 text-[11px] font-bold">CONG TY CO PHAN MINTMART VN</strong>
                             </div>
-                            <div class="flex justify-between items-center py-1 border-b border-slate-200">
+                            <div class="flex justify-between items-center py-1.5 border-b border-slate-200">
                                 <span class="text-slate-400">Số tiền:</span>
                                 <div class="flex items-center space-x-1.5">
-                                    <strong class="text-rose-600 font-extrabold" id="pgCopyAmount">0 ₫</strong>
+                                    <strong class="text-rose-600 font-black text-sm" id="pgCopyAmount">0 ₫</strong>
                                     <button type="button" onclick="copyPaymentAmount()" class="text-emerald-600 hover:text-emerald-700 p-1" title="Sao chép số tiền">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
                                 </div>
                             </div>
-                            <div class="flex justify-between items-center py-1">
+                            <div class="flex justify-between items-center py-1.5">
                                 <span class="text-slate-400">Nội dung CK:</span>
                                 <div class="flex items-center space-x-1.5">
-                                    <strong class="text-emerald-700 font-mono font-bold bg-emerald-100 px-2 py-0.5 rounded text-xs" id="pgCopyMemo">MM-00000</strong>
+                                    <strong class="text-emerald-700 font-mono font-black bg-emerald-100 px-2.5 py-1 rounded-lg text-xs" id="pgCopyMemo">MM-00000</strong>
                                     <button type="button" onclick="copyPaymentMemo()" class="text-emerald-600 hover:text-emerald-700 p-1" title="Sao chép nội dung">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
@@ -1651,15 +1666,15 @@ function ensurePaymentGatewayModal() {
 
                 <!-- Content: MoMo Tab -->
                 <div id="pgTabContent-momo" class="hidden space-y-4">
-                    <div class="bg-pink-50/50 p-4 rounded-2xl border border-pink-100 text-center">
+                    <div class="bg-pink-50/50 p-5 rounded-2xl border border-pink-100 text-center">
                         <div class="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-pink-600 to-rose-500 text-white flex items-center justify-center text-xl shadow-md mb-2">
                             <i class="fa-solid fa-wallet"></i>
                         </div>
                         <h4 class="font-bold text-slate-800 text-sm">Thanh toán qua Ví MoMo / VNPay (Sandbox)</h4>
-                        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Môi trường thanh toán thử nghiệm. Bạn có thể bấm xác nhận thanh toán trực tiếp bên dưới.</p>
-                        <div class="my-4 inline-block p-3 bg-white rounded-2xl border border-pink-200 shadow-sm">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=MINTMART-MOMO-SANDBOX-PAYMENT" alt="MoMo Sandbox QR" class="w-32 h-32 mx-auto rounded-lg">
-                            <span class="text-[10px] text-pink-600 font-bold block mt-1">Quét mã bằng App MoMo</span>
+                        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Môi trường thanh toán thử nghiệm. Bạn có thể quét mã hoặc bấm xác nhận thanh toán trực tiếp bên dưới.</p>
+                        <div class="my-4 inline-block p-4 bg-white rounded-2xl border border-pink-200 shadow-sm">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=MINTMART-MOMO-SANDBOX-PAYMENT" alt="MoMo Sandbox QR" class="w-56 h-56 sm:w-64 sm:h-64 mx-auto rounded-xl object-contain">
+                            <span class="text-[11px] text-pink-600 font-bold block mt-2">Quét mã bằng App MoMo</span>
                         </div>
                         <button type="button" onclick="simulateSandboxPayment('MoMo')" class="w-full py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-xl font-bold text-xs transition shadow-md flex items-center justify-center space-x-1.5">
                             <i class="fa-solid fa-bolt"></i>
@@ -1841,6 +1856,43 @@ function copyPaymentMemo() {
     }
 }
 
+function zoomPaymentQr() {
+    const qrImg = document.getElementById('pgVietQrImage');
+    if (!qrImg || !qrImg.src) return;
+    const amount = document.getElementById('pgCopyAmount')?.textContent || '';
+    const memo = document.getElementById('pgCopyMemo')?.textContent || '';
+    Swal.fire({
+        title: 'Mã VietQR Thanh Toán',
+        imageUrl: qrImg.src,
+        imageAlt: 'VietQR MintMart',
+        imageWidth: 420,
+        imageHeight: 'auto',
+        html: `
+            <div class="text-xs text-slate-600 mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 text-left">
+                <div class="flex justify-between"><span>Số tiền:</span> <strong class="text-rose-600 font-bold text-sm">${amount}</strong></div>
+                <div class="flex justify-between"><span>Nội dung CK:</span> <strong class="text-emerald-700 font-mono font-bold bg-emerald-100 px-2 py-0.5 rounded">${memo}</strong></div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2">Mở ứng dụng Ngân hàng trên điện thoại để quét mã</p>
+        `,
+        confirmButtonText: 'Đóng',
+        confirmButtonColor: '#10B981',
+        showCloseButton: true
+    });
+}
+
+function downloadPaymentQr() {
+    const qrImg = document.getElementById('pgVietQrImage');
+    if (!qrImg || !qrImg.src) return;
+    const link = document.createElement('a');
+    link.href = qrImg.src;
+    link.target = '_blank';
+    link.download = `VietQR-${currentGatewayOrder ? currentGatewayOrder.order_code : 'MintMart'}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('info', 'Đang mở / tải ảnh mã QR...');
+}
+
 function fillTestCard() {
     const num = document.getElementById('pgCardNumber');
     const exp = document.getElementById('pgCardExpiry');
@@ -1872,6 +1924,11 @@ async function confirmOrderPaymentNow() {
             localStorage.setItem('mintmart_last_paid_order', JSON.stringify({
                 id: currentGatewayOrder.id,
                 order_code: currentGatewayOrder.order_code,
+                customer_name: currentGatewayOrder.customer_name || 'Khách hàng',
+                customer_phone: currentGatewayOrder.customer_phone || '',
+                total_amount: currentGatewayOrder.total_amount,
+                payment_method: currentGatewayOrder.payment_method || 'VietQR',
+                payment_status: 'paid',
                 timestamp: Date.now()
             }));
         } catch(e) {}

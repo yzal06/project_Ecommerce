@@ -153,6 +153,7 @@ async function handleChangePasswordSubmit(e) {
 // Speaker Notification State
 let speakerEnabled = localStorage.getItem('mintmart_speaker_enabled') !== 'false';
 let lastKnownOrderIds = new Set();
+let lastKnownOrderPaymentStatuses = new Map();
 let isWatcherInitialized = false;
 let watcherInterval = null;
 
@@ -186,7 +187,7 @@ function updateSpeakerUI() {
     }
 }
 
-// Âm thanh chuông báo (Ding-dong chime Web Audio API)
+// Âm thanh chuông báo đơn mới (Ding-dong chime Web Audio API)
 function playDingDongChime() {
     try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -217,6 +218,34 @@ function playDingDongChime() {
         gain2.connect(ctx.destination);
         osc2.start(now + 0.12);
         osc2.stop(now + 0.7);
+    } catch (e) {
+        console.warn('Web Audio error:', e);
+    }
+}
+
+// Âm thanh chuông báo thanh toán thành công (Cheerful Arpeggio Chord Web Audio API)
+function playPaymentSuccessChime() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        // 4 nốt tươi vui ngân vang: C5 (523.25Hz), E5 (659.25Hz), G5 (783.99Hz), C6 (1046.50Hz)
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const start = now + idx * 0.1;
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, start);
+            gain.gain.setValueAtTime(0.35, start);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(start);
+            osc.stop(start + 0.4);
+        });
     } catch (e) {
         console.warn('Web Audio error:', e);
     }
@@ -290,7 +319,7 @@ function fallbackWebSpeechFemale(text) {
     }
 }
 
-// Kích hoạt chuông + giọng nữ Việt Nam + banner thông báo
+// Kích hoạt chuông + giọng nữ Việt Nam + banner thông báo đơn hàng mới
 function triggerNewOrderAlert(order) {
     if (speakerEnabled) {
         playDingDongChime();
@@ -315,6 +344,38 @@ function dismissOrderAlert() {
     if (banner) banner.classList.add('hidden');
 }
 
+// Kích hoạt chuông + giọng nữ phát thanh + banner thông báo thanh toán thành công
+function triggerPaymentSuccessAlert(order) {
+    if (speakerEnabled) {
+        playPaymentSuccessChime();
+        setTimeout(() => {
+            const code = order.order_code || 'mới';
+            fallbackWebSpeechFemale(`Đơn hàng ${code} đã thanh toán thành công!`);
+        }, 450);
+    }
+
+    // Hiển thị banner thanh toán thành công góc phải
+    const banner = document.getElementById('livePaymentAlertBanner');
+    if (banner) {
+        const custEl = document.getElementById('alertPaymentCustomer');
+        const amtEl = document.getElementById('alertPaymentAmount');
+        if (custEl && order) {
+            custEl.textContent = `${order.customer_name || 'Khách hàng'} (${order.order_code || ''})`;
+        }
+        if (amtEl && order) {
+            amtEl.textContent = formatCurrency(order.total_amount || 0);
+        }
+        banner.classList.remove('hidden');
+    }
+
+    showToast('success', `💰 Đơn hàng ${order.order_code || ''} đã thanh toán thành công ${formatCurrency(order.total_amount || 0)}!`);
+}
+
+function dismissPaymentAlert() {
+    const banner = document.getElementById('livePaymentAlertBanner');
+    if (banner) banner.classList.add('hidden');
+}
+
 function testOrderSound() {
     playDingDongChime();
     setTimeout(() => {
@@ -323,7 +384,15 @@ function testOrderSound() {
     showToast('info', '🔊 Đang phát thông báo giọng nữ Việt Nam: "Bạn có đơn hàng mới!"');
 }
 
-// Tự động kiểm tra đơn hàng mới trong nền
+function testPaymentSound() {
+    playPaymentSuccessChime();
+    setTimeout(() => {
+        fallbackWebSpeechFemale('Đơn hàng MM-10023 đã thanh toán thành công!');
+    }, 450);
+    showToast('success', '🔊 Đang phát thử âm thanh thanh toán thành công: "Đơn hàng MM-10023 đã thanh toán thành công!"');
+}
+
+// Tự động kiểm tra đơn hàng mới & thanh toán thành công trong nền
 function startOrderNotificationWatcher() {
     if (isWatcherInitialized) return;
     isWatcherInitialized = true;
@@ -331,7 +400,11 @@ function startOrderNotificationWatcher() {
     // Load initial orders
     apiFetch('/api/orders').then(res => {
         const orders = res.orders || [];
-        orders.forEach(o => lastKnownOrderIds.add(o.id || o.order_code));
+        orders.forEach(o => {
+            const key = o.id || o.order_code;
+            lastKnownOrderIds.add(key);
+            lastKnownOrderPaymentStatuses.set(key, o.payment_status || 'pending');
+        });
     }).catch(() => {});
 
     // Poll every 6 seconds
@@ -341,19 +414,38 @@ function startOrderNotificationWatcher() {
             const res = await apiFetch('/api/orders');
             const orders = res.orders || [];
             let foundNew = false;
-            let latestOrder = null;
+            let latestNewOrder = null;
+            let newlyPaidOrder = null;
 
             for (const o of orders) {
                 const key = o.id || o.order_code;
+                const isPaid = o.payment_status === 'paid';
+                const prevStatus = lastKnownOrderPaymentStatuses.get(key);
+
                 if (!lastKnownOrderIds.has(key)) {
+                    // New order
                     lastKnownOrderIds.add(key);
+                    lastKnownOrderPaymentStatuses.set(key, o.payment_status || 'pending');
                     foundNew = true;
-                    latestOrder = o;
+                    latestNewOrder = o;
+                    if (isPaid) {
+                        newlyPaidOrder = o;
+                    }
+                } else if (prevStatus !== 'paid' && isPaid) {
+                    // Existing order changed to paid
+                    lastKnownOrderPaymentStatuses.set(key, 'paid');
+                    newlyPaidOrder = o;
                 }
             }
 
-            if (foundNew && latestOrder) {
-                triggerNewOrderAlert(latestOrder);
+            if (newlyPaidOrder) {
+                triggerPaymentSuccessAlert(newlyPaidOrder);
+                // Refresh views
+                if (currentAdminTab === 'orders') loadAdminOrders();
+                if (currentAdminTab === 'dashboard') loadDashboardStats();
+                if (currentAdminTab === 'marketplace') loadMarketplaceRevenueTables();
+            } else if (foundNew && latestNewOrder) {
+                triggerNewOrderAlert(latestNewOrder);
                 // Refresh views
                 if (currentAdminTab === 'orders') loadAdminOrders();
                 if (currentAdminTab === 'dashboard') loadDashboardStats();
@@ -362,17 +454,47 @@ function startOrderNotificationWatcher() {
         } catch (e) {}
     }, 6000);
 
-    // Also listen to storage events
+    // Also listen to storage events (Cross-tab instant sync)
     window.addEventListener('storage', (e) => {
+        if (e.key === 'mintmart_last_paid_order') {
+            try {
+                const paidOrder = JSON.parse(e.newValue || '{}');
+                if (paidOrder && (paidOrder.id || paidOrder.order_code)) {
+                    const key = paidOrder.id || paidOrder.order_code;
+                    const prevStatus = lastKnownOrderPaymentStatuses.get(key);
+                    if (prevStatus !== 'paid') {
+                        lastKnownOrderIds.add(key);
+                        lastKnownOrderPaymentStatuses.set(key, 'paid');
+                        triggerPaymentSuccessAlert(paidOrder);
+                        if (currentAdminTab === 'orders') loadAdminOrders();
+                        if (currentAdminTab === 'dashboard') loadDashboardStats();
+                        if (currentAdminTab === 'marketplace') loadMarketplaceRevenueTables();
+                    }
+                }
+            } catch (err) {}
+        }
+
         if (e.key === 'mintmart_mock_orders_v2') {
             try {
                 const orders = JSON.parse(e.newValue || '[]');
                 if (orders.length > 0) {
                     const latest = orders[0];
                     const key = latest.id || latest.order_code;
+                    const isPaid = latest.payment_status === 'paid';
+                    const prevStatus = lastKnownOrderPaymentStatuses.get(key);
+
                     if (!lastKnownOrderIds.has(key)) {
                         lastKnownOrderIds.add(key);
-                        triggerNewOrderAlert(latest);
+                        lastKnownOrderPaymentStatuses.set(key, latest.payment_status || 'pending');
+                        if (isPaid) {
+                            triggerPaymentSuccessAlert(latest);
+                        } else {
+                            triggerNewOrderAlert(latest);
+                        }
+                        if (currentAdminTab === 'orders') loadAdminOrders();
+                    } else if (prevStatus !== 'paid' && isPaid) {
+                        lastKnownOrderPaymentStatuses.set(key, 'paid');
+                        triggerPaymentSuccessAlert(latest);
                         if (currentAdminTab === 'orders') loadAdminOrders();
                     }
                 }
@@ -1676,6 +1798,7 @@ async function toggleOrderPaymentStatus(orderId, newStatus) {
             method: 'PUT',
             body: JSON.stringify({ payment_status: newStatus })
         });
+        lastKnownOrderPaymentStatuses.set(orderId, newStatus);
         showToast('success', `Đã cập nhật trạng thái: ${newStatus === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}`);
         loadAdminOrders();
         loadDashboardStats();

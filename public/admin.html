@@ -228,8 +228,11 @@
                             <i class="fa-solid fa-volume-high text-emerald-600" id="speakerIcon"></i>
                             <span id="speakerLabel" class="hidden sm:inline">Loa: Bật</span>
                         </button>
-                        <button onclick="testOrderSound()" class="hidden md:inline-flex items-center text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition" title="Bấm để thử âm thanh loa">
+                        <button onclick="testOrderSound()" class="hidden md:inline-flex items-center text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition" title="Bấm để thử âm thanh loa đơn mới">
                             <i class="fa-solid fa-play text-[9px] mr-1 text-emerald-600"></i> Thử Loa
+                        </button>
+                        <button onclick="testPaymentSound()" class="hidden md:inline-flex items-center text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition" title="Bấm để thử âm thanh báo khách đã thanh toán thành công">
+                            <i class="fa-solid fa-bell text-[10px] mr-1 text-emerald-600"></i> Thử Báo TT
                         </button>
                     </div>
 
@@ -279,6 +282,32 @@
                         </div>
                         <button onclick="switchAdminTab('orders'); dismissOrderAlert();" class="mt-2 w-full py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[11px] transition shadow">
                             Xem chi tiết đơn hàng
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Payment Success Alert Toast (Thông Báo Tiền Đã Về) -->
+                <div id="livePaymentAlertBanner" class="hidden fixed bottom-6 right-6 z-50 bg-white border-2 border-emerald-600 rounded-3xl p-4 sm:p-5 shadow-2xl max-w-sm flex items-start space-x-3.5 transition-all duration-300 transform scale-100 animate-bounce">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center text-xl flex-shrink-0 shadow-md shadow-emerald-500/20">
+                        <i class="fa-solid fa-money-bill-wave animate-pulse"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black text-emerald-700 uppercase tracking-wide flex items-center">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-1.5"></span>
+                                ĐÃ THANH TOÁN THÀNH CÔNG! 🎉
+                            </span>
+                            <button onclick="dismissPaymentAlert()" class="text-slate-400 hover:text-slate-600 p-1 -mr-1">
+                                <i class="fa-solid fa-xmark text-sm"></i>
+                            </button>
+                        </div>
+                        <div class="text-xs font-bold text-slate-800 truncate mt-1" id="alertPaymentCustomer">Khách hàng</div>
+                        <div class="text-xs font-black text-emerald-600" id="alertPaymentAmount">0 ₫</div>
+                        <div class="text-[10px] text-emerald-700 mt-1 flex items-center font-bold">
+                            <i class="fa-solid fa-circle-check mr-1 text-emerald-600"></i> Đối soát khớp / Tiền đã vào tài khoản
+                        </div>
+                        <button onclick="switchAdminTab('orders'); dismissPaymentAlert();" class="mt-2 w-full py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl text-[11px] transition shadow">
+                            Xem đơn hàng ngay
                         </button>
                     </div>
                 </div>
