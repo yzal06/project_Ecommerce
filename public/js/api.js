@@ -964,19 +964,70 @@ async function handleMockApi(endpoint, options = {}) {
     // L. CREATE ORDER
     if (path === '/api/orders' && method === 'POST') {
         const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+        const items = body.items || [];
+        if (!items || items.length === 0) {
+            throw new Error('Giỏ hàng của bạn đang trống! Vui lòng chọn ít nhất một sản phẩm.');
+        }
+
+        // 1. Kiểm tra Họ và tên
+        const trimmedName = (body.customer_name || '').trim();
+        if (!trimmedName || trimmedName.length < 2) {
+            throw new Error('Họ và tên người nhận hàng không hợp lệ (tối thiểu 2 ký tự)!');
+        }
+
+        // 2. Ràng buộc Số điện thoại
+        const rawPhone = (body.customer_phone || '').trim();
+        let cleanPhone = rawPhone.replace(/[\s\.\-\(\)]/g, '');
+        if (cleanPhone.startsWith('+84')) cleanPhone = '0' + cleanPhone.slice(3);
+        else if (cleanPhone.startsWith('84') && cleanPhone.length === 11) cleanPhone = '0' + cleanPhone.slice(2);
+
+        const vnPhoneRegex = /^0[35789]\d{8}$/;
+        const isRepeatedDigits = /^0([0-9])\1{8}$/.test(cleanPhone);
+        if (!cleanPhone || !vnPhoneRegex.test(cleanPhone) || isRepeatedDigits || cleanPhone === '0900000000') {
+            throw new Error('Số điện thoại nhận hàng không hợp lệ! Vui lòng nhập số di động Việt Nam gồm 10 chữ số (Đầu số: 03, 05, 07, 08, 09. Ví dụ: 0912345678).');
+        }
+
+        // 3. Ràng buộc Gmail / Email
+        const cleanEmail = (body.customer_email || '').trim().toLowerCase();
+        if (!cleanEmail) {
+            throw new Error('Vui lòng cung cấp địa chỉ Gmail/Email để nhận thông tin đơn hàng và hóa đơn thanh toán!');
+        }
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(cleanEmail)) {
+            throw new Error('Địa chỉ Gmail/Email không đúng định dạng! Vui lòng nhập email hợp lệ (Ví dụ: khachhang@gmail.com).');
+        }
+
+        // 4. Ràng buộc Địa chỉ nhận hàng
+        const cleanAddress = (body.shipping_address || '').trim();
+        if (!cleanAddress || cleanAddress.length < 10) {
+            throw new Error('Địa chỉ giao hàng quá ngắn (tối thiểu 10 ký tự)! Vui lòng ghi chi tiết: Số nhà, ngõ/đường, phường/xã, quận/huyện, tỉnh/thành phố để shipper giao hàng tận nơi.');
+        }
+        if (cleanAddress.length > 300) {
+            throw new Error('Địa chỉ giao hàng không được vượt quá 300 ký tự!');
+        }
+        const addressWords = cleanAddress.split(/\s+/).filter(w => w.length > 0);
+        if (addressWords.length < 3) {
+            throw new Error('Địa chỉ nhận hàng chưa rõ ràng! Vui lòng cung cấp tối thiểu 3 thành phần (Số nhà/đường, phường/xã, quận/huyện, tỉnh/thành phố).');
+        }
+        if (!/[a-zA-ZàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẸÊỀẾỂỄỆĐÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ]/i.test(cleanAddress)) {
+            throw new Error('Địa chỉ giao hàng không hợp lệ (không chứa tên đường, địa danh có chữ cái)!');
+        }
+        if (/(.)\1{5,}/.test(cleanAddress)) {
+            throw new Error('Địa chỉ giao hàng chứa chuỗi ký tự lặp vô nghĩa! Vui lòng nhập địa chỉ thực tế.');
+        }
+
         const orderCode = 'MM-' + Math.floor(10000 + Math.random() * 90000);
         const orders = getMockOrders();
-        const items = body.items || [];
         const total = items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
         const payment_status = body.payment_status || 'pending';
 
         const newOrder = {
             id: orders.length + 1,
             order_code: orderCode,
-            customer_name: body.customer_name || 'Khách Vãng Lai',
-            customer_phone: body.customer_phone || '',
-            customer_email: body.customer_email || '',
-            shipping_address: body.shipping_address || '',
+            customer_name: trimmedName,
+            customer_phone: cleanPhone,
+            customer_email: cleanEmail,
+            shipping_address: cleanAddress,
             payment_method: body.payment_method || 'COD',
             payment_status: payment_status,
             total_amount: total,
@@ -1406,9 +1457,16 @@ async function apiFetch(endpoint, options = {}) {
             return await handleMockApi(endpoint, options);
         }
 
-        const data = await response.json();
-        throw new Error(data.message || `Lỗi HTTP ${response.status}`);
+        const data = await response.json().catch(() => ({}));
+        const serverError = new Error(data.message || `Lỗi HTTP ${response.status}`);
+        serverError.status = response.status;
+        serverError.data = data;
+        throw serverError;
     } catch (err) {
+        // If it is an explicit 4xx validation/auth error from the server, propagate it to UI
+        if (err.status && err.status >= 400 && err.status < 500 && err.status !== 404) {
+            throw err;
+        }
         console.warn(`Backend fetch failed for [${endpoint}], falling back to Client-side DB:`, err.message);
         return await handleMockApi(endpoint, options);
     }

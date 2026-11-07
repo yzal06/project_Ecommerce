@@ -666,8 +666,87 @@ app.post('/api/orders', async (req, res) => {
     try {
         const { customer_name, customer_phone, customer_email, shipping_address, payment_method, note, items, user_id } = req.body;
 
-        if (!customer_name || !customer_phone || !shipping_address || !items || items.length === 0) {
-            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp đầy đủ thông tin nhận hàng và sản phẩm!' });
+        // 1. Kiểm tra danh sách sản phẩm
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ success: false, message: 'Giỏ hàng của bạn đang trống! Vui lòng chọn ít nhất một sản phẩm.' });
+        }
+
+        // 2. Ràng buộc Họ và tên người nhận
+        const trimmedName = (customer_name || '').trim();
+        if (!trimmedName || trimmedName.length < 2) {
+            return res.status(400).json({ success: false, message: 'Họ và tên người nhận hàng không hợp lệ (tối thiểu 2 ký tự)!' });
+        }
+        if (!/[a-zA-ZàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆĐÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ]/i.test(trimmedName)) {
+            return res.status(400).json({ success: false, message: 'Họ và tên người nhận không hợp lệ (phải chứa chữ cái)!' });
+        }
+
+        // 3. Ràng buộc Số điện thoại (Chuẩn nhà mạng di động Việt Nam)
+        const rawPhone = (customer_phone || '').trim();
+        let cleanPhone = rawPhone.replace(/[\s\.\-\(\)]/g, '');
+        if (cleanPhone.startsWith('+84')) {
+            cleanPhone = '0' + cleanPhone.slice(3);
+        } else if (cleanPhone.startsWith('84') && cleanPhone.length === 11) {
+            cleanPhone = '0' + cleanPhone.slice(2);
+        }
+
+        const vnPhoneRegex = /^0[35789]\d{8}$/;
+        const isRepeatedDigits = /^0([0-9])\1{8}$/.test(cleanPhone);
+        if (!cleanPhone || !vnPhoneRegex.test(cleanPhone) || isRepeatedDigits || cleanPhone === '0900000000') {
+            return res.status(400).json({
+                success: false,
+                message: 'Số điện thoại nhận hàng không hợp lệ! Vui lòng nhập số di động Việt Nam gồm 10 chữ số (Đầu số: 03, 05, 07, 08, 09. Ví dụ: 0912345678).'
+            });
+        }
+
+        // 4. Ràng buộc Gmail / Email nhận thông báo đơn hàng
+        const cleanEmail = (customer_email || '').trim().toLowerCase();
+        if (!cleanEmail) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng cung cấp địa chỉ Gmail/Email để nhận thông tin đơn hàng và hóa đơn thanh toán!'
+            });
+        }
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(cleanEmail)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Địa chỉ Gmail/Email không đúng định dạng! Vui lòng nhập email hợp lệ (Ví dụ: khachhang@gmail.com).'
+            });
+        }
+
+        // 5. Ràng buộc Địa chỉ nhận hàng chi tiết
+        const cleanAddress = (shipping_address || '').trim();
+        if (!cleanAddress || cleanAddress.length < 10) {
+            return res.status(400).json({
+                success: false,
+                message: 'Địa chỉ giao hàng quá ngắn (tối thiểu 10 ký tự)! Vui lòng ghi chi tiết: Số nhà, ngõ/đường, phường/xã, quận/huyện, tỉnh/thành phố để shipper giao hàng tận nơi.'
+            });
+        }
+        if (cleanAddress.length > 300) {
+            return res.status(400).json({
+                success: false,
+                message: 'Địa chỉ giao hàng không được vượt quá 300 ký tự!'
+            });
+        }
+        const addressWords = cleanAddress.split(/\s+/).filter(w => w.length > 0);
+        if (addressWords.length < 3) {
+            return res.status(400).json({
+                success: false,
+                message: 'Địa chỉ nhận hàng chưa rõ ràng! Vui lòng cung cấp tối thiểu 3 thành phần (Số nhà/đường, phường/xã, quận/huyện, tỉnh/thành phố).'
+            });
+        }
+        const hasAddressLetters = /[a-zA-ZàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆĐÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ]/i.test(cleanAddress);
+        if (!hasAddressLetters) {
+            return res.status(400).json({
+                success: false,
+                message: 'Địa chỉ giao hàng không hợp lệ (không chứa tên đường, địa danh có chữ cái)!'
+            });
+        }
+        if (/(.)\1{5,}/.test(cleanAddress)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Địa chỉ giao hàng chứa chuỗi ký tự lặp vô nghĩa! Vui lòng nhập địa chỉ thực tế.'
+            });
         }
 
         // ========================================================
@@ -713,10 +792,10 @@ app.post('/api/orders', async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
         `, [
             orderCode,
-            customer_name.trim(),
-            customer_phone.trim(),
-            customer_email ? customer_email.trim() : '',
-            shipping_address.trim(),
+            trimmedName,
+            cleanPhone,
+            cleanEmail,
+            cleanAddress,
             payment_method || 'COD',
             calculatedTotal,
             note || '',
@@ -773,7 +852,10 @@ app.post('/api/orders', async (req, res) => {
                 id: orderId,
                 order_code: orderCode,
                 total_amount: calculatedTotal,
-                customer_name,
+                customer_name: trimmedName,
+                customer_phone: cleanPhone,
+                customer_email: cleanEmail,
+                shipping_address: cleanAddress,
                 status: 'pending',
                 payment_method: payment_method || 'COD',
                 payment_status

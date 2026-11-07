@@ -125,6 +125,16 @@ function setupEventListeners() {
             userDropdown?.classList.add('hidden');
         }
     });
+
+    // Realtime validation filter for phone numbers (only allow numbers, spaces, plus, hyphens)
+    ['orderCustomerPhone', 'drawerCustomerPhone'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[^0-9\+\s\.\-]/g, '');
+            });
+        }
+    });
 }
 
 // Flash Sale Countdown Timer
@@ -1246,9 +1256,11 @@ function toggleCartDrawer(open) {
         if (user) {
             const dName = document.getElementById('drawerCustomerName');
             const dPhone = document.getElementById('drawerCustomerPhone');
+            const dEmail = document.getElementById('drawerCustomerEmail');
             const dAddr = document.getElementById('drawerShippingAddress');
             if (dName && !dName.value) dName.value = user.name || '';
             if (dPhone && !dPhone.value) dPhone.value = user.phone || '';
+            if (dEmail && !dEmail.value) dEmail.value = user.email || '';
             if (dAddr && !dAddr.value) dAddr.value = user.address || '';
             syncDrawerToCheckout();
         }
@@ -1263,16 +1275,19 @@ function toggleCartDrawer(open) {
 function syncDrawerToCheckout() {
     const dName = document.getElementById('drawerCustomerName');
     const dPhone = document.getElementById('drawerCustomerPhone');
+    const dEmail = document.getElementById('drawerCustomerEmail');
     const dAddr = document.getElementById('drawerShippingAddress');
     const dNote = document.getElementById('drawerOrderNote');
 
     const mName = document.getElementById('orderCustomerName');
     const mPhone = document.getElementById('orderCustomerPhone');
+    const mEmail = document.getElementById('orderCustomerEmail');
     const mAddr = document.getElementById('orderShippingAddress');
     const mNote = document.getElementById('orderNote');
 
     if (dName && mName && dName.value !== undefined) mName.value = dName.value;
     if (dPhone && mPhone && dPhone.value !== undefined) mPhone.value = dPhone.value;
+    if (dEmail && mEmail && dEmail.value !== undefined) mEmail.value = dEmail.value;
     if (dAddr && mAddr && dAddr.value !== undefined) mAddr.value = dAddr.value;
     if (dNote && mNote && dNote.value !== undefined) mNote.value = dNote.value;
 }
@@ -1280,16 +1295,19 @@ function syncDrawerToCheckout() {
 function syncCheckoutToDrawer() {
     const dName = document.getElementById('drawerCustomerName');
     const dPhone = document.getElementById('drawerCustomerPhone');
+    const dEmail = document.getElementById('drawerCustomerEmail');
     const dAddr = document.getElementById('drawerShippingAddress');
     const dNote = document.getElementById('drawerOrderNote');
 
     const mName = document.getElementById('orderCustomerName');
     const mPhone = document.getElementById('orderCustomerPhone');
+    const mEmail = document.getElementById('orderCustomerEmail');
     const mAddr = document.getElementById('orderShippingAddress');
     const mNote = document.getElementById('orderNote');
 
     if (mName && dName) dName.value = mName.value;
     if (mPhone && dPhone) dPhone.value = mPhone.value;
+    if (mEmail && dEmail) dEmail.value = mEmail.value;
     if (mAddr && dAddr) dAddr.value = mAddr.value;
     if (mNote && dNote) dNote.value = mNote.value;
 }
@@ -1392,6 +1410,11 @@ async function submitCheckout(e) {
     e.preventDefault();
     const { items, total } = getCartTotals();
 
+    if (!items || items.length === 0) {
+        showToast('warning', 'Giỏ hàng đang trống! Vui lòng chọn ít nhất 1 sản phẩm.');
+        return;
+    }
+
     // Sync any updates from drawer or inputs
     syncDrawerToCheckout();
 
@@ -1403,18 +1426,78 @@ async function submitCheckout(e) {
     const paymentMethodEl = document.querySelector('input[name="paymentMethod"]:checked');
     const payment_method = paymentMethodEl ? paymentMethodEl.value : 'COD';
 
-    if (!customer_name) {
-        showToast('warning', 'Vui lòng nhập họ và tên người nhận hàng!');
+    // 1. Ràng buộc Họ và tên người nhận
+    if (!customer_name || customer_name.length < 2) {
+        showToast('warning', 'Vui lòng nhập họ và tên người nhận hàng (tối thiểu 2 ký tự)!');
         document.getElementById('orderCustomerName')?.focus();
         return;
     }
+    if (!/[a-zA-ZàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆĐÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ]/i.test(customer_name)) {
+        showToast('warning', 'Họ và tên người nhận không hợp lệ (cần chứa chữ cái)!');
+        document.getElementById('orderCustomerName')?.focus();
+        return;
+    }
+
+    // 2. Ràng buộc Số điện thoại (10 chữ số chuẩn mạng viễn thông Việt Nam)
     if (!customer_phone) {
         showToast('warning', 'Vui lòng cung cấp số điện thoại nhận hàng!');
         document.getElementById('orderCustomerPhone')?.focus();
         return;
     }
-    if (!shipping_address) {
-        showToast('warning', 'Vui lòng cung cấp địa chỉ giao hàng chi tiết!');
+    let cleanPhone = customer_phone.replace(/[\s\.\-\(\)]/g, '');
+    if (cleanPhone.startsWith('+84')) {
+        cleanPhone = '0' + cleanPhone.slice(3);
+    } else if (cleanPhone.startsWith('84') && cleanPhone.length === 11) {
+        cleanPhone = '0' + cleanPhone.slice(2);
+    }
+
+    const vnPhoneRegex = /^0[35789]\d{8}$/;
+    const isRepeatedDigits = /^0([0-9])\1{8}$/.test(cleanPhone);
+    if (!vnPhoneRegex.test(cleanPhone) || isRepeatedDigits || cleanPhone === '0900000000') {
+        showToast('warning', 'Số điện thoại không hợp lệ! Vui lòng nhập số di động Việt Nam gồm 10 chữ số (Đầu số: 03, 05, 07, 08, 09. Ví dụ: 0912345678).');
+        document.getElementById('orderCustomerPhone')?.focus();
+        return;
+    }
+
+    // 3. Ràng buộc Gmail / Email
+    if (!customer_email) {
+        showToast('warning', 'Vui lòng cung cấp địa chỉ Gmail/Email để nhận thông tin đơn hàng và hóa đơn!');
+        document.getElementById('orderCustomerEmail')?.focus();
+        return;
+    }
+    const cleanEmail = customer_email.toLowerCase();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(cleanEmail)) {
+        showToast('warning', 'Địa chỉ Gmail/Email không đúng định dạng! Vui lòng nhập email hợp lệ (Ví dụ: khachhang@gmail.com).');
+        document.getElementById('orderCustomerEmail')?.focus();
+        return;
+    }
+
+    // 4. Ràng buộc Địa chỉ nhận hàng chi tiết
+    if (!shipping_address || shipping_address.length < 10) {
+        showToast('warning', 'Địa chỉ giao hàng quá ngắn (tối thiểu 10 ký tự)! Vui lòng ghi chi tiết: Số nhà, tên ngõ/đường, phường/xã, quận/huyện, tỉnh/TP để shipper giao hàng tận nơi.');
+        document.getElementById('orderShippingAddress')?.focus();
+        return;
+    }
+    if (shipping_address.length > 300) {
+        showToast('warning', 'Địa chỉ giao hàng không được vượt quá 300 ký tự!');
+        document.getElementById('orderShippingAddress')?.focus();
+        return;
+    }
+    const addressWords = shipping_address.split(/\s+/).filter(w => w.length > 0);
+    if (addressWords.length < 3) {
+        showToast('warning', 'Địa chỉ giao hàng chưa rõ ràng! Vui lòng cung cấp tối thiểu 3 thành phần (Số nhà/đường, phường/xã, quận/huyện, tỉnh/thành phố).');
+        document.getElementById('orderShippingAddress')?.focus();
+        return;
+    }
+    const hasAddressLetters = /[a-zA-ZàáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệđìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆĐÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴ]/i.test(shipping_address);
+    if (!hasAddressLetters) {
+        showToast('warning', 'Địa chỉ giao hàng không hợp lệ (không chứa tên đường, địa danh có chữ cái)!');
+        document.getElementById('orderShippingAddress')?.focus();
+        return;
+    }
+    if (/(.)\1{5,}/.test(shipping_address)) {
+        showToast('warning', 'Địa chỉ giao hàng chứa chuỗi ký tự lặp vô nghĩa! Vui lòng nhập địa chỉ thực tế.');
         document.getElementById('orderShippingAddress')?.focus();
         return;
     }
@@ -1424,8 +1507,8 @@ async function submitCheckout(e) {
     try {
         const payload = {
             customer_name,
-            customer_phone,
-            customer_email,
+            customer_phone: cleanPhone,
+            customer_email: cleanEmail,
             shipping_address,
             payment_method,
             payment_status: 'pending',
@@ -1467,7 +1550,11 @@ async function submitCheckout(e) {
                         </div>
                         <div class="text-slate-700">
                             <span class="text-slate-400 font-semibold">Người nhận & SĐT:</span>
-                            <strong class="ml-1">${customer_name}</strong> - <span class="text-emerald-600 font-bold">${customer_phone}</span>
+                            <strong class="ml-1">${customer_name}</strong> - <span class="text-emerald-600 font-bold">${cleanPhone}</span>
+                        </div>
+                        <div class="text-slate-700 flex items-center space-x-1.5">
+                            <i class="fa-regular fa-envelope text-blue-500 shrink-0"></i>
+                            <div><span class="text-slate-400 font-semibold">Gmail nhận đơn:</span> <span class="font-medium text-slate-800">${cleanEmail}</span></div>
                         </div>
                         <div class="text-slate-700 flex items-start space-x-1.5">
                             <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0"></i>
@@ -1498,7 +1585,7 @@ async function submitCheckout(e) {
                         </div>
                     </div>
 
-                    <p class="text-[11px] text-slate-400 mt-2 italic text-center">MintMart sẽ liên hệ qua số điện thoại <strong>${customer_phone}</strong> để xác nhận và giao hàng nhanh nhất.</p>
+                    <p class="text-[11px] text-slate-400 mt-2 italic text-center">MintMart sẽ liên hệ qua SĐT <strong>${cleanPhone}</strong> và gửi email xác nhận đến <strong>${cleanEmail}</strong> để giao hàng nhanh nhất.</p>
                 </div>
             `,
             confirmButtonText: 'Tiếp tục mua hàng',
