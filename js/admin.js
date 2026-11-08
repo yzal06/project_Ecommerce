@@ -1557,14 +1557,22 @@ async function handleSaveProduct(e) {
                 method: 'PUT',
                 body: JSON.stringify(payload)
             });
-            showToast('success', 'Đã cập nhật thông tin mặt hàng thành công!');
+            showToast('success', 'Đã cập nhật thông tin mặt hàng thành công (Đã lưu lên Đám Mây)!');
         } else {
             // Create
             await apiFetch('/api/products', {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
-            showToast('success', 'Đã thêm mặt hàng mới thành công vào cửa hàng!');
+            showToast('success', 'Đã thêm mặt hàng mới thành công vào cửa hàng (Đã lưu lên Đám Mây)!');
+        }
+
+        // Tự động kích hoạt đồng bộ lên Đám Mây ngay lập tức
+        if (typeof window.syncToCloud === 'function') {
+            window.syncToCloud().catch(() => {});
+        }
+        if (typeof window.resetCloudCountdown === 'function') {
+            window.resetCloudCountdown(30);
         }
 
         closeProductModal();

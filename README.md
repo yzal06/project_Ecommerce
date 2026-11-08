@@ -6,7 +6,9 @@ Hệ thống được tách biệt thành **2 trang web riêng biệt**:
 1. **Giao diện Người sử dụng (Customer Storefront)**: Dành cho khách mua hàng trải nghiệm lướt web, tìm kiếm, lọc theo giá/danh mục, flash sale, giỏ hàng slide-out và đặt hàng.
 2. **Giao diện Quản trị viên (Admin Portal)**: Dành cho người quản lý hệ thống phân quyền (Role-Based Access Control), thêm mới/chỉnh sửa/xóa mặt hàng (hỗ trợ upload ảnh từ máy tính hoặc link URL), quản lý danh mục, xử lý đơn hàng và thống kê doanh thu với biểu đồ tương tác.
 
-Dữ liệu được **đồng bộ trực tiếp tức thì qua cơ sở dữ liệu SQLite**: Khi người quản trị thêm hoặc chỉnh sửa sản phẩm trong trang Quản trị, mặt hàng đó sẽ lập tức hiển thị trên trang bán hàng của khách.
+Dữ liệu được **đồng bộ trực tiếp tức thì qua cơ sở dữ liệu SQLite & Đám Mây (Cloud Storage)**: 
+* Khi quản trị viên thêm mới, chỉnh sửa hoặc gỡ mặt hàng, hệ thống tự động lưu vào SQLite local và **ngay lập tức đẩy snapshot lên Đám Mây đa thiết bị (Cloud Storage)**.
+* Mọi thiết bị khác (điện thoại di động, máy tính khác) đều tự động nhận dữ liệu mới theo chu kỳ 30 giây hoặc ngay khi thao tác.
 
 Đặc biệt, hệ thống tích hợp **API Đồng bộ đa kênh (Omnichannel) với Shopee & Lazada**:
 * **Ràng buộc kiểm tra tồn kho liên sàn**: Khách không thể đặt vượt quá số lượng hàng có sẵn trong kho.

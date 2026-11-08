@@ -8,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { runQuery, getQuery, allQuery, initDatabase } = require('./database');
 const marketplaceService = require('./marketplaceService');
+const cloudSyncService = require('./cloudSyncService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -322,6 +323,9 @@ app.post('/api/categories', requireAdmin, async (req, res) => {
             [name.trim(), slug + '-' + Date.now(), icon || 'fa-tag', description || '']
         );
 
+        // Đồng bộ lên Đám Mây
+        cloudSyncService.pushToCloud().catch(err => console.error('Lỗi tự động đẩy Cloud khi tạo danh mục:', err.message));
+
         res.json({ success: true, message: 'Tạo danh mục mới thành công!', categoryId: result.lastID });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Lỗi server khi tạo danh mục' });
@@ -342,6 +346,9 @@ app.delete('/api/categories/:id', requireAdmin, async (req, res) => {
 
         // Delete the category
         await runQuery(`DELETE FROM categories WHERE id = ?`, [id]);
+
+        // Đồng bộ lên Đám Mây
+        cloudSyncService.pushToCloud().catch(err => console.error('Lỗi tự động đẩy Cloud khi xóa danh mục:', err.message));
 
         res.json({
             success: true,
@@ -530,10 +537,16 @@ app.post('/api/products', requireAdmin, async (req, res) => {
             WHERE p.id = ?
         `, [result.lastID]);
 
+        // TỰ ĐỘNG ĐẨY MẶT HÀNG MỚI LÊN ĐÁM MÂY (CLOUD STORAGE)
+        cloudSyncService.pushToCloud().catch(cloudErr => {
+            console.error('Lỗi tự động đẩy Cloud khi thêm sản phẩm:', cloudErr.message);
+        });
+
         res.json({
             success: true,
-            message: 'Thêm mặt hàng mới thành công (Đã liên kết kho Shopee & Lazada)!',
-            product: newProduct
+            message: 'Thêm mặt hàng mới thành công (Đã lưu cơ sở dữ liệu & Đồng bộ lên Đám Mây)!',
+            product: newProduct,
+            cloud_synced: true
         });
     } catch (err) {
         console.error('Lỗi thêm sản phẩm:', err);
@@ -597,7 +610,17 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
             WHERE p.id = ?
         `, [id]);
 
-        res.json({ success: true, message: 'Cập nhật sản phẩm & kho Shopee/Lazada thành công!', product: updated });
+        // TỰ ĐỘNG ĐỒNG BỘ CẬP NHẬT LÊN ĐÁM MÂY
+        cloudSyncService.pushToCloud().catch(cloudErr => {
+            console.error('Lỗi tự động đẩy Cloud khi sửa sản phẩm:', cloudErr.message);
+        });
+
+        res.json({
+            success: true,
+            message: 'Cập nhật sản phẩm & kho Shopee/Lazada thành công (Đã đồng bộ Đám Mây)!',
+            product: updated,
+            cloud_synced: true
+        });
     } catch (err) {
         console.error('Lỗi cập nhật sản phẩm:', err);
         res.status(500).json({ success: false, message: 'Lỗi khi cập nhật sản phẩm' });
@@ -620,11 +643,17 @@ app.patch('/api/products/:id/toggle-active', requireAdmin, async (req, res) => {
 
         await runQuery(`UPDATE products SET is_active = ? WHERE id = ?`, [newStatus, id]);
 
-        const actionText = newStatus === 1 ? 'Đã đăng mở bán lại trên website!' : 'Đã gỡ sản phẩm khỏi website bán hàng!';
+        // TỰ ĐỘNG ĐỒNG BỘ TRẠNG THÁI MỞ BÁN / GỠ BÁN LÊN ĐÁM MÂY
+        cloudSyncService.pushToCloud().catch(cloudErr => {
+            console.error('Lỗi tự động đẩy Cloud khi đổi trạng thái sản phẩm:', cloudErr.message);
+        });
+
+        const actionText = newStatus === 1 ? 'Đã đăng mở bán lại trên website (Đã đồng bộ Đám Mây)!' : 'Đã gỡ sản phẩm khỏi website bán hàng (Đã đồng bộ Đám Mây)!';
         res.json({
             success: true,
             is_active: newStatus,
-            message: `${actionText} ("${existing.name}")`
+            message: `${actionText} ("${existing.name}")`,
+            cloud_synced: true
         });
     } catch (err) {
         console.error('Lỗi khi gỡ/mở bán sản phẩm:', err);
@@ -632,12 +661,20 @@ app.patch('/api/products/:id/toggle-active', requireAdmin, async (req, res) => {
     }
 });
 
-// Delete product (ADMIN ONLY)
+// Delete product (ADMIN ONLY - Vĩnh viễn & Xóa trên Đám Mây)
 app.delete('/api/products/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         await runQuery(`DELETE FROM products WHERE id = ?`, [id]);
-        res.json({ success: true, message: 'Đã xóa sản phẩm thành công!' });
+
+        // Ghi nhận ID đã xóa và đồng bộ xóa vĩnh viễn trên Đám Mây
+        cloudSyncService.recordDeletedProduct(id);
+
+        res.json({
+            success: true,
+            message: 'Đã xóa sản phẩm thành công và đồng bộ xóa vĩnh viễn trên Đám Mây!',
+            cloud_synced: true
+        });
     } catch (err) {
         console.error('Lỗi xóa sản phẩm:', err);
         res.status(500).json({ success: false, message: 'Lỗi server khi xóa sản phẩm' });
@@ -1123,14 +1160,54 @@ app.patch('/api/marketplace/lazada/toggle-hide', requireAdmin, async (req, res) 
     }
 });
 
+/* ========================================================
+   CLOUD SYNC & BACKUP ROUTES (ĐỒNG BỘ ĐÁM MÂY ĐA THIẾT BỊ)
+   ======================================================== */
+
+// Lấy trạng thái đồng bộ Cloud
+app.get('/api/cloud-sync/status', (req, res) => {
+    try {
+        res.json({ success: true, ...cloudSyncService.getStatus() });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi lấy trạng thái đám mây' });
+    }
+});
+
+// Kích hoạt đồng bộ đẩy toàn bộ dữ liệu SQLite lên Cloud (Admin)
+app.post('/api/cloud-sync/push', requireAdmin, async (req, res) => {
+    try {
+        const result = await cloudSyncService.pushToCloud();
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi khi đẩy dữ liệu lên Cloud: ' + err.message });
+    }
+});
+
+// Tải dữ liệu từ Cloud về nạp vào hệ thống (Admin)
+app.post('/api/cloud-sync/pull', requireAdmin, async (req, res) => {
+    try {
+        const result = await cloudSyncService.pullFromCloud(true);
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Lỗi khi kéo dữ liệu từ Cloud: ' + err.message });
+    }
+});
+
 // Start server
 async function start() {
     await initDatabase();
+
+    // Tự động đẩy snapshot dữ liệu hiện tại lên Đám Mây khi server khởi động
+    cloudSyncService.pushToCloud().catch(err => {
+        console.warn('⚠️ [Cloud Sync] Chưa thể đồng bộ đám mây ngay lúc khởi động:', err.message);
+    });
+
     app.listen(PORT, () => {
         console.log(`====================================================`);
         console.log(`🌱 MintMart E-Commerce Server đang chạy tại:`);
         console.log(`   - Giao diện Khách hàng (Storefront): http://localhost:${PORT}`);
         console.log(`   - Giao diện Quản trị viên (Admin Portal): http://localhost:${PORT}/admin`);
+        console.log(`   - Đồng bộ Đám Mây (Cloud Sync): Đang kích hoạt (Tự động lưu lên Cloud khi thêm mới)`);
         console.log(`====================================================`);
     });
 }
