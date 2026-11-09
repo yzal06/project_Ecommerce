@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌿 MintMart - Đang chuyển hướng...</title>
+    <script>
+        (function() {
+            var path = window.location.pathname;
+            // Clean routing for static hosting / GitHub Pages
+            if (path.endsWith('/admin') || path.endsWith('/admin/')) {
+                window.location.replace(window.location.origin + path.replace(/\/admin\/?$/, '/admin.html') + window.location.search + window.location.hash);
+            } else if (path.endsWith('/products') || path.endsWith('/products/')) {
+                window.location.replace(window.location.origin + path.replace(/\/products\/?$/, '/products.html') + window.location.search + window.location.hash);
+            } else if (path.endsWith('/deals') || path.endsWith('/deals/')) {
+                window.location.replace(window.location.origin + path.replace(/\/deals\/?$/, '/deals.html') + window.location.search + window.location.hash);
+            } else if (path.endsWith('/hot') || path.endsWith('/hot/')) {
+                window.location.replace(window.location.origin + path.replace(/\/hot\/?$/, '/hot.html') + window.location.search + window.location.hash);
+            } else {
+                window.location.replace(window.location.origin + '/index.html');
+            }
+        })();
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0f172a;
+            color: #10b981;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+            padding: 20px;
+        }
+        a {
+            color: #34d399;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h2>🌿 Đang chuyển hướng đến MintMart...</h2>
+        <p style="color: #94a3b8; font-size: 14px;">Nếu trang không tự chuyển, <a href="index.html">bấm vào đây để về trang chủ</a> hoặc <a href="admin.html">vào Cổng Quản Trị</a>.</p>
+    </div>
+</body>
+</html>

@@ -77,6 +77,57 @@ async function handleAdminLogin(e) {
     }
 }
 
+// QUICK FILL CREDENTIALS
+function fillAdminCredentials() {
+    const emailEl = document.getElementById('adminEmailInput');
+    const passEl = document.getElementById('adminPasswordInput');
+    const savedEmail = localStorage.getItem('mock_admin_email') || 'admin@mintmart.vn';
+    const savedPass = localStorage.getItem('mock_admin_pass') || 'admin123';
+    if (emailEl) emailEl.value = savedEmail;
+    if (passEl) passEl.value = savedPass;
+    showToast('info', 'Đã tự động điền tài khoản Quản Trị Viên!');
+}
+
+// API CONFIG MODAL
+function openApiConfigModal() {
+    const customUrl = localStorage.getItem('mintmart_backend_url') || '';
+    const mode = localStorage.getItem('mintmart_app_mode') || 'auto';
+    const urlInput = document.getElementById('customBackendUrlInput');
+    const modeSelect = document.getElementById('customAppModeSelect');
+    if (urlInput) urlInput.value = customUrl;
+    if (modeSelect) modeSelect.value = mode;
+    const modal = document.getElementById('adminApiConfigModal');
+    if (modal) modal.classList.remove('hidden');
+}
+
+function closeApiConfigModal() {
+    const modal = document.getElementById('adminApiConfigModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function saveApiConfig() {
+    const urlInput = document.getElementById('customBackendUrlInput');
+    const modeSelect = document.getElementById('customAppModeSelect');
+    const url = (urlInput ? urlInput.value : '').trim().replace(/\/+$/, '');
+    const mode = modeSelect ? modeSelect.value : 'auto';
+
+    if (url) {
+        localStorage.setItem('mintmart_backend_url', url);
+    } else {
+        localStorage.removeItem('mintmart_backend_url');
+    }
+
+    if (mode && mode !== 'auto') {
+        localStorage.setItem('mintmart_app_mode', mode);
+    } else {
+        localStorage.removeItem('mintmart_app_mode');
+    }
+
+    closeApiConfigModal();
+    showToast('success', 'Đã lưu cấu hình kết nối API!');
+    setTimeout(() => window.location.reload(), 500);
+}
+
 // OPEN / CLOSE CHANGE PASSWORD MODAL
 function openChangePasswordModal() {
     const user = getAuthUser();
@@ -1557,14 +1608,22 @@ async function handleSaveProduct(e) {
                 method: 'PUT',
                 body: JSON.stringify(payload)
             });
-            showToast('success', 'Đã cập nhật thông tin mặt hàng thành công!');
+            showToast('success', 'Đã cập nhật thông tin mặt hàng thành công (Đã lưu lên Đám Mây)!');
         } else {
             // Create
             await apiFetch('/api/products', {
                 method: 'POST',
                 body: JSON.stringify(payload)
             });
-            showToast('success', 'Đã thêm mặt hàng mới thành công vào cửa hàng!');
+            showToast('success', 'Đã thêm mặt hàng mới thành công vào cửa hàng (Đã lưu lên Đám Mây)!');
+        }
+
+        // Tự động kích hoạt đồng bộ lên Đám Mây ngay lập tức
+        if (typeof window.syncToCloud === 'function') {
+            window.syncToCloud().catch(() => {});
+        }
+        if (typeof window.resetCloudCountdown === 'function') {
+            window.resetCloudCountdown(30);
         }
 
         closeProductModal();

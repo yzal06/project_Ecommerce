@@ -45,16 +45,20 @@ const upload = multer({
 });
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static directories (Supports both root and public/ directory structure)
-app.use('/uploads', express.static(uploadsDir));
-app.use(express.static(__dirname));
-app.use(express.static(path.join(__dirname, 'public')));
+// Health Check API
+app.get('/api/health', (req, res) => {
+    res.json({ success: true, status: 'online', service: 'MintMart E-Commerce API', timestamp: new Date().toISOString() });
+});
 
-// Specific friendly routes for clean URLs
+// Specific friendly routes for clean URLs (prioritized before static handler)
 app.get('/admin', (req, res) => {
     const adminPath = fs.existsSync(path.join(__dirname, 'admin.html'))
         ? path.join(__dirname, 'admin.html')
@@ -82,6 +86,11 @@ app.get('/deals', (req, res) => {
         : path.join(__dirname, 'public', 'deals.html');
     res.sendFile(p);
 });
+
+// Serve static directories (Supports both root and public/ directory structure)
+app.use('/uploads', express.static(uploadsDir));
+app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Auth Middleware
 const authenticateToken = (req, res, next) => {

@@ -5,6 +5,17 @@
  */
 
 const API_BASE = ''; // Same origin
+let _mintmartBackendAvailable = null;
+
+function getApiBase() {
+    try {
+        const custom = localStorage.getItem('mintmart_backend_url') || localStorage.getItem('mintmart_api_base');
+        if (custom && custom.trim()) {
+            return custom.trim().replace(/\/+$/, '');
+        }
+    } catch (e) {}
+    return API_BASE;
+}
 
 // Storage keys
 const TOKEN_KEY = 'mintmart_token';
@@ -16,6 +27,24 @@ const MOCK_DELETED_PRODUCTS_KEY = 'mintmart_deleted_products_v2';
 const MOCK_DELETED_CATEGORIES_KEY = 'mintmart_deleted_categories_v2';
 const MOCK_ORDERS_KEY = 'mintmart_mock_orders_v2';
 const MOCK_LOGS_KEY = 'mintmart_mock_logs_v2';
+const MOCK_USERS_KEY = 'mintmart_mock_users_v2';
+
+function getMockUsers() {
+    try {
+        const stored = localStorage.getItem(MOCK_USERS_KEY);
+        if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    const adminEmail = (localStorage.getItem('mock_admin_email') || 'admin@mintmart.vn').toLowerCase().trim();
+    const adminName = localStorage.getItem('mock_admin_name') || 'Quản Trị Viên (Admin)';
+    const initUsers = [
+        { id: 1, name: adminName, email: adminEmail, phone: '0901234567', address: '124 Hoàng Quốc Việt, Cầu Giấy, Hà Nội', role: 'admin', created_at: '2026-10-01' },
+        { id: 2, name: 'Nguyễn Văn An', email: 'khachhang@gmail.com', phone: '0912345678', address: '45 Lê Duẩn, Quận 1, TP. Hồ Chí Minh', role: 'customer', created_at: '2026-10-15' },
+        { id: 3, name: 'Trần Thị Mai', email: 'maitran@gmail.com', phone: '0987654321', address: '88 Nguyễn Trãi, Thanh Xuân, Hà Nội', role: 'customer', created_at: '2026-10-20' },
+        { id: 4, name: 'Lê Hoàng Long', email: 'longle@gmail.com', phone: '0934567890', address: '12 Bạch Đằng, Hải Châu, Đà Nẵng', role: 'customer', created_at: '2026-10-25' }
+    ];
+    localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(initUsers));
+    return initUsers;
+}
 
 // Danh sách sản phẩm đã bị xóa vĩnh viễn (Tombstones - Ngăn sản phẩm cũ hồi sinh)
 function getDeletedProductIds() {
@@ -639,12 +668,21 @@ function getMockLogs() {
     return initLogs;
 }
 
-// Check if running on GitHub Pages or static host
+// Check if running on GitHub Pages, static host or offline fallback
 function isStaticOrGitHubPages() {
+    if (_mintmartBackendAvailable === false) return true;
+    if (_mintmartBackendAvailable === true) return false;
+
+    try {
+        const forcedMode = localStorage.getItem('mintmart_app_mode');
+        if (forcedMode === 'static') return true;
+        if (forcedMode === 'backend') return false;
+    } catch (e) {}
+
     return window.location.hostname.includes('github.io') || 
            window.location.protocol === 'file:' || 
            window.location.port === '5500' ||
-           window.location.hostname === 'localhost' && window.location.port === '';
+           (window.location.hostname === 'localhost' && window.location.port === '');
 }
 
 // 2. Client-side Mock Handler
@@ -892,8 +930,12 @@ async function handleMockApi(endpoint, options = {}) {
     }
 
     // I. UPLOAD IMAGE
-    if (path === '/api/products/upload-image' && method === 'POST') {
-        return { success: true, imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80' };
+    if ((path === '/api/upload' || path === '/api/products/upload-image') && method === 'POST') {
+        return {
+            success: true,
+            imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80',
+            message: 'Tải ảnh sản phẩm lên thành công!'
+        };
     }
 
     // J. AUTH LOGIN
@@ -1090,17 +1132,129 @@ async function handleMockApi(endpoint, options = {}) {
         return { success: true, message: `Đã cập nhật trạng thái thanh toán sang: ${body.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}` };
     }
 
-    // O. REVENUE STATS
-    if (path === '/api/stats/revenue') {
+    // O. DASHBOARD & REVENUE STATS
+    if (path === '/api/stats/dashboard' || path === '/api/stats/revenue') {
         const orders = getMockOrders();
         const prods = getMockProducts();
-        const totalRev = orders.reduce((s, o) => s + (o.total_amount || 0), 0);
+        const categories = getMockCategories();
+        const users = getMockUsers();
+
+        const nonCancelled = orders.filter(o => o.status !== 'cancelled');
+        const totalRev = nonCancelled.reduce((s, o) => s + (o.total_amount || 0), 0);
+        const recentOrders = orders.slice(0, 5);
+        const lowStockProducts = prods.filter(p => (p.stock || 0) <= 15).sort((a, b) => a.stock - b.stock).slice(0, 5);
+
+        const salesByCategory = categories.map(c => {
+            const catProds = prods.filter(p => p.category_id == c.id);
+            const totalSold = catProds.reduce((sum, p) => sum + (p.sold_count || 0), 0);
+            return {
+                name: c.name,
+                product_count: catProds.length,
+                total_sold: totalSold
+            };
+        });
+
+        // Generate 7-day marketplace data for Shopee & Lazada
+        const days = [];
+        const shopeeDaily = [];
+        const lazadaDaily = [];
+        const shopeeBaseline = [
+            { orders: 14, units: 38, baseRev: 21500000 },
+            { orders: 18, units: 46, baseRev: 27800000 },
+            { orders: 16, units: 42, baseRev: 24200000 },
+            { orders: 22, units: 58, baseRev: 34500000 },
+            { orders: 25, units: 64, baseRev: 39100000 },
+            { orders: 32, units: 85, baseRev: 48600000 },
+            { orders: 28, units: 72, baseRev: 42300000 }
+        ];
+        const lazadaBaseline = [
+            { orders: 9,  units: 24, baseRev: 14200000 },
+            { orders: 11, units: 29, baseRev: 17500000 },
+            { orders: 10, units: 26, baseRev: 15800000 },
+            { orders: 15, units: 38, baseRev: 22900000 },
+            { orders: 17, units: 44, baseRev: 26400000 },
+            { orders: 21, units: 55, baseRev: 32800000 },
+            { orders: 19, units: 48, baseRev: 28500000 }
+        ];
+
+        let shpTotalRev = 0, shpTotalOrders = 0, shpTotalUnits = 0;
+        let lazTotalRev = 0, lazTotalOrders = 0, lazTotalUnits = 0;
+
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().slice(0, 10);
+            const shortDay = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()];
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dayLabel = `${shortDay} (${dd}/${mm})`;
+            const fullDate = `${dd}/${mm}/${d.getFullYear()}`;
+            days.push(dayLabel);
+            const idx = 6 - i;
+
+            const shpB = shopeeBaseline[idx];
+            shpTotalRev += shpB.baseRev;
+            shpTotalOrders += shpB.orders;
+            shpTotalUnits += shpB.units;
+            shopeeDaily.push({
+                date: fullDate,
+                dateKey: dateStr,
+                dayLabel,
+                orders: shpB.orders,
+                units: shpB.units,
+                revenue: shpB.baseRev,
+                real_synced_orders: 0
+            });
+
+            const lazB = lazadaBaseline[idx];
+            lazTotalRev += lazB.baseRev;
+            lazTotalOrders += lazB.orders;
+            lazTotalUnits += lazB.units;
+            lazadaDaily.push({
+                date: fullDate,
+                dateKey: dateStr,
+                dayLabel,
+                orders: lazB.orders,
+                units: lazB.units,
+                revenue: lazB.baseRev,
+                real_synced_orders: 0
+            });
+        }
+
+        const marketplace7Days = {
+            days,
+            shopee: {
+                platform: 'Shopee',
+                shop_name: 'MintMart Official Store (Shopee Mall)',
+                status_label: 'Đang kết nối API v2',
+                total_revenue: shpTotalRev,
+                total_orders: shpTotalOrders,
+                total_units: shpTotalUnits,
+                daily: shopeeDaily
+            },
+            lazada: {
+                platform: 'Lazada',
+                shop_name: 'MintMart LazMall Flagship Store',
+                status_label: 'Tạm ẩn theo yêu cầu quản trị viên',
+                is_temporarily_hidden: true,
+                total_revenue: lazTotalRev,
+                total_orders: lazTotalOrders,
+                total_units: lazTotalUnits,
+                daily: lazadaDaily
+            }
+        };
+
         return {
             success: true,
             stats: {
-                totalRevenue: totalRev,
-                totalOrders: orders.length,
+                totalRevenue: totalRev || 42850000,
+                totalOrders: orders.length || 24,
                 totalProducts: prods.length,
+                totalCustomers: users.length || 15,
+                recentOrders,
+                lowStockProducts,
+                salesByCategory,
+                marketplace7Days,
                 monthlyRevenue: [
                     { month: '05/2026', revenue: 18500000 },
                     { month: '06/2026', revenue: 24200000 },
@@ -1287,6 +1441,12 @@ async function handleMockApi(endpoint, options = {}) {
         return { success: true, count: getMockLogs().length, logs: getMockLogs() };
     }
     if (path === '/api/marketplace/settings') {
+        if (method === 'PUT') {
+            return {
+                success: true,
+                message: 'Cập nhật cấu hình kết nối sàn Shopee & Lazada thành công!'
+            };
+        }
         return {
             success: true,
             settings: {
@@ -1300,6 +1460,23 @@ async function handleMockApi(endpoint, options = {}) {
             }
         };
     }
+    if (path === '/api/marketplace/test-connection' && method === 'POST') {
+        const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+        const platform = (body.platform || 'shopee').toLowerCase();
+        const isShopee = platform === 'shopee';
+        return {
+            success: true,
+            result: {
+                platform: isShopee ? 'Shopee Open Platform V2' : 'Lazada Open Platform',
+                shop_name: isShopee ? 'MintMart Official Store' : 'MintMart Vietnam Mall',
+                seller_name: isShopee ? 'MintMart Store' : 'MintMart Vietnam Mall',
+                api_version: isShopee ? 'v2.0-prod' : 'v1.4-live',
+                latency_ms: Math.floor(45 + Math.random() * 30),
+                status: 'connected',
+                message: 'Đường truyền API bảo mật HMAC-SHA256 phản hồi hoàn hảo trong thời gian thực!'
+            }
+        };
+    }
     if (path === '/api/marketplace/lazada/toggle-hide') {
         return {
             success: true,
@@ -1309,6 +1486,25 @@ async function handleMockApi(endpoint, options = {}) {
     }
     if (path === '/api/marketplace/sync-all') {
         return { success: true, message: 'Đồng bộ toàn bộ kho hàng lên Shopee & Lazada thành công!' };
+    }
+
+    // USER MANAGEMENT
+    if (path === '/api/users' && method === 'GET') {
+        const users = getMockUsers();
+        return { success: true, count: users.length, users };
+    }
+
+    const userRoleMatch = path.match(/^\/api\/users\/(\d+)\/role$/);
+    if (userRoleMatch && (method === 'PUT' || method === 'PATCH')) {
+        const uid = parseInt(userRoleMatch[1], 10);
+        const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+        const users = getMockUsers();
+        const u = users.find(x => x.id === uid);
+        if (u) {
+            u.role = body.role || 'customer';
+            localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+        }
+        return { success: true, message: 'Cập nhật phân quyền người dùng thành công!' };
     }
 
     // R. CLOUD SYNC & BACKUP MANAGEMENT ENDPOINTS
@@ -1421,9 +1617,9 @@ function formatDate(dateStr) {
     });
 }
 
-// Unified API Fetch wrapper with GitHub Pages & Offline Fallback
+// Unified API Fetch wrapper with GitHub Pages, Custom Domain & Resilient Fallback
 async function apiFetch(endpoint, options = {}) {
-    // If running on GitHub Pages or static host, route directly to client mock DB
+    // If running in known static mode or backend was already verified as unavailable
     if (isStaticOrGitHubPages()) {
         try {
             return await handleMockApi(endpoint, options);
@@ -1433,8 +1629,9 @@ async function apiFetch(endpoint, options = {}) {
         }
     }
 
-    // When running with backend (e.g. Node server on localhost:3000)
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+    // When attempting backend fetch (e.g. Node server on localhost:3000 or custom domain backend)
+    const base = getApiBase();
+    const url = endpoint.startsWith('http') ? endpoint : `${base}${endpoint}`;
     const headers = options.headers || {};
 
     const token = getAuthToken();
@@ -1449,25 +1646,42 @@ async function apiFetch(endpoint, options = {}) {
     try {
         const response = await fetch(url, { ...options, headers });
         if (response.ok) {
+            _mintmartBackendAvailable = true;
             return await response.json();
         }
 
-        // If backend returned 404 or not found, try fallback mock
-        if (response.status === 404) {
+        // If backend returned 404 (Not Found) or 405 (Method Not Allowed - common on static hosts for POST)
+        // or server errors (501, 502, 503, 504):
+        if (response.status === 404 || response.status === 405 || response.status >= 500) {
+            _mintmartBackendAvailable = false;
+            console.warn(`[MintMart] Máy chủ phản hồi HTTP ${response.status} cho [${endpoint}]. Tự động chuyển sang chế độ Client-side DB & Cloud Sync.`);
             return await handleMockApi(endpoint, options);
         }
 
+        // For other 4xx errors:
         const data = await response.json().catch(() => ({}));
-        const serverError = new Error(data.message || `Lỗi HTTP ${response.status}`);
-        serverError.status = response.status;
-        serverError.data = data;
-        throw serverError;
+        // If the server returned an explicit JSON error message from our Express backend, propagate it
+        if (data && data.message && (data.success === false || data.success === true)) {
+            _mintmartBackendAvailable = true;
+            const appErr = new Error(data.message);
+            appErr.isAppError = true;
+            appErr.status = response.status;
+            appErr.data = data;
+            throw appErr;
+        }
+
+        // Non-JSON or generic web server 4xx error page (e.g. 403 Forbidden directory on static hosting):
+        _mintmartBackendAvailable = false;
+        console.warn(`[MintMart] Phản hồi không phải API hợp lệ (${response.status}) cho [${endpoint}]. Chuyển sang Client-side DB.`);
+        return await handleMockApi(endpoint, options);
+
     } catch (err) {
-        // If it is an explicit 4xx validation/auth error from the server, propagate it to UI
-        if (err.status && err.status >= 400 && err.status < 500 && err.status !== 404) {
+        if (err.isAppError) {
             throw err;
         }
-        console.warn(`Backend fetch failed for [${endpoint}], falling back to Client-side DB:`, err.message);
+        // Connection refused, network error, CORS, or host down
+        _mintmartBackendAvailable = false;
+        console.warn(`[MintMart] Kết nối máy chủ backend thất bại cho [${endpoint}]:`, err.message, `. Đang kích hoạt Client-side DB.`);
         return await handleMockApi(endpoint, options);
     }
 }
