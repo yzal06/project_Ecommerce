@@ -963,13 +963,18 @@ async function handleMockApi(endpoint, options = {}) {
                 user: { id: 2, email: 'khachhang@gmail.com', name: 'Nguyễn Văn An', role: 'customer' }
             };
         } else {
-            // Allow general login for demo
-            return {
-                success: true,
-                message: 'Đăng nhập thành công!',
-                token: 'mock-demo-token-' + Date.now(),
-                user: { id: 99, email: email, name: email.split('@')[0], role: email.includes('admin') ? 'admin' : 'customer' }
-            };
+            // Check registered customer users
+            const users = getMockUsers();
+            const matched = users.find(u => (u.email || '').toLowerCase().trim() === email && u.role !== 'admin');
+            if (matched && pass && pass.length >= 6) {
+                return {
+                    success: true,
+                    message: 'Đăng nhập thành công!',
+                    token: 'mock-user-token-' + Date.now(),
+                    user: { id: matched.id, email: matched.email, name: matched.name, role: 'customer' }
+                };
+            }
+            throw new Error('Email hoặc mật khẩu không chính xác! Vui lòng kiểm tra lại.');
         }
     }
 

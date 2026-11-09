@@ -77,26 +77,14 @@
                     </div>
                 </div>
 
-                <div class="p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl text-left text-[11px] text-slate-600 space-y-1">
-                    <div class="flex items-center justify-between text-emerald-800 font-bold">
-                        <span><i class="fa-solid fa-key mr-1 text-emerald-600"></i> Tài khoản Admin mặc định:</span>
-                        <button type="button" onclick="fillAdminCredentials()" class="text-[10px] text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-100 transition">Điền nhanh</button>
-                    </div>
-                    <div>Email: <strong class="font-mono text-slate-800">admin@mintmart.vn</strong></div>
-                    <div>Mật khẩu: <strong class="font-mono text-slate-800">admin123</strong></div>
-                </div>
-
                 <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg transition flex items-center justify-center">
                     <i class="fa-solid fa-arrow-right-to-bracket mr-2"></i> Đăng Nhập Quản Trị
                 </button>
 
-                <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                    <a href="index.html" class="hover:text-emerald-600 flex items-center">
-                        <i class="fa-solid fa-arrow-left mr-1"></i> Về Cửa Hàng
+                <div class="text-center pt-2">
+                    <a href="index.html" class="text-xs text-slate-500 hover:text-emerald-600 flex items-center justify-center transition">
+                        <i class="fa-solid fa-arrow-left mr-1.5"></i> Trở về Cửa Hàng Bán Hàng
                     </a>
-                    <button type="button" onclick="openApiConfigModal()" class="hover:text-emerald-600 flex items-center text-slate-400">
-                        <i class="fa-solid fa-gear mr-1"></i> Cấu hình Server API
-                    </button>
                 </div>
             </form>
         </div>
@@ -1406,46 +1394,7 @@
         </div>
     </div>
 
-    <!-- MODAL: CẤU HÌNH SERVER API & CHẾ ĐỘ HOẠT ĐỘNG -->
-    <div id="adminApiConfigModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
-            <button onclick="closeApiConfigModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center text-xs">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <div class="flex items-center space-x-3 mb-4">
-                <div class="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-600 flex items-center justify-center text-lg">
-                    <i class="fa-solid fa-server"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-slate-800 text-base">Cấu Hình Kết Nối API</h3>
-                    <p class="text-xs text-slate-400">Tùy biến URL máy chủ hoặc chế độ Đám Mây</p>
-                </div>
-            </div>
-            <div class="space-y-3.5 text-xs">
-                <div>
-                    <label class="block font-bold text-slate-700 mb-1">URL Máy Chủ Backend (Tùy chọn)</label>
-                    <input type="url" id="customBackendUrlInput" placeholder="Ví dụ: https://api.yourdomain.com (Để trống để tự động)" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500">
-                    <p class="text-[10px] text-slate-400 mt-1">Nếu bạn chạy Node.js server trên domain/cổng riêng (Render, VPS, v.v.). Để trống để hệ thống tự động nhận diện hoặc dùng Đám Mây.</p>
-                </div>
-                <div>
-                    <label class="block font-bold text-slate-700 mb-1">Chế Độ Hoạt Động</label>
-                    <select id="customAppModeSelect" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 bg-white">
-                        <option value="auto">Tự động (Khuyên dùng - Nhận diện Backend & Fallback Cloud)</option>
-                        <option value="static">Chế độ Đám Mây (Cloud Sync & Client DB - Dành cho GitHub Pages / Static Hosting)</option>
-                        <option value="backend">Bắt buộc dùng Backend Node.js / Express Server</option>
-                    </select>
-                </div>
-                <div class="flex items-center space-x-2 pt-2">
-                    <button type="button" onclick="closeApiConfigModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition">
-                        Đóng
-                    </button>
-                    <button type="button" onclick="saveApiConfig()" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">
-                        Lưu Cấu Hình
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Mobile Floating Action Button (Thêm Sản Phẩm Nhanh Trên Điện Thoại) -->
     <button onclick="openProductModal()" class="admin-mobile-fab md:hidden" title="Thêm mặt hàng mới trên điện thoại">

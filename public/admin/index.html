@@ -7,6 +7,16 @@
     <title>🌿 Đang chuyển hướng đến Cổng Quản Trị MintMart...</title>
     <script>
         (function() {
+            try {
+                var rawUser = localStorage.getItem('auth_user') || localStorage.getItem('mintmart_user');
+                if (rawUser) {
+                    var u = JSON.parse(rawUser);
+                    if (u && u.role && u.role !== 'admin') {
+                        window.location.replace('../index.html');
+                        return;
+                    }
+                }
+            } catch (e) {}
             var target = '../admin.html' + window.location.search + window.location.hash;
             window.location.replace(target);
         })();

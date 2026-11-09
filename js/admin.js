@@ -36,28 +36,48 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAdminAuth();
 });
 
-// Check Admin Authentication
+// Check Admin Authentication & Enforce Access Restriction
 function checkAdminAuth() {
     const user = getCurrentUser();
     const loginScreen = document.getElementById('adminLoginScreen');
     const mainLayout = document.getElementById('adminMainLayout');
 
     if (user && user.role === 'admin') {
-        loginScreen.classList.add('hidden');
-        mainLayout.classList.remove('hidden');
-        document.getElementById('sidebarAdminName').textContent = user.name;
+        if (loginScreen) loginScreen.classList.add('hidden');
+        if (mainLayout) mainLayout.classList.remove('hidden');
+        const nameEl = document.getElementById('sidebarAdminName');
+        if (nameEl) nameEl.textContent = user.name;
         initAdminDashboard();
+    } else if (user && user.role !== 'admin') {
+        // Hạn chế khách hàng hoặc người ngoài không có quyền truy cập vào Cổng Quản Trị
+        if (loginScreen) loginScreen.classList.add('hidden');
+        if (mainLayout) mainLayout.classList.add('hidden');
+        showToast('error', 'Bạn không có quyền truy cập vào Cổng Quản Trị!');
+        setTimeout(() => {
+            window.location.replace('index.html');
+        }, 1200);
     } else {
-        loginScreen.classList.remove('hidden');
-        mainLayout.classList.add('hidden');
+        if (loginScreen) loginScreen.classList.remove('hidden');
+        if (mainLayout) mainLayout.classList.add('hidden');
     }
 }
 
-// Handle Admin Login
+let failedAdminLoginAttempts = 0;
+let adminLockoutUntil = 0;
+
+// Handle Admin Login with Protection
 async function handleAdminLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('adminEmailInput').value;
-    const password = document.getElementById('adminPasswordInput').value;
+
+    const now = Date.now();
+    if (adminLockoutUntil && now < adminLockoutUntil) {
+        const remainingMinutes = Math.ceil((adminLockoutUntil - now) / 60000);
+        showToast('error', `Tài khoản tạm khóa do nhập sai nhiều lần. Vui lòng thử lại sau ${remainingMinutes} phút.`);
+        return;
+    }
+
+    const email = (document.getElementById('adminEmailInput').value || '').trim();
+    const password = document.getElementById('adminPasswordInput').value || '';
 
     try {
         const res = await apiFetch('/api/auth/login', {
@@ -65,67 +85,24 @@ async function handleAdminLogin(e) {
             body: JSON.stringify({ email, password })
         });
 
-        if (res.user.role !== 'admin') {
+        if (!res.user || res.user.role !== 'admin') {
             throw new Error('Tài khoản này không có quyền quản trị viên!');
         }
 
+        failedAdminLoginAttempts = 0;
+        adminLockoutUntil = 0;
         setAuth(res.token, res.user);
         showToast('success', `Chào mừng Quản trị viên ${res.user.name}!`);
         checkAdminAuth();
     } catch (err) {
-        showToast('error', err.message || 'Đăng nhập quản trị thất bại');
+        failedAdminLoginAttempts++;
+        if (failedAdminLoginAttempts >= 5) {
+            adminLockoutUntil = Date.now() + 5 * 60 * 1000;
+            showToast('error', 'Bạn đã nhập sai 5 lần liên tiếp. Cổng quản trị bị tạm khóa 5 phút!');
+        } else {
+            showToast('error', err.message || 'Đăng nhập quản trị thất bại');
+        }
     }
-}
-
-// QUICK FILL CREDENTIALS
-function fillAdminCredentials() {
-    const emailEl = document.getElementById('adminEmailInput');
-    const passEl = document.getElementById('adminPasswordInput');
-    const savedEmail = localStorage.getItem('mock_admin_email') || 'admin@mintmart.vn';
-    const savedPass = localStorage.getItem('mock_admin_pass') || 'admin123';
-    if (emailEl) emailEl.value = savedEmail;
-    if (passEl) passEl.value = savedPass;
-    showToast('info', 'Đã tự động điền tài khoản Quản Trị Viên!');
-}
-
-// API CONFIG MODAL
-function openApiConfigModal() {
-    const customUrl = localStorage.getItem('mintmart_backend_url') || '';
-    const mode = localStorage.getItem('mintmart_app_mode') || 'auto';
-    const urlInput = document.getElementById('customBackendUrlInput');
-    const modeSelect = document.getElementById('customAppModeSelect');
-    if (urlInput) urlInput.value = customUrl;
-    if (modeSelect) modeSelect.value = mode;
-    const modal = document.getElementById('adminApiConfigModal');
-    if (modal) modal.classList.remove('hidden');
-}
-
-function closeApiConfigModal() {
-    const modal = document.getElementById('adminApiConfigModal');
-    if (modal) modal.classList.add('hidden');
-}
-
-function saveApiConfig() {
-    const urlInput = document.getElementById('customBackendUrlInput');
-    const modeSelect = document.getElementById('customAppModeSelect');
-    const url = (urlInput ? urlInput.value : '').trim().replace(/\/+$/, '');
-    const mode = modeSelect ? modeSelect.value : 'auto';
-
-    if (url) {
-        localStorage.setItem('mintmart_backend_url', url);
-    } else {
-        localStorage.removeItem('mintmart_backend_url');
-    }
-
-    if (mode && mode !== 'auto') {
-        localStorage.setItem('mintmart_app_mode', mode);
-    } else {
-        localStorage.removeItem('mintmart_app_mode');
-    }
-
-    closeApiConfigModal();
-    showToast('success', 'Đã lưu cấu hình kết nối API!');
-    setTimeout(() => window.location.reload(), 500);
 }
 
 // OPEN / CLOSE CHANGE PASSWORD MODAL
@@ -274,32 +251,9 @@ function playDingDongChime() {
     }
 }
 
-// Âm thanh chuông báo thanh toán thành công (Cheerful Arpeggio Chord Web Audio API)
+// Âm thanh chuông báo thanh toán thành công (Đồng bộ chuẩn chuông Ding-dong với đơn hàng mới)
 function playPaymentSuccessChime() {
-    try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
-        const now = ctx.currentTime;
-
-        // 4 nốt tươi vui ngân vang: C5 (523.25Hz), E5 (659.25Hz), G5 (783.99Hz), C6 (1046.50Hz)
-        const notes = [523.25, 659.25, 783.99, 1046.50];
-        notes.forEach((freq, idx) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            const start = now + idx * 0.1;
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(freq, start);
-            gain.gain.setValueAtTime(0.35, start);
-            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(start);
-            osc.stop(start + 0.4);
-        });
-    } catch (e) {
-        console.warn('Web Audio error:', e);
-    }
+    playDingDongChime();
 }
 
 // Audio cache cho giọng nữ Việt Nam phát thanh chuẩn
@@ -395,14 +349,18 @@ function dismissOrderAlert() {
     if (banner) banner.classList.add('hidden');
 }
 
-// Kích hoạt chuông + giọng nữ phát thanh + banner thông báo thanh toán thành công
+// Phát thanh thông báo đơn hàng đã thanh toán thành công (giọng nữ Việt Nam)
+function speakPaymentAlert(text = 'Bạn có đơn hàng đã thanh toán thành công!') {
+    fallbackWebSpeechFemale(text);
+}
+
+// Kích hoạt chuông Ding-dong + giọng nữ Việt Nam + banner thông báo thanh toán thành công (đồng bộ như có đơn mới)
 function triggerPaymentSuccessAlert(order) {
     if (speakerEnabled) {
-        playPaymentSuccessChime();
+        playDingDongChime();
         setTimeout(() => {
-            const code = order.order_code || 'mới';
-            fallbackWebSpeechFemale(`Đơn hàng ${code} đã thanh toán thành công!`);
-        }, 450);
+            speakPaymentAlert('Bạn có đơn hàng đã thanh toán thành công!');
+        }, 350);
     }
 
     // Hiển thị banner thanh toán thành công góc phải
@@ -436,11 +394,11 @@ function testOrderSound() {
 }
 
 function testPaymentSound() {
-    playPaymentSuccessChime();
+    playDingDongChime();
     setTimeout(() => {
-        fallbackWebSpeechFemale('Đơn hàng MM-10023 đã thanh toán thành công!');
-    }, 450);
-    showToast('success', '🔊 Đang phát thử âm thanh thanh toán thành công: "Đơn hàng MM-10023 đã thanh toán thành công!"');
+        speakPaymentAlert('Bạn có đơn hàng đã thanh toán thành công!');
+    }, 350);
+    showToast('success', '🔊 Đang phát thông báo thanh toán thành công: "Bạn có đơn hàng đã thanh toán thành công!"');
 }
 
 // Tự động kiểm tra đơn hàng mới & thanh toán thành công trong nền
