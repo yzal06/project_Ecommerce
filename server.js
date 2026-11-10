@@ -60,10 +60,7 @@ app.get('/api/health', (req, res) => {
 
 // Specific friendly routes for clean URLs (prioritized before static handler)
 app.get('/admin', (req, res) => {
-    const adminPath = fs.existsSync(path.join(__dirname, 'admin.html'))
-        ? path.join(__dirname, 'admin.html')
-        : path.join(__dirname, 'public', 'admin.html');
-    res.sendFile(adminPath);
+    res.status(404).send('404 Not Found - Cổng Quản Trị đã được cô lập trên branch admin riêng biệt.');
 });
 
 app.get('/products', (req, res) => {
@@ -99,11 +96,6 @@ const authenticateToken = (req, res, next) => {
 
     if (!token) {
         return res.status(401).json({ success: false, message: 'Yêu cầu đăng nhập để thực hiện!' });
-    }
-
-    if (token.startsWith('mock-admin-token-')) {
-        req.user = { id: 1, email: 'admin@mintmart.vn', name: 'Quản Trị Viên (Admin)', role: 'admin' };
-        return next();
     }
 
     jwt.verify(token, JWT_SECRET, (err, user) => {

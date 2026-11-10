@@ -8,9 +8,7 @@
         (function() {
             var path = window.location.pathname;
             // Clean routing for static hosting / GitHub Pages
-            if (path.endsWith('/admin') || path.endsWith('/admin/')) {
-                window.location.replace(window.location.origin + path.replace(/\/admin\/?$/, '/admin.html') + window.location.search + window.location.hash);
-            } else if (path.endsWith('/products') || path.endsWith('/products/')) {
+            if (path.endsWith('/products') || path.endsWith('/products/')) {
                 window.location.replace(window.location.origin + path.replace(/\/products\/?$/, '/products.html') + window.location.search + window.location.hash);
             } else if (path.endsWith('/deals') || path.endsWith('/deals/')) {
                 window.location.replace(window.location.origin + path.replace(/\/deals\/?$/, '/deals.html') + window.location.search + window.location.hash);

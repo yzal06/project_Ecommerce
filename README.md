@@ -1,19 +1,11 @@
 # 🌿 MintMart - Website Thương Mại Điện Tử Hiện Đại (Xanh Bạc Hà & Nền Trắng)
 
+> [!NOTE]
+> **Nhánh Khách Hàng (`main`)**: Nhánh này chứa toàn bộ mã nguồn **Cửa Hàng Khách Hàng (Customer Storefront)**.
+> 🛡️ **Bảo mật & Chống Khai Thác (Anti-Exploit)**: Toàn bộ Cổng Quản Trị Viên (`admin.html`, `js/admin.js`, `css/admin.css`), router `/admin` và thông tin đặc quyền admin đã được **tách biệt hoàn toàn sang nhánh `admin` riêng biệt**. Khách truy cập hoặc người dùng công khai trên nhánh `main` không thể tiếp cận hay khai thác các tính năng quản trị.
+> 👉 **Quản trị viên**: Vui lòng chuyển sang nhánh **`admin`** trên GitHub (`git checkout admin`) để sử dụng toàn bộ công cụ quản lý đơn hàng, kho bãi và đồng bộ sàn Shopee & Lazada.
+
 Hệ thống website bán hàng trực tuyến hoàn chỉnh với thiết kế màu chủ đạo xanh bạc hà (Mint Green `#10B981`) kết hợp nền trắng thanh lịch, tham khảo phong cách từ các nền tảng thương mại điện tử hàng đầu (Shopee, Tiki, Apple, Shopify).
-
-Hệ thống được tách biệt thành **2 trang web riêng biệt**:
-1. **Giao diện Người sử dụng (Customer Storefront)**: Dành cho khách mua hàng trải nghiệm lướt web, tìm kiếm, lọc theo giá/danh mục, flash sale, giỏ hàng slide-out và đặt hàng.
-2. **Giao diện Quản trị viên (Admin Portal)**: Dành cho người quản lý hệ thống phân quyền (Role-Based Access Control), thêm mới/chỉnh sửa/xóa mặt hàng (hỗ trợ upload ảnh từ máy tính hoặc link URL), quản lý danh mục, xử lý đơn hàng và thống kê doanh thu với biểu đồ tương tác.
-
-Dữ liệu được **đồng bộ trực tiếp tức thì qua cơ sở dữ liệu SQLite & Đám Mây (Cloud Storage)**: 
-* Khi quản trị viên thêm mới, chỉnh sửa hoặc gỡ mặt hàng, hệ thống tự động lưu vào SQLite local và **ngay lập tức đẩy snapshot lên Đám Mây đa thiết bị (Cloud Storage)**.
-* Mọi thiết bị khác (điện thoại di động, máy tính khác) đều tự động nhận dữ liệu mới theo chu kỳ 30 giây hoặc ngay khi thao tác.
-
-Đặc biệt, hệ thống tích hợp **API Đồng bộ đa kênh (Omnichannel) với Shopee & Lazada**:
-* **Ràng buộc kiểm tra tồn kho liên sàn**: Khách không thể đặt vượt quá số lượng hàng có sẵn trong kho.
-* **Tự động khấu trừ kho thời gian thực**: Ngay khi khách đặt hàng trên website, hệ thống tự động gọi API khấu trừ số lượng sản phẩm tương ứng trong kho trên cả 2 sàn Shopee và Lazada.
-* **Ghi nhật ký đồng bộ chi tiết**: Quản trị viên có thể theo dõi từng giao dịch trừ kho của Shopee và Lazada ngay tại tab *"Đồng Bộ Shopee & Lazada"*.
 
 ---
 
@@ -30,7 +22,7 @@ Chỉ cần nhấp đúp vào file `start.bat` trong thư mục dự án để t
 
 Sau khi khởi động, mở trình duyệt và truy cập:
 * 🛒 **Trang Bán Hàng (Người dùng)**: [http://localhost:3000](http://localhost:3000)
-* 🛡️ **Trang Quản Trị (Admin Portal)**: [http://localhost:3000/admin](http://localhost:3000/admin)
+* 🛡️ **Trang Quản Trị (Admin Portal)**: Nằm trên nhánh chuyên biệt `admin` (`git checkout admin`) để đảm bảo an toàn, không nằm trên nhánh `main`.
 
 ---
 
@@ -94,14 +86,14 @@ d:\Project_E-commerce\
 ├── uploads/               # Thư mục chứa hình ảnh sản phẩm được tải lên từ máy tính
 ├── public/                # Thư mục giao diện tĩnh
 │   ├── index.html         # Trang Cửa hàng người dùng (Customer Storefront)
-│   ├── admin.html         # Trang Quản trị viên (Admin Portal)
+│   ├── products.html      # Trang danh sách sản phẩm
+│   ├── deals.html         # Trang săn deal Flash Sale
+│   ├── hot.html           # Trang sản phẩm bán chạy
 │   ├── css/
-│   │   ├── style.css      # CSS hiệu ứng & màu xanh bạc hà cho storefront
-│   │   └── admin.css      # CSS bảng điều khiển & biểu đồ cho trang admin
+│   │   └── style.css      # CSS hiệu ứng & màu xanh bạc hà cho storefront
 │   └── js/
-│       ├── api.js         # Thư viện dùng chung (kết nối API, xác thực token, giỏ hàng, định dạng tiền VNĐ)
-│       ├── store.js       # Logic giao diện người dùng (lọc, tìm kiếm, giỏ hàng, đặt hàng)
-│       └── admin.js       # Logic giao diện quản trị (thống kê, thêm/sửa/xóa sản phẩm, duyệt đơn)
+│       ├── api.js         # Kết nối API, giỏ hàng, định dạng tiền VNĐ
+│       └── store.js       # Logic giao diện người dùng (lọc, tìm kiếm, giỏ hàng, đặt hàng)
 └── Main/
     └── Index.html         # Trang chuyển hướng tự động sang máy chủ
 ```

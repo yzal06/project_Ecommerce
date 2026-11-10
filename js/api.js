@@ -35,18 +35,14 @@ function getMockUsers() {
         if (stored) {
             const parsed = JSON.parse(stored);
             const demoEmails = ['khachhang@gmail.com', 'maitran@gmail.com', 'longle@gmail.com'];
-            const cleaned = parsed.filter(u => u && (u.role === 'admin' || !demoEmails.includes((u.email || '').toLowerCase().trim())));
+            const cleaned = parsed.filter(u => u && !demoEmails.includes((u.email || '').toLowerCase().trim()) && u.role !== 'admin');
             if (cleaned.length !== parsed.length) {
                 localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(cleaned));
             }
             return cleaned;
         }
     } catch (e) {}
-    const adminEmail = (localStorage.getItem('mock_admin_email') || 'admin@mintmart.vn').toLowerCase().trim();
-    const adminName = localStorage.getItem('mock_admin_name') || 'Quản Trị Viên (Admin)';
-    const initUsers = [
-        { id: 1, name: adminName, email: adminEmail, phone: '0901234567', address: '124 Hoàng Quốc Việt, Cầu Giấy, Hà Nội', role: 'admin', created_at: '2026-10-01' }
-    ];
+    const initUsers = [];
     localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(initUsers));
     return initUsers;
 }
@@ -908,50 +904,18 @@ async function handleMockApi(endpoint, options = {}) {
         const email = (body.email || '').toLowerCase().trim();
         const pass = body.password || '';
 
-        const adminSavedEmail = (localStorage.getItem('mock_admin_email') || 'admin@mintmart.vn').toLowerCase().trim();
-        const adminSavedPass = localStorage.getItem('mock_admin_pass') || 'admin123';
-        const adminSavedName = localStorage.getItem('mock_admin_name') || 'Quản Trị Viên (Admin)';
-
-        if (email === adminSavedEmail && pass === adminSavedPass) {
+        // Check registered customer users
+        const users = getMockUsers();
+        const matched = users.find(u => (u.email || '').toLowerCase().trim() === email && u.role !== 'admin');
+        if (matched && pass && pass.length >= 6) {
             return {
                 success: true,
-                message: 'Đăng nhập Quản Trị Viên thành công!',
-                token: 'mock-admin-token-' + Date.now(),
-                user: { id: 1, email: adminSavedEmail, name: adminSavedName, role: 'admin' }
+                message: 'Đăng nhập thành công!',
+                token: 'mock-user-token-' + Date.now(),
+                user: { id: matched.id, email: matched.email, name: matched.name, role: 'customer' }
             };
-        } else {
-            // Check registered customer users
-            const users = getMockUsers();
-            const matched = users.find(u => (u.email || '').toLowerCase().trim() === email && u.role !== 'admin');
-            if (matched && pass && pass.length >= 6) {
-                return {
-                    success: true,
-                    message: 'Đăng nhập thành công!',
-                    token: 'mock-user-token-' + Date.now(),
-                    user: { id: matched.id, email: matched.email, name: matched.name, role: 'customer' }
-                };
-            }
-            throw new Error('Email hoặc mật khẩu không chính xác! Vui lòng kiểm tra lại.');
         }
-    }
-
-    // J2. AUTH CHANGE CREDENTIALS
-    if (path === '/api/auth/change-credentials' && method === 'PUT') {
-        const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
-        const { newName, newEmail, newPassword } = body;
-        if (newEmail) localStorage.setItem('mock_admin_email', newEmail);
-        if (newPassword) localStorage.setItem('mock_admin_pass', newPassword);
-        if (newName) localStorage.setItem('mock_admin_name', newName);
-
-        const currentEmail = newEmail || localStorage.getItem('mock_admin_email') || 'admin@mintmart.vn';
-        const currentName = newName || localStorage.getItem('mock_admin_name') || 'Quản Trị Viên (Admin)';
-
-        return {
-            success: true,
-            message: 'Cập nhật tài khoản và mật khẩu thành công!',
-            token: 'mock-admin-token-' + Date.now(),
-            user: { id: 1, email: currentEmail, name: currentName, role: 'admin' }
-        };
+        throw new Error('Email hoặc mật khẩu không chính xác! Vui lòng kiểm tra lại.');
     }
 
     // K. AUTH REGISTER
@@ -1487,8 +1451,7 @@ function isLoggedIn() {
 }
 
 function isAdmin() {
-    const user = getCurrentUser();
-    return user && user.role === 'admin';
+    return false;
 }
 
 // Format Currency to Vietnamese Dong (VNĐ)

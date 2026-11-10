@@ -2078,10 +2078,9 @@ function updateUserUI() {
     const headerAdminPill = document.getElementById('headerAdminPill');
     const loggedInSection = document.getElementById('userDropdownLoggedInOnly');
     const loggedOutSection = document.getElementById('userDropdownLoggedOutOnly');
-    const dropdownAdminLink = document.getElementById('dropdownAdminLink');
 
     if (user) {
-        if (roleBadge) roleBadge.textContent = user.role === 'admin' ? 'Quản Trị' : 'Thành Viên';
+        if (roleBadge) roleBadge.textContent = 'Thành Viên';
         if (nameDisplay) nameDisplay.textContent = user.name.split(' ').pop();
         if (topGreeting) {
             topGreeting.innerHTML = `
@@ -2096,15 +2095,6 @@ function updateUserUI() {
 
         if (loggedInSection) loggedInSection.classList.remove('hidden');
         if (loggedOutSection) loggedOutSection.classList.add('hidden');
-
-        // If admin, show admin portals links
-        if (user.role === 'admin') {
-            if (headerAdminPill) headerAdminPill.classList.remove('hidden');
-            if (dropdownAdminLink) dropdownAdminLink.classList.remove('hidden');
-        } else {
-            if (headerAdminPill) headerAdminPill.classList.add('hidden');
-            if (dropdownAdminLink) dropdownAdminLink.classList.add('hidden');
-        }
     } else {
         if (roleBadge) roleBadge.textContent = 'Khách';
         if (nameDisplay) nameDisplay.textContent = 'Tài khoản';
@@ -2169,15 +2159,6 @@ async function handleLoginSubmit(e) {
         });
 
         setAuth(res.token, res.user);
-        // If admin, automatically redirect to Admin portal
-        if (res.user.role === 'admin') {
-            showToast('success', `Chào mừng Quản trị viên ${res.user.name}! Đang chuyển đến Trang Quản Trị...`);
-            setTimeout(() => {
-                window.location.href = 'admin.html';
-            }, 500);
-            return;
-        }
-
         updateUserUI();
         showToast('success', `Chào mừng ${res.user.name} đã quay trở lại!`);
 
