@@ -1,7 +1,5 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/admin.html" },
-    { "source": "/admin", "destination": "/admin.html" }
-  ]
+  "framework": null,
+  "outputDirectory": ".",
+  "cleanUrls": true
 }
