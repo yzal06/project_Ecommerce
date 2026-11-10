@@ -15,9 +15,13 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mintmart-secret-key-2026-safe-e-commerce';
 
 // Ensure uploads folder exists
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+const uploadsDir = process.env.VERCEL ? path.join('/tmp', 'uploads') : path.join(__dirname, 'uploads');
+try {
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+} catch (e) {
+    console.warn('⚠️ [Vercel] Không thể tạo thư mục uploads:', e.message);
 }
 
 // Multer storage config
@@ -59,6 +63,13 @@ app.get('/api/health', (req, res) => {
 });
 
 // Specific friendly routes for clean URLs (prioritized before static handler)
+app.get('/', (req, res) => {
+    const adminPath = fs.existsSync(path.join(__dirname, 'admin.html'))
+        ? path.join(__dirname, 'admin.html')
+        : path.join(__dirname, 'public', 'admin.html');
+    res.sendFile(adminPath);
+});
+
 app.get('/admin', (req, res) => {
     const adminPath = fs.existsSync(path.join(__dirname, 'admin.html'))
         ? path.join(__dirname, 'admin.html')
@@ -1202,14 +1213,20 @@ app.post('/api/cloud-sync/pull', requireAdmin, async (req, res) => {
     }
 });
 
+// Export app for Vercel Serverless Functions
+module.exports = app;
+
 // Start server
 async function start() {
-    await initDatabase();
-
-    // Tự động đẩy snapshot dữ liệu hiện tại lên Đám Mây khi server khởi động
-    cloudSyncService.pushToCloud().catch(err => {
-        console.warn('⚠️ [Cloud Sync] Chưa thể đồng bộ đám mây ngay lúc khởi động:', err.message);
-    });
+    try {
+        await initDatabase();
+        // Tự động đẩy snapshot dữ liệu hiện tại lên Đám Mây khi server khởi động
+        cloudSyncService.pushToCloud().catch(err => {
+            console.warn('⚠️ [Cloud Sync] Chưa thể đồng bộ đám mây ngay lúc khởi động:', err.message);
+        });
+    } catch (e) {
+        console.warn('⚠️ [Database Init]:', e.message);
+    }
 
     app.listen(PORT, () => {
         console.log(`====================================================`);
@@ -1221,4 +1238,11 @@ async function start() {
     });
 }
 
-start();
+// Only start listening if not running in serverless / Vercel environment
+if (!process.env.VERCEL && !process.env.NOW_REGION && require.main === module) {
+    start();
+} else if (process.env.VERCEL) {
+    initDatabase().catch(err => {
+        console.warn('⚠️ [Vercel DB Init]:', err.message);
+    });
+}

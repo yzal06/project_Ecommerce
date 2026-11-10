@@ -1,10 +1,29 @@
 require('dotenv').config();
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.join(__dirname, 'ecommerce.db');
-const db = new sqlite3.Database(dbPath);
+let dbPath = path.join(__dirname, 'ecommerce.db');
+
+// In Vercel serverless environment, copy db to /tmp/ecommerce.db where writes are permitted
+if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const tmpDbPath = path.join('/tmp', 'ecommerce.db');
+    try {
+        if (!fs.existsSync(tmpDbPath) && fs.existsSync(dbPath)) {
+            fs.copyFileSync(dbPath, tmpDbPath);
+        }
+        dbPath = tmpDbPath;
+    } catch (e) {
+        console.warn('⚠️ [Vercel SQLite] Không thể sao chép db sang /tmp:', e.message);
+    }
+}
+
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.warn('⚠️ [SQLite Init Warning]:', err.message);
+    }
+});
 
 // Helper for promises
 const runQuery = (sql, params = []) => {
