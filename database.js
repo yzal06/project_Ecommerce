@@ -197,17 +197,17 @@ async function initDatabase() {
         // Ensure lazada_hidden is set to 1 and lazada_enabled is 0 (Tạm ẩn API Lazada theo yêu cầu)
         await runQuery(`UPDATE marketplace_settings SET lazada_enabled = 0, lazada_hidden = 1 WHERE id = 1`);
 
-        // Initialize shopee and lazada stock & sold counts
+        // Initialize shopee and lazada stock & sold counts (bắt đầu từ 0)
         await runQuery(`
             UPDATE products 
             SET shopee_item_id = COALESCE(shopee_item_id, 'SHP-' || (10000000 + id * 1234)),
                 shopee_stock = CASE WHEN shopee_stock IS NULL OR shopee_stock = 0 THEN stock ELSE shopee_stock END,
                 lazada_item_id = COALESCE(lazada_item_id, 'LAZ-' || (20000000 + id * 4321)),
                 lazada_stock = CASE WHEN lazada_stock IS NULL OR lazada_stock = 0 THEN stock ELSE lazada_stock END,
-                shopee_sold_count = CASE WHEN shopee_sold_count IS NULL OR shopee_sold_count = 0 THEN CAST(COALESCE(sold_count, 10) * 0.55 AS INT) ELSE shopee_sold_count END,
-                lazada_sold_count = CASE WHEN lazada_sold_count IS NULL OR lazada_sold_count = 0 THEN CAST(COALESCE(sold_count, 10) * 0.40 AS INT) ELSE lazada_sold_count END,
+                shopee_sold_count = COALESCE(shopee_sold_count, 0),
+                lazada_sold_count = COALESCE(lazada_sold_count, 0),
                 auto_sync_marketplace = 1
-            WHERE shopee_item_id IS NULL OR shopee_stock = 0 OR shopee_sold_count IS NULL OR shopee_sold_count = 0
+            WHERE shopee_item_id IS NULL OR shopee_stock = 0
         `);
     } catch (migErr) {
         console.error('Lỗi kiểm tra migration marketplace:', migErr);
@@ -223,12 +223,6 @@ async function initDatabase() {
         await runQuery(
             `INSERT INTO users (email, password, name, phone, address, role) VALUES (?, ?, ?, ?, ?, ?)`,
             [defaultAdminEmail, adminPassHash, 'Quản Trị Viên (Admin)', '0901234567', 'Hà Nội, Việt Nam', 'admin']
-        );
-
-        const customerPassHash = await bcrypt.hash('123456', 10);
-        await runQuery(
-            `INSERT INTO users (email, password, name, phone, address, role) VALUES (?, ?, ?, ?, ?, ?)`,
-            ['khachhang@gmail.com', customerPassHash, 'Nguyễn Văn An', '0987654321', 'Quận 1, TP. Hồ Chí Minh', 'customer']
         );
     }
 
@@ -268,7 +262,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
                 badge: 'HOT',
                 rating: 4.9,
-                sold_count: 320,
+                sold_count: 0,
                 description: 'Tai nghe chống ồn chủ động cao cấp, âm bass mạnh mẽ, pin trâu 36 giờ, màu xanh bạc hà thanh lịch.'
             },
             {
@@ -281,7 +275,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80',
                 badge: 'GIẢM 25%',
                 rating: 4.8,
-                sold_count: 185,
+                sold_count: 0,
                 description: 'Đo nhịp tim, nồng độ oxy SpO2, theo dõi giấc ngủ và 100 chế độ tập luyện. Màn hình AMOLED 1.4 inch sắc nét.'
             },
             {
@@ -294,7 +288,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&auto=format&fit=crop&q=80',
                 badge: 'BÁN CHẠY',
                 rating: 5.0,
-                sold_count: 410,
+                sold_count: 0,
                 description: 'Layout 75%, switch gõ êm ái, kết nối 3 chế độ (Bluetooth 5.1 / 2.4GHz / Type-C), pin dùng 4 tuần.'
             },
             {
@@ -307,7 +301,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80',
                 badge: 'MỚI',
                 rating: 4.7,
-                sold_count: 98,
+                sold_count: 0,
                 description: 'Chất liệu nỉ cotton 100% tự nhiên mềm mịn, thoáng mát, form rộng hiện đại chuẩn Hàn Quốc.'
             },
             {
@@ -320,7 +314,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80',
                 badge: 'GIẢM 26%',
                 rating: 4.8,
-                sold_count: 142,
+                sold_count: 0,
                 description: 'Chứa vừa laptop 15.6 inch, thiết kế ngăn thông minh, đệm lưng êm ái chống gù lưng, vải Oxford kháng nước.'
             },
             {
@@ -333,7 +327,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80',
                 badge: 'HOT',
                 rating: 4.9,
-                sold_count: 270,
+                sold_count: 0,
                 description: 'Không ánh sáng xanh gây hại, tùy chỉnh 3 dải màu và 5 cấp độ sáng cảm ứng, tích hợp sạc pin tiện lợi.'
             },
             {
@@ -346,7 +340,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&auto=format&fit=crop&q=80',
                 badge: 'BEST SELLER',
                 rating: 4.9,
-                sold_count: 530,
+                sold_count: 0,
                 description: 'Giữ nóng 12 tiếng, giữ lạnh 24 tiếng. Lõi Inox 316 y tế an toàn cho sức khỏe, có quai xách thể thao.'
             },
             {
@@ -359,7 +353,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1608248597359-2e0618012678?w=800&auto=format&fit=crop&q=80',
                 badge: 'THIÊN NHIÊN',
                 rating: 4.8,
-                sold_count: 215,
+                sold_count: 0,
                 description: 'Chiết xuất 100% thảo mộc organic xanh mát, kiểm soát dầu thừa, se khít lỗ chân lông và phục hồi da nhạy cảm.'
             },
             {
@@ -372,7 +366,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=800&auto=format&fit=crop&q=80',
                 badge: 'GIẢM 23%',
                 rating: 4.9,
-                sold_count: 112,
+                sold_count: 0,
                 description: 'Công nghệ đốt nhiệt Rapid Air tuần hoàn 360 độ, giảm 85% chất béo, mặt kính quan sát tiện lợi.'
             },
             {
@@ -385,7 +379,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=800&auto=format&fit=crop&q=80',
                 badge: 'HOT',
                 rating: 4.6,
-                sold_count: 360,
+                sold_count: 0,
                 description: 'Lưỡi dao thép 6 cánh sắc bén, sạc qua cổng Type-C, nhỏ gọn mang đi làm hoặc tập gym mọi lúc mọi nơi.'
             },
             {
@@ -398,7 +392,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&auto=format&fit=crop&q=80',
                 badge: 'MỚI',
                 rating: 4.9,
-                sold_count: 190,
+                sold_count: 0,
                 description: 'Giấy ford định lượng 100gsm chống thấm mực cao cấp, bìa da PU chống nước, ruy băng đánh dấu trang.'
             },
             {
@@ -411,7 +405,7 @@ async function initDatabase() {
                 image_url: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=800&auto=format&fit=crop&q=80',
                 badge: 'HOT',
                 rating: 4.8,
-                sold_count: 245,
+                sold_count: 0,
                 description: 'Âm thanh 360 độ sống động, chống nước chuẩn IPX7, pin nghe nhạc liên tục 15 giờ.'
             }
         ];
@@ -421,62 +415,6 @@ async function initDatabase() {
                 `INSERT INTO products (name, slug, category_id, price, original_price, stock, image_url, badge, rating, sold_count, description)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [p.name, p.slug, p.category_id, p.price, p.original_price, p.stock, p.image_url, p.badge, p.rating, p.sold_count, p.description]
-            );
-        }
-    }
-
-    // Seed a couple of demo orders for admin dashboard analytics
-    const orderCount = await getQuery(`SELECT COUNT(*) as count FROM orders`);
-    if (orderCount.count === 0) {
-        console.log('Tạo đơn hàng mẫu hiển thị thống kê quản trị...');
-        const sampleOrders = [
-            {
-                code: 'MM-98214',
-                name: 'Trần Thị Mai',
-                phone: '0912345678',
-                email: 'maitran@gmail.com',
-                address: '124 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-                method: 'COD',
-                total: 2340000,
-                status: 'completed',
-                note: 'Giao trong giờ hành chính giúp mình nhé'
-            },
-            {
-                code: 'MM-98215',
-                name: 'Lê Hoàng Nam',
-                phone: '0988776655',
-                email: 'namle@gmail.com',
-                address: '45 Lê Lợi, Quận 1, TP. Hồ Chí Minh',
-                method: 'Chuyển khoản QR',
-                total: 890000,
-                status: 'shipping',
-                note: 'Gọi điện trước khi giao 15 phút'
-            },
-            {
-                code: 'MM-98216',
-                name: 'Vũ Thu Trang',
-                phone: '0933221100',
-                email: 'thutrang@gmail.com',
-                address: '89 Nguyễn Trãi, Thanh Xuân, Hà Nội',
-                method: 'COD',
-                total: 1690000,
-                status: 'pending',
-                note: 'Kiểm tra kỹ hàng trước khi gửi'
-            }
-        ];
-
-        for (const ord of sampleOrders) {
-            const res = await runQuery(
-                `INSERT INTO orders (order_code, customer_name, customer_phone, customer_email, shipping_address, payment_method, total_amount, status, note)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [ord.code, ord.name, ord.phone, ord.email, ord.address, ord.method, ord.total, ord.status, ord.note]
-            );
-
-            // Add an item to this order
-            await runQuery(
-                `INSERT INTO order_items (order_id, product_name, price, quantity, total)
-                 VALUES (?, ?, ?, ?, ?)`,
-                [res.lastID, 'Tai nghe Bluetooth Không Dây Mint Sound Pro', 890000, 1, 890000]
             );
         }
     }

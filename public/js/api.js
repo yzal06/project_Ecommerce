@@ -32,15 +32,20 @@ const MOCK_USERS_KEY = 'mintmart_mock_users_v2';
 function getMockUsers() {
     try {
         const stored = localStorage.getItem(MOCK_USERS_KEY);
-        if (stored) return JSON.parse(stored);
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            const demoEmails = ['khachhang@gmail.com', 'maitran@gmail.com', 'longle@gmail.com'];
+            const cleaned = parsed.filter(u => u && (u.role === 'admin' || !demoEmails.includes((u.email || '').toLowerCase().trim())));
+            if (cleaned.length !== parsed.length) {
+                localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(cleaned));
+            }
+            return cleaned;
+        }
     } catch (e) {}
     const adminEmail = (localStorage.getItem('mock_admin_email') || 'admin@mintmart.vn').toLowerCase().trim();
     const adminName = localStorage.getItem('mock_admin_name') || 'Quản Trị Viên (Admin)';
     const initUsers = [
-        { id: 1, name: adminName, email: adminEmail, phone: '0901234567', address: '124 Hoàng Quốc Việt, Cầu Giấy, Hà Nội', role: 'admin', created_at: '2026-10-01' },
-        { id: 2, name: 'Nguyễn Văn An', email: 'khachhang@gmail.com', phone: '0912345678', address: '45 Lê Duẩn, Quận 1, TP. Hồ Chí Minh', role: 'customer', created_at: '2026-10-15' },
-        { id: 3, name: 'Trần Thị Mai', email: 'maitran@gmail.com', phone: '0987654321', address: '88 Nguyễn Trãi, Thanh Xuân, Hà Nội', role: 'customer', created_at: '2026-10-20' },
-        { id: 4, name: 'Lê Hoàng Long', email: 'longle@gmail.com', phone: '0934567890', address: '12 Bạch Đằng, Hải Châu, Đà Nẵng', role: 'customer', created_at: '2026-10-25' }
+        { id: 1, name: adminName, email: adminEmail, phone: '0901234567', address: '124 Hoàng Quốc Việt, Cầu Giấy, Hà Nội', role: 'admin', created_at: '2026-10-01' }
     ];
     localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(initUsers));
     return initUsers;
@@ -118,7 +123,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80',
         badge: 'HOT',
         rating: 4.9,
-        sold_count: 325,
+        sold_count: 0,
         description: 'Tai nghe chống ồn chủ động cao cấp, âm bass mạnh mẽ, pin trâu 36 giờ, màu xanh bạc hà thanh lịch.',
         is_active: 1,
         shopee_item_id: 'SHP-10001234',
@@ -139,7 +144,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80',
         badge: 'GIẢM 25%',
         rating: 4.8,
-        sold_count: 185,
+        sold_count: 0,
         description: 'Đo nhịp tim, nồng độ oxy SpO2, theo dõi giấc ngủ và 100 chế độ tập luyện. Màn hình AMOLED 1.4 inch sắc nét.',
         is_active: 1,
         shopee_item_id: 'SHP-10002468',
@@ -160,7 +165,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&auto=format&fit=crop&q=80',
         badge: 'BÁN CHẠY',
         rating: 5.0,
-        sold_count: 410,
+        sold_count: 0,
         description: 'Layout 75%, switch gõ êm ái, kết nối 3 chế độ (Bluetooth 5.1 / 2.4GHz / Type-C), pin dùng 4 tuần.',
         is_active: 1,
         shopee_item_id: 'SHP-10003702',
@@ -181,7 +186,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80',
         badge: 'MỚI',
         rating: 4.7,
-        sold_count: 98,
+        sold_count: 0,
         description: 'Chất liệu nỉ cotton 100% tự nhiên mềm mịn, thoáng mát, form rộng hiện đại chuẩn Hàn Quốc.',
         is_active: 1,
         shopee_item_id: 'SHP-10004936',
@@ -202,7 +207,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80',
         badge: 'GIẢM 26%',
         rating: 4.8,
-        sold_count: 142,
+        sold_count: 0,
         description: 'Chứa vừa laptop 15.6 inch, thiết kế ngăn thông minh, đệm lưng êm ái chống gù lưng, vải Oxford kháng nước.',
         is_active: 1,
         shopee_item_id: 'SHP-10006170',
@@ -223,7 +228,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop&q=80',
         badge: 'HOT',
         rating: 4.9,
-        sold_count: 270,
+        sold_count: 0,
         description: 'Không ánh sáng xanh gây hại, tùy chỉnh 3 dải màu và 5 cấp độ sáng cảm ứng, tích hợp sạc pin tiện lợi.',
         is_active: 1,
         shopee_item_id: 'SHP-10007404',
@@ -244,7 +249,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800&auto=format&fit=crop&q=80',
         badge: 'BEST SELLER',
         rating: 4.9,
-        sold_count: 530,
+        sold_count: 0,
         description: 'Giữ nóng 12 tiếng, giữ lạnh 24 tiếng. Lõi Inox 316 y tế an toàn cho sức khỏe, có quai xách thể thao.',
         is_active: 1,
         shopee_item_id: 'SHP-10008638',
@@ -265,7 +270,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1608248597359-2e0618012678?w=800&auto=format&fit=crop&q=80',
         badge: 'THIÊN NHIÊN',
         rating: 4.8,
-        sold_count: 215,
+        sold_count: 0,
         description: 'Chiết xuất 100% thảo mộc organic xanh mát, kiểm soát dầu thừa, se khít lỗ chân lông và phục hồi da nhạy cảm.',
         is_active: 1,
         shopee_item_id: 'SHP-10009872',
@@ -286,7 +291,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1585659722983-3a675dabf23d?w=800&auto=format&fit=crop&q=80',
         badge: 'GIẢM 23%',
         rating: 4.9,
-        sold_count: 112,
+        sold_count: 0,
         description: 'Công nghệ đốt nhiệt Rapid Air tuần hoàn 360 độ, giảm 85% chất béo, mặt kính quan sát tiện lợi.',
         is_active: 1,
         shopee_item_id: 'SHP-10011106',
@@ -307,7 +312,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=800&auto=format&fit=crop&q=80',
         badge: 'HOT',
         rating: 4.6,
-        sold_count: 360,
+        sold_count: 0,
         description: 'Lưỡi dao thép 6 cánh sắc bén, sạc qua cổng Type-C, nhỏ gọn mang đi làm hoặc tập gym mọi lúc mọi nơi.',
         is_active: 1,
         shopee_item_id: 'SHP-10012340',
@@ -328,7 +333,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=800&auto=format&fit=crop&q=80',
         badge: 'MỚI',
         rating: 4.9,
-        sold_count: 190,
+        sold_count: 0,
         description: 'Giấy ford định lượng 100gsm chống thấm mực cao cấp, bìa da PU chống nước, ruy băng đánh dấu trang.',
         is_active: 1,
         shopee_item_id: 'SHP-10013574',
@@ -349,7 +354,7 @@ const SEED_PRODUCTS = [
         image_url: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=800&auto=format&fit=crop&q=80',
         badge: 'HOT',
         rating: 4.8,
-        sold_count: 245,
+        sold_count: 0,
         description: 'Âm thanh 360 độ sống động, chống nước chuẩn IPX7, pin nghe nhạc liên tục 15 giờ.',
         is_active: 1,
         shopee_item_id: 'SHP-10014808',
@@ -360,36 +365,7 @@ const SEED_PRODUCTS = [
     }
 ];
 
-const SEED_ORDERS = [
-    {
-        id: 1,
-        order_code: 'MM-98214',
-        customer_name: 'Trần Thị Mai',
-        customer_phone: '0912345678',
-        customer_email: 'maitran@gmail.com',
-        shipping_address: '124 Hoàng Quốc Việt, Cầu Giấy, Hà Nội',
-        payment_method: 'COD',
-        total_amount: 890000,
-        status: 'completed',
-        note: 'Giao giờ hành chính giúp mình',
-        created_at: '2026-10-28 14:30:00',
-        item_count: 1
-    },
-    {
-        id: 2,
-        order_code: 'MM-98215',
-        customer_name: 'Lê Hoàng Long',
-        customer_phone: '0988776655',
-        customer_email: 'longle@gmail.com',
-        shipping_address: '45 Lê Duẩn, Bến Nghé, Quận 1, TP. HCM',
-        payment_method: 'BANKING',
-        total_amount: 1495000,
-        status: 'confirmed',
-        note: 'Đã chuyển khoản thành công',
-        created_at: '2026-10-29 09:15:00',
-        item_count: 2
-    }
-];
+const SEED_ORDERS = [];
 
 // Helper to access LocalStorage Mock DB
 function getMockProducts() {
@@ -623,10 +599,17 @@ function getMockCategories() {
 function getMockOrders() {
     try {
         const stored = localStorage.getItem(MOCK_ORDERS_KEY);
-        if (stored) return JSON.parse(stored);
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            const cleaned = parsed.filter(o => o && !['MM-98214', 'MM-98215', 'MM-98216'].includes(o.order_code));
+            if (cleaned.length !== parsed.length) {
+                localStorage.setItem(MOCK_ORDERS_KEY, JSON.stringify(cleaned));
+            }
+            return cleaned;
+        }
     } catch (e) {}
-    localStorage.setItem(MOCK_ORDERS_KEY, JSON.stringify(SEED_ORDERS));
-    return SEED_ORDERS;
+    localStorage.setItem(MOCK_ORDERS_KEY, JSON.stringify([]));
+    return [];
 }
 
 function saveMockOrders(orders) {
@@ -636,36 +619,17 @@ function saveMockOrders(orders) {
 function getMockLogs() {
     try {
         const stored = localStorage.getItem(MOCK_LOGS_KEY);
-        if (stored) return JSON.parse(stored);
-    } catch (e) {}
-    const initLogs = [
-        {
-            id: 1,
-            order_code: 'MM-98214',
-            product_name: 'Tai nghe Bluetooth Không Dây Mint Sound Pro',
-            platform: 'Shopee',
-            action: 'DEDUCT_STOCK',
-            quantity_deducted: 1,
-            previous_stock: 46,
-            remaining_stock: 45,
-            status: 'success',
-            created_at: '2026-10-28 14:30:15'
-        },
-        {
-            id: 2,
-            order_code: 'MM-98214',
-            product_name: 'Tai nghe Bluetooth Không Dây Mint Sound Pro',
-            platform: 'Lazada',
-            action: 'DEDUCT_STOCK',
-            quantity_deducted: 1,
-            previous_stock: 46,
-            remaining_stock: 45,
-            status: 'success',
-            created_at: '2026-10-28 14:30:16'
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            const cleaned = parsed.filter(l => l && !['MM-98214', 'MM-98215', 'MM-98216'].includes(l.order_code));
+            if (cleaned.length !== parsed.length) {
+                localStorage.setItem(MOCK_LOGS_KEY, JSON.stringify(cleaned));
+            }
+            return cleaned;
         }
-    ];
-    localStorage.setItem(MOCK_LOGS_KEY, JSON.stringify(initLogs));
-    return initLogs;
+    } catch (e) {}
+    localStorage.setItem(MOCK_LOGS_KEY, JSON.stringify([]));
+    return [];
 }
 
 // Check if running on GitHub Pages, static host or offline fallback
@@ -955,13 +919,6 @@ async function handleMockApi(endpoint, options = {}) {
                 token: 'mock-admin-token-' + Date.now(),
                 user: { id: 1, email: adminSavedEmail, name: adminSavedName, role: 'admin' }
             };
-        } else if (email === 'khachhang@gmail.com' && pass === '123456') {
-            return {
-                success: true,
-                message: 'Đăng nhập khách hàng thành công!',
-                token: 'mock-user-token-' + Date.now(),
-                user: { id: 2, email: 'khachhang@gmail.com', name: 'Nguyễn Văn An', role: 'customer' }
-            };
         } else {
             // Check registered customer users
             const users = getMockUsers();
@@ -1000,11 +957,23 @@ async function handleMockApi(endpoint, options = {}) {
     // K. AUTH REGISTER
     if (path === '/api/auth/register' && method === 'POST') {
         const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+        const users = getMockUsers();
+        const newUser = {
+            id: Date.now(),
+            name: body.name || 'Khách hàng',
+            email: (body.email || '').toLowerCase().trim(),
+            phone: body.phone || '',
+            address: body.address || '',
+            role: 'customer',
+            created_at: new Date().toISOString().slice(0, 10)
+        };
+        users.push(newUser);
+        localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
         return {
             success: true,
             message: 'Đăng ký tài khoản thành công!',
             token: 'mock-token-' + Date.now(),
-            user: { id: Date.now(), email: body.email, name: body.name, role: 'customer' }
+            user: newUser
         };
     }
 
@@ -1137,6 +1106,109 @@ async function handleMockApi(endpoint, options = {}) {
         return { success: true, message: `Đã cập nhật trạng thái thanh toán sang: ${body.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}` };
     }
 
+function generateMock7DayMarketplaceRevenue() {
+    const orders = getMockOrders();
+    const days = [];
+    const dateStrs = [];
+    const shopeeDaily = [];
+    const lazadaDaily = [];
+
+    let shpTotalRev = 0, shpTotalOrders = 0, shpTotalUnits = 0;
+    let lazTotalRev = 0, lazTotalOrders = 0, lazTotalUnits = 0;
+
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().slice(0, 10);
+        const shortDay = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()];
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dayLabel = `${shortDay} (${dd}/${mm})`;
+        const fullDate = `${dd}/${mm}/${d.getFullYear()}`;
+        days.push(dayLabel);
+        dateStrs.push(dateStr);
+        const idx = 6 - i;
+
+        // Tìm đơn hàng thực tế phát sinh trong ngày
+        const dayOrders = orders.filter(o => {
+            if (!o.created_at) return false;
+            return o.created_at.startsWith(dateStr);
+        });
+
+        const dayOrdersCount = dayOrders.length;
+        const dayUnits = dayOrders.reduce((sum, o) => {
+            if (Array.isArray(o.items)) {
+                return sum + o.items.reduce((s, it) => s + (Number(it.quantity) || 1), 0);
+            }
+            return sum + (Number(o.item_count) || 1);
+        }, 0);
+        const dayRev = dayOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0);
+
+        shpTotalRev += dayRev;
+        shpTotalOrders += dayOrdersCount;
+        shpTotalUnits += dayUnits;
+
+        const prevShpRev = idx > 0 ? (shopeeDaily[idx - 1]?.revenue || 0) : 0;
+        let shpGrowth = '0%';
+        if (dayRev > 0 && prevShpRev === 0) {
+            shpGrowth = '+100%';
+        } else if (prevShpRev > 0) {
+            const diff = ((dayRev - prevShpRev) / prevShpRev) * 100;
+            shpGrowth = diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`;
+        }
+
+        shopeeDaily.push({
+            date: fullDate,
+            dateKey: dateStr,
+            dateStr: dateStr,
+            dayLabel,
+            orders: dayOrdersCount,
+            units: dayUnits,
+            revenue: dayRev,
+            real_synced_orders: dayOrdersCount,
+            growth: shpGrowth,
+            status: 'Đồng bộ API v2'
+        });
+
+        lazadaDaily.push({
+            date: fullDate,
+            dateKey: dateStr,
+            dateStr: dateStr,
+            dayLabel,
+            orders: 0,
+            units: 0,
+            revenue: 0,
+            real_synced_orders: 0,
+            growth: '0%',
+            status: 'Tạm ẩn API'
+        });
+    }
+
+    return {
+        success: true,
+        days,
+        shopee: {
+            platform: 'Shopee',
+            shop_name: 'MintMart Official Store (Shopee Mall)',
+            status_label: 'Đang kết nối API v2',
+            total_revenue: shpTotalRev,
+            total_orders: shpTotalOrders,
+            total_units: shpTotalUnits,
+            daily: shopeeDaily
+        },
+        lazada: {
+            platform: 'Lazada',
+            shop_name: 'MintMart LazMall Flagship Store',
+            status_label: 'Tạm ẩn theo yêu cầu quản trị viên',
+            is_temporarily_hidden: true,
+            total_revenue: lazTotalRev,
+            total_orders: lazTotalOrders,
+            total_units: lazTotalUnits,
+            daily: lazadaDaily
+        }
+    };
+}
+
     // O. DASHBOARD & REVENUE STATS
     if (path === '/api/stats/dashboard' || path === '/api/stats/revenue') {
         const orders = getMockOrders();
@@ -1159,115 +1231,21 @@ async function handleMockApi(endpoint, options = {}) {
             };
         });
 
-        // Generate 7-day marketplace data for Shopee & Lazada
-        const days = [];
-        const shopeeDaily = [];
-        const lazadaDaily = [];
-        const shopeeBaseline = [
-            { orders: 14, units: 38, baseRev: 21500000 },
-            { orders: 18, units: 46, baseRev: 27800000 },
-            { orders: 16, units: 42, baseRev: 24200000 },
-            { orders: 22, units: 58, baseRev: 34500000 },
-            { orders: 25, units: 64, baseRev: 39100000 },
-            { orders: 32, units: 85, baseRev: 48600000 },
-            { orders: 28, units: 72, baseRev: 42300000 }
-        ];
-        const lazadaBaseline = [
-            { orders: 9,  units: 24, baseRev: 14200000 },
-            { orders: 11, units: 29, baseRev: 17500000 },
-            { orders: 10, units: 26, baseRev: 15800000 },
-            { orders: 15, units: 38, baseRev: 22900000 },
-            { orders: 17, units: 44, baseRev: 26400000 },
-            { orders: 21, units: 55, baseRev: 32800000 },
-            { orders: 19, units: 48, baseRev: 28500000 }
-        ];
-
-        let shpTotalRev = 0, shpTotalOrders = 0, shpTotalUnits = 0;
-        let lazTotalRev = 0, lazTotalOrders = 0, lazTotalUnits = 0;
-
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().slice(0, 10);
-            const shortDay = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()];
-            const dd = String(d.getDate()).padStart(2, '0');
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dayLabel = `${shortDay} (${dd}/${mm})`;
-            const fullDate = `${dd}/${mm}/${d.getFullYear()}`;
-            days.push(dayLabel);
-            const idx = 6 - i;
-
-            const shpB = shopeeBaseline[idx];
-            shpTotalRev += shpB.baseRev;
-            shpTotalOrders += shpB.orders;
-            shpTotalUnits += shpB.units;
-            shopeeDaily.push({
-                date: fullDate,
-                dateKey: dateStr,
-                dayLabel,
-                orders: shpB.orders,
-                units: shpB.units,
-                revenue: shpB.baseRev,
-                real_synced_orders: 0
-            });
-
-            const lazB = lazadaBaseline[idx];
-            lazTotalRev += lazB.baseRev;
-            lazTotalOrders += lazB.orders;
-            lazTotalUnits += lazB.units;
-            lazadaDaily.push({
-                date: fullDate,
-                dateKey: dateStr,
-                dayLabel,
-                orders: lazB.orders,
-                units: lazB.units,
-                revenue: lazB.baseRev,
-                real_synced_orders: 0
-            });
-        }
-
-        const marketplace7Days = {
-            days,
-            shopee: {
-                platform: 'Shopee',
-                shop_name: 'MintMart Official Store (Shopee Mall)',
-                status_label: 'Đang kết nối API v2',
-                total_revenue: shpTotalRev,
-                total_orders: shpTotalOrders,
-                total_units: shpTotalUnits,
-                daily: shopeeDaily
-            },
-            lazada: {
-                platform: 'Lazada',
-                shop_name: 'MintMart LazMall Flagship Store',
-                status_label: 'Tạm ẩn theo yêu cầu quản trị viên',
-                is_temporarily_hidden: true,
-                total_revenue: lazTotalRev,
-                total_orders: lazTotalOrders,
-                total_units: lazTotalUnits,
-                daily: lazadaDaily
-            }
-        };
+        // 7-day marketplace data calculated from real orders (Bắt đầu từ 0)
+        const marketplace7Days = generateMock7DayMarketplaceRevenue();
 
         return {
             success: true,
             stats: {
-                totalRevenue: totalRev || 42850000,
-                totalOrders: orders.length || 24,
+                totalRevenue: totalRev,
+                totalOrders: orders.length,
                 totalProducts: prods.length,
-                totalCustomers: users.length || 15,
+                totalCustomers: users.filter(u => u.role === 'customer').length,
                 recentOrders,
                 lowStockProducts,
                 salesByCategory,
                 marketplace7Days,
-                monthlyRevenue: [
-                    { month: '05/2026', revenue: 18500000 },
-                    { month: '06/2026', revenue: 24200000 },
-                    { month: '07/2026', revenue: 31000000 },
-                    { month: '08/2026', revenue: 29800000 },
-                    { month: '09/2026', revenue: 38500000 },
-                    { month: '10/2026', revenue: totalRev || 42100000 }
-                ]
+                monthlyRevenue: []
             }
         };
     }
@@ -1279,8 +1257,8 @@ async function handleMockApi(endpoint, options = {}) {
         let lazadaTotal = 0, lazadaUnits = 0, lazadaOrders = 0;
 
         const shopeeItems = prods.map(p => {
-            const sold = p.shopee_sold_count || Math.floor((p.sold_count || 10) * 0.55);
-            const rev = sold * p.price;
+            const sold = Number(p.shopee_sold_count) || 0;
+            const rev = sold * Number(p.price);
             shopeeTotal += rev;
             shopeeUnits += sold;
             if (sold > 0) shopeeOrders++;
@@ -1298,8 +1276,8 @@ async function handleMockApi(endpoint, options = {}) {
         });
 
         const lazadaItems = prods.map(p => {
-            const sold = p.lazada_sold_count || Math.floor((p.sold_count || 10) * 0.40);
-            const rev = sold * p.price;
+            const sold = Number(p.lazada_sold_count) || 0;
+            const rev = sold * Number(p.price);
             lazadaTotal += rev;
             lazadaUnits += sold;
             if (sold > 0) lazadaOrders++;
@@ -1348,97 +1326,7 @@ async function handleMockApi(endpoint, options = {}) {
 
     // P2. 7-DAY REVENUE REPORT FOR 2 MARKETPLACES
     if (path === '/api/marketplace/revenue-7days') {
-        const days = [];
-        const shopeeDaily = [];
-        const lazadaDaily = [];
-        const shopeeBaseline = [
-            { orders: 14, units: 38, baseRev: 21500000 },
-            { orders: 18, units: 46, baseRev: 27800000 },
-            { orders: 16, units: 42, baseRev: 24200000 },
-            { orders: 22, units: 58, baseRev: 34500000 },
-            { orders: 25, units: 64, baseRev: 39100000 },
-            { orders: 32, units: 85, baseRev: 48600000 },
-            { orders: 28, units: 72, baseRev: 42300000 }
-        ];
-        const lazadaBaseline = [
-            { orders: 9,  units: 24, baseRev: 14200000 },
-            { orders: 11, units: 29, baseRev: 17500000 },
-            { orders: 10, units: 26, baseRev: 15800000 },
-            { orders: 15, units: 38, baseRev: 22900000 },
-            { orders: 17, units: 44, baseRev: 26400000 },
-            { orders: 21, units: 55, baseRev: 32800000 },
-            { orders: 19, units: 48, baseRev: 28500000 }
-        ];
-
-        let shpTotalRev = 0, shpTotalOrders = 0, shpTotalUnits = 0;
-        let lazTotalRev = 0, lazTotalOrders = 0, lazTotalUnits = 0;
-
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            const dateStr = d.toISOString().slice(0, 10);
-            const shortDay = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()];
-            const dd = String(d.getDate()).padStart(2, '0');
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dayLabel = `${shortDay} (${dd}/${mm})`;
-            const fullDate = `${dd}/${mm}/${d.getFullYear()}`;
-            days.push(dayLabel);
-            const idx = 6 - i;
-
-            const shpB = shopeeBaseline[idx];
-            shpTotalRev += shpB.baseRev;
-            shpTotalOrders += shpB.orders;
-            shpTotalUnits += shpB.units;
-            shopeeDaily.push({
-                date: fullDate,
-                dateStr,
-                dayLabel,
-                orders: shpB.orders,
-                units: shpB.units,
-                revenue: shpB.baseRev,
-                growth: idx === 0 ? '+5.2%' : '+8.5%',
-                status: 'Đồng bộ API v2'
-            });
-
-            const lazB = lazadaBaseline[idx];
-            lazTotalRev += lazB.baseRev;
-            lazTotalOrders += lazB.orders;
-            lazTotalUnits += lazB.units;
-            lazadaDaily.push({
-                date: fullDate,
-                dateStr,
-                dayLabel,
-                orders: lazB.orders,
-                units: lazB.units,
-                revenue: lazB.baseRev,
-                growth: idx === 0 ? '+3.8%' : '+6.2%',
-                status: 'Tạm ẩn API'
-            });
-        }
-
-        return {
-            success: true,
-            days,
-            shopee: {
-                platform: 'Shopee',
-                shop_name: 'MintMart Official Store (Shopee Mall)',
-                status_label: 'Đang kết nối API v2',
-                total_revenue: shpTotalRev,
-                total_orders: shpTotalOrders,
-                total_units: shpTotalUnits,
-                daily: shopeeDaily
-            },
-            lazada: {
-                platform: 'Lazada',
-                shop_name: 'MintMart LazMall Flagship Store',
-                status_label: 'Tạm ẩn theo yêu cầu quản trị viên',
-                is_temporarily_hidden: true,
-                total_revenue: lazTotalRev,
-                total_orders: lazTotalOrders,
-                total_units: lazTotalUnits,
-                daily: lazadaDaily
-            }
-        };
+        return generateMock7DayMarketplaceRevenue();
     }
 
     // Q. MARKETPLACE LOGS & SETTINGS

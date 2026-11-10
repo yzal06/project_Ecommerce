@@ -621,6 +621,40 @@ async function loadDashboardStats() {
         document.getElementById('statTotalProducts').textContent = s.totalProducts;
         document.getElementById('statTotalCustomers').textContent = s.totalCustomers;
 
+        // Subtitles dynamically updated based on real values
+        const revSub = document.getElementById('statRevenueSubtitle');
+        if (revSub) {
+            if (s.totalRevenue > 0) {
+                revSub.innerHTML = `<i class="fa-solid fa-arrow-trend-up mr-1"></i> Doanh thu thực tế tích lũy`;
+                revSub.className = "text-[11px] text-emerald-600 font-bold flex items-center mt-1";
+            } else {
+                revSub.innerHTML = `<i class="fa-solid fa-coins mr-1"></i> Bắt đầu từ 0 ₫`;
+                revSub.className = "text-[11px] text-slate-400 font-medium flex items-center mt-1";
+            }
+        }
+
+        const ordSub = document.getElementById('statOrdersSubtitle');
+        if (ordSub) {
+            if (s.totalOrders > 0) {
+                ordSub.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i> ${s.totalOrders} đơn hàng thực tế`;
+                ordSub.className = "text-[11px] text-emerald-600 font-bold flex items-center mt-1";
+            } else {
+                ordSub.innerHTML = `<i class="fa-solid fa-cart-shopping mr-1"></i> Chưa có đơn hàng phát sinh`;
+                ordSub.className = "text-[11px] text-slate-400 font-medium flex items-center mt-1";
+            }
+        }
+
+        const custSub = document.getElementById('statCustomersSubtitle');
+        if (custSub) {
+            if (s.totalCustomers > 0) {
+                custSub.innerHTML = `<i class="fa-solid fa-user-plus mr-1"></i> ${s.totalCustomers} khách hàng thành viên`;
+                custSub.className = "text-[11px] text-emerald-600 font-bold flex items-center mt-1";
+            } else {
+                custSub.innerHTML = `<i class="fa-solid fa-users mr-1"></i> Chưa có khách hàng đăng ký`;
+                custSub.className = "text-[11px] text-slate-400 font-medium flex items-center mt-1";
+            }
+        }
+
         // Badges in sidebar
         const sbProd = document.getElementById('sidebarProductCount');
         if (sbProd) sbProd.textContent = s.totalProducts;
@@ -739,6 +773,17 @@ async function load7DayMarketplaceRevenue(initialData = null) {
     if (shpUnitsEl) shpUnitsEl.textContent = `${shp.total_units} sp`;
     if (shpFooterEl) shpFooterEl.textContent = formatCurrency(shp.total_revenue);
 
+    const shpGrowthFooter = document.getElementById('shopee7DayGrowthFooter');
+    if (shpGrowthFooter) {
+        if (shp.total_revenue > 0) {
+            shpGrowthFooter.innerHTML = `<i class="fa-solid fa-arrow-trend-up mr-1"></i> Tăng trưởng thực tế`;
+            shpGrowthFooter.className = "py-2.5 px-3 text-center text-emerald-600 font-bold";
+        } else {
+            shpGrowthFooter.textContent = '0%';
+            shpGrowthFooter.className = "py-2.5 px-3 text-center text-slate-400 font-bold";
+        }
+    }
+
     if (shpTableBody && shp.daily) {
         shpTableBody.innerHTML = shp.daily.map(d => `
             <tr class="hover:bg-orange-50/40 transition">
@@ -757,8 +802,8 @@ async function load7DayMarketplaceRevenue(initialData = null) {
                     <strong class="font-black text-orange-600 text-xs">${formatCurrency(d.revenue)}</strong>
                 </td>
                 <td class="py-2.5 px-3 text-center">
-                    <span class="text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : 'text-rose-500'}">
-                        ${d.growth.startsWith('+') ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>' : '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>'}${d.growth}
+                    <span class="text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : (d.growth.startsWith('-') ? 'text-rose-500' : 'text-slate-400')}">
+                        ${d.growth.startsWith('+') ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>' : (d.growth.startsWith('-') ? '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>' : '')}${d.growth}
                     </span>
                 </td>
             </tr>
@@ -795,8 +840,8 @@ async function load7DayMarketplaceRevenue(initialData = null) {
                     <strong class="font-black text-indigo-600 text-xs">${formatCurrency(d.revenue)}</strong>
                 </td>
                 <td class="py-2.5 px-3 text-center">
-                    <span class="text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : 'text-rose-500'}">
-                        ${d.growth.startsWith('+') ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>' : '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>'}${d.growth}
+                    <span class="text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : (d.growth.startsWith('-') ? 'text-rose-500' : 'text-slate-400')}">
+                        ${d.growth.startsWith('+') ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>' : (d.growth.startsWith('-') ? '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>' : '')}${d.growth}
                     </span>
                 </td>
             </tr>
@@ -807,6 +852,13 @@ async function load7DayMarketplaceRevenue(initialData = null) {
     if (typeof Chart !== 'undefined') {
         const shpRevs = (shp.daily || []).map(d => d.revenue);
         const lazRevs = (laz.daily || []).map(d => d.revenue);
+
+        const formatChartTick = (val) => {
+            if (val === 0) return '0 ₫';
+            if (val >= 1000000) return (val / 1000000) + ' Tr';
+            if (val >= 1000) return (val / 1000) + ' k';
+            return val + ' ₫';
+        };
 
         // Mini Shopee Chart
         const shpCanvas = document.getElementById('shopee7DayChart');
@@ -834,7 +886,7 @@ async function load7DayMarketplaceRevenue(initialData = null) {
                     plugins: { legend: { display: false } },
                     scales: {
                         y: {
-                            ticks: { callback: v => (v / 1000000) + ' Tr', font: { size: 9 } },
+                            ticks: { callback: formatChartTick, font: { size: 9 } },
                             grid: { color: '#FFF7ED' }
                         },
                         x: { grid: { display: false }, font: { size: 9 } }
@@ -869,7 +921,7 @@ async function load7DayMarketplaceRevenue(initialData = null) {
                     plugins: { legend: { display: false } },
                     scales: {
                         y: {
-                            ticks: { callback: v => (v / 1000000) + ' Tr', font: { size: 9 } },
+                            ticks: { callback: formatChartTick, font: { size: 9 } },
                             grid: { color: '#EEF2FF' }
                         },
                         x: { grid: { display: false }, font: { size: 9 } }
@@ -890,6 +942,13 @@ function initRevenueComparisonChart(labels, shpData, lazData) {
     if (revenueChartInstance) {
         revenueChartInstance.destroy();
     }
+
+    const formatCompTick = (val) => {
+        if (val === 0) return '0 ₫';
+        if (val >= 1000000) return (val / 1000000) + ' Tr';
+        if (val >= 1000) return (val / 1000) + ' k';
+        return val + ' ₫';
+    };
 
     revenueChartInstance = new Chart(ctx, {
         type: 'line',
@@ -934,7 +993,7 @@ function initRevenueComparisonChart(labels, shpData, lazData) {
             scales: {
                 y: {
                     ticks: {
-                        callback: (val) => (val / 1000000) + ' Tr',
+                        callback: formatCompTick,
                         font: { size: 10 }
                     },
                     grid: { color: '#F1F5F9' }

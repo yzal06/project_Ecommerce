@@ -519,29 +519,9 @@ class MarketplaceService {
 
         // 7 days timeline
         const days = [];
+        const dateStrs = [];
         const shopeeDaily = [];
         const lazadaDaily = [];
-
-        // Baseline daily distribution weights for 7 days
-        const shopeeBaseline = [
-            { orders: 14, units: 38, baseRev: 21500000 },
-            { orders: 18, units: 46, baseRev: 27800000 },
-            { orders: 16, units: 42, baseRev: 24200000 },
-            { orders: 22, units: 58, baseRev: 34500000 },
-            { orders: 25, units: 64, baseRev: 39100000 },
-            { orders: 32, units: 85, baseRev: 48600000 },
-            { orders: 28, units: 72, baseRev: 42300000 }
-        ];
-
-        const lazadaBaseline = [
-            { orders: 9,  units: 24, baseRev: 14200000 },
-            { orders: 11, units: 29, baseRev: 17500000 },
-            { orders: 10, units: 26, baseRev: 15800000 },
-            { orders: 15, units: 38, baseRev: 22900000 },
-            { orders: 17, units: 44, baseRev: 26400000 },
-            { orders: 21, units: 55, baseRev: 32800000 },
-            { orders: 19, units: 48, baseRev: 28500000 }
-        ];
 
         let shopeeTotalRev = 0;
         let shopeeTotalOrders = 0;
@@ -562,20 +542,27 @@ class MarketplaceService {
             const fullDate = `${dd}/${mm}/${d.getFullYear()}`;
 
             days.push(dayLabel);
+            dateStrs.push(dateStr);
             const idx = 6 - i;
 
-            // Shopee calculations (baseline + real synced orders)
+            // Shopee calculations (Dữ liệu thực tế bắt đầu từ 0)
             const shpReal = logsByDate[`Shopee_${dateStr}`] || { orders: 0, units: 0, revenue: 0 };
-            const shpOrders = shopeeBaseline[idx].orders + shpReal.orders;
-            const shpUnits = shopeeBaseline[idx].units + shpReal.units;
-            const shpRev = shopeeBaseline[idx].baseRev + shpReal.revenue;
+            const shpOrders = shpReal.orders;
+            const shpUnits = shpReal.units;
+            const shpRev = shpReal.revenue;
 
             shopeeTotalRev += shpRev;
             shopeeTotalOrders += shpOrders;
             shopeeTotalUnits += shpUnits;
 
-            const prevShpRev = idx > 0 ? (shopeeBaseline[idx - 1].baseRev + (logsByDate[`Shopee_${days[idx - 1]}`]?.revenue || 0)) : shpRev;
-            const shpGrowth = idx === 0 ? '+5.2%' : (shpRev >= prevShpRev ? `+${(((shpRev - prevShpRev) / prevShpRev) * 100).toFixed(1)}%` : `-${(((prevShpRev - shpRev) / prevShpRev) * 100).toFixed(1)}%`);
+            const prevShpRev = idx > 0 ? (logsByDate[`Shopee_${dateStrs[idx - 1]}`]?.revenue || 0) : 0;
+            let shpGrowth = '0%';
+            if (shpRev > 0 && prevShpRev === 0) {
+                shpGrowth = '+100%';
+            } else if (prevShpRev > 0) {
+                const diff = ((shpRev - prevShpRev) / prevShpRev) * 100;
+                shpGrowth = diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`;
+            }
 
             shopeeDaily.push({
                 date: fullDate,
@@ -589,18 +576,24 @@ class MarketplaceService {
                 status: 'Đồng bộ API v2'
             });
 
-            // Lazada calculations (baseline + real synced orders)
+            // Lazada calculations (Dữ liệu thực tế bắt đầu từ 0)
             const lazReal = logsByDate[`Lazada_${dateStr}`] || { orders: 0, units: 0, revenue: 0 };
-            const lazOrders = lazadaBaseline[idx].orders + lazReal.orders;
-            const lazUnits = lazadaBaseline[idx].units + lazReal.units;
-            const lazRev = lazadaBaseline[idx].baseRev + lazReal.revenue;
+            const lazOrders = lazReal.orders;
+            const lazUnits = lazReal.units;
+            const lazRev = lazReal.revenue;
 
             lazadaTotalRev += lazRev;
             lazadaTotalOrders += lazOrders;
             lazadaTotalUnits += lazUnits;
 
-            const prevLazRev = idx > 0 ? (lazadaBaseline[idx - 1].baseRev + (logsByDate[`Lazada_${days[idx - 1]}`]?.revenue || 0)) : lazRev;
-            const lazGrowth = idx === 0 ? '+3.8%' : (lazRev >= prevLazRev ? `+${(((lazRev - prevLazRev) / prevLazRev) * 100).toFixed(1)}%` : `-${(((prevLazRev - lazRev) / prevLazRev) * 100).toFixed(1)}%`);
+            const prevLazRev = idx > 0 ? (logsByDate[`Lazada_${dateStrs[idx - 1]}`]?.revenue || 0) : 0;
+            let lazGrowth = '0%';
+            if (lazRev > 0 && prevLazRev === 0) {
+                lazGrowth = '+100%';
+            } else if (prevLazRev > 0) {
+                const diff = ((lazRev - prevLazRev) / prevLazRev) * 100;
+                lazGrowth = diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`;
+            }
 
             lazadaDaily.push({
                 date: fullDate,
