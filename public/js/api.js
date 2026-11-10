@@ -644,6 +644,8 @@ function isStaticOrGitHubPages() {
     } catch (e) {}
 
     return window.location.hostname.includes('github.io') || 
+           window.location.hostname.includes('vercel.app') || 
+           window.location.hostname.includes('mintmart.vn') || 
            window.location.protocol === 'file:' || 
            window.location.port === '5500' ||
            (window.location.hostname === 'localhost' && window.location.port === '');

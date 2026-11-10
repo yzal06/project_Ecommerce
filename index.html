@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MintMart - Siêu Thị Mua Sắm Trực Tuyến Đẳng Cấp & Tiện Lợi</title>
+    <script>
+        // Trên nhánh admin, tự động chuyển hướng đến trang Quản Trị
+        if (window.location.hostname.startsWith('admin.') || window.location.pathname === '/' || window.location.pathname.endsWith('/index.html')) {
+            window.location.replace('admin.html' + window.location.search + window.location.hash);
+        }
+    </script>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
