@@ -1,5 +1,9 @@
 # 🌿 MintMart - Website Thương Mại Điện Tử Hiện Đại (Xanh Bạc Hà & Nền Trắng)
 
+> [!IMPORTANT]
+> **Nhánh Quản Trị Viên (`admin`)**: Đây là nhánh chuyên biệt chứa toàn bộ hệ thống **Cổng Quản Trị Viên (Admin Portal)**, công cụ quản lý đơn hàng, danh mục, sản phẩm, phân quyền người dùng và đồng bộ kho hàng đa kênh Shopee & Lazada.
+> Nhánh `main` được giữ độc lập và cô lập chỉ dành cho **Cửa Hàng Khách Hàng (Customer Storefront)** để ngăn ngừa rò rỉ quyền hạn và rủi ro bị khai thác (anti-exploit).
+
 Hệ thống website bán hàng trực tuyến hoàn chỉnh với thiết kế màu chủ đạo xanh bạc hà (Mint Green `#10B981`) kết hợp nền trắng thanh lịch, tham khảo phong cách từ các nền tảng thương mại điện tử hàng đầu (Shopee, Tiki, Apple, Shopify).
 
 Hệ thống được tách biệt thành **2 trang web riêng biệt**:
