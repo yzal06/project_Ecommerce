@@ -152,6 +152,24 @@ async function initDatabase() {
         )
     `);
 
+    // Customer Website Analytics tables (Số lần xem trang & sản phẩm trên web khách hàng)
+    await runQuery(`
+        CREATE TABLE IF NOT EXISTS web_daily_stats (
+            date_key TEXT PRIMARY KEY,
+            page_views INTEGER DEFAULT 0,
+            product_views INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    await runQuery(`
+        CREATE TABLE IF NOT EXISTS web_product_stats (
+            product_id INTEGER PRIMARY KEY,
+            view_count INTEGER DEFAULT 0,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
     // Ensure Marketplace Columns exist in products table
     try {
         const prodCols = await allQuery(`PRAGMA table_info(products)`);

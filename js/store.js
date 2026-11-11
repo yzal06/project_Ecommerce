@@ -12,9 +12,21 @@ let flashSaleProducts = [];
 let hotProducts = [];
 let onlyDiscounted = false;
 
+function trackCustomerWebEvent(type, productId = null) {
+    try {
+        const pathname = (window.location && window.location.pathname) ? window.location.pathname.toLowerCase() : '';
+        if (pathname.includes('/admin') || document.getElementById('adminMainLayout')) return;
+        apiFetch('/api/analytics/track', {
+            method: 'POST',
+            body: JSON.stringify({ type, product_id: productId || null })
+        }).catch(() => {});
+    } catch (e) {}
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initCustomerTheme();
     initStore();
+    trackCustomerWebEvent('page_view');
     initFlashSaleCountdown();
     setupEventListeners();
     updateUserUI();
@@ -1147,6 +1159,7 @@ async function openQuickView(productId) {
         const res = await apiFetch(`/api/products/${productId}`);
         const p = res.product;
         if (!p) return;
+        trackCustomerWebEvent('product_view', p.id);
 
         const discountPercent = p.original_price && p.original_price > p.price
             ? Math.round(((p.original_price - p.price) / p.original_price) * 100)
