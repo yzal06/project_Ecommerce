@@ -28,6 +28,8 @@ const MOCK_DELETED_CATEGORIES_KEY = 'mintmart_deleted_categories_v2';
 const MOCK_ORDERS_KEY = 'mintmart_mock_orders_v2';
 const MOCK_LOGS_KEY = 'mintmart_mock_logs_v2';
 const MOCK_USERS_KEY = 'mintmart_mock_users_v2';
+const WEB_ANALYTICS_KEY = 'mintmart_web_analytics_v2';
+const WEB_ANALYTICS_DELTA_KEY = 'mintmart_web_analytics_delta_v2';
 
 function getMockUsers() {
     try {
@@ -398,10 +400,361 @@ function saveMockProducts(prods) {
 }
 
 // ========================================================
+// THỐNG KÊ LƯỢT XEM TRANG WEB KHÁCH HÀNG (BASELINE + DELTA)
+// ========================================================
+function createEmptyWebAnalytics() {
+    return {
+        daily: {},
+        product_views: {},
+        updated_at: null
+    };
+}
+
+function normalizeWebAnalytics(raw) {
+    const out = createEmptyWebAnalytics();
+    if (!raw || typeof raw !== 'object') return out;
+
+    if (raw.daily && typeof raw.daily === 'object') {
+        Object.keys(raw.daily).forEach(dateKey => {
+            const entry = raw.daily[dateKey];
+            if (entry && typeof entry === 'object') {
+                out.daily[dateKey] = {
+                    page_views: Math.max(0, Number(entry.page_views) || 0),
+                    product_views: Math.max(0, Number(entry.product_views) || 0)
+                };
+            }
+        });
+    }
+
+    if (raw.product_views && typeof raw.product_views === 'object') {
+        Object.keys(raw.product_views).forEach(pid => {
+            const val = Math.max(0, Number(raw.product_views[pid]) || 0);
+            if (val > 0) out.product_views[String(pid)] = val;
+        });
+    }
+
+    if (raw.updated_at) out.updated_at = raw.updated_at;
+    return out;
+}
+
+function getWebAnalyticsBaseline() {
+    try {
+        const stored = localStorage.getItem(WEB_ANALYTICS_KEY);
+        if (stored) return normalizeWebAnalytics(JSON.parse(stored));
+    } catch (e) {}
+    return createEmptyWebAnalytics();
+}
+
+function saveWebAnalyticsBaseline(data) {
+    const clean = normalizeWebAnalytics(data);
+    localStorage.setItem(WEB_ANALYTICS_KEY, JSON.stringify(clean));
+    return clean;
+}
+
+function getWebAnalyticsDelta() {
+    try {
+        const stored = localStorage.getItem(WEB_ANALYTICS_DELTA_KEY);
+        if (stored) return normalizeWebAnalytics(JSON.parse(stored));
+    } catch (e) {}
+    return createEmptyWebAnalytics();
+}
+
+function saveWebAnalyticsDelta(data) {
+    const clean = normalizeWebAnalytics(data);
+    localStorage.setItem(WEB_ANALYTICS_DELTA_KEY, JSON.stringify(clean));
+    return clean;
+}
+
+function hasPendingWebAnalyticsDelta(delta) {
+    const d = delta || getWebAnalyticsDelta();
+    const hasDaily = Object.values(d.daily || {}).some(v => (v.page_views || 0) > 0 || (v.product_views || 0) > 0);
+    const hasProd = Object.values(d.product_views || {}).some(v => (v || 0) > 0);
+    return hasDaily || hasProd;
+}
+
+function mergeWebAnalyticsMax(a, b) {
+    const na = normalizeWebAnalytics(a);
+    const nb = normalizeWebAnalytics(b);
+    const merged = createEmptyWebAnalytics();
+
+    const dateKeys = new Set([...Object.keys(na.daily), ...Object.keys(nb.daily)]);
+    dateKeys.forEach(dk => {
+        const va = na.daily[dk] || { page_views: 0, product_views: 0 };
+        const vb = nb.daily[dk] || { page_views: 0, product_views: 0 };
+        merged.daily[dk] = {
+            page_views: Math.max(va.page_views, vb.page_views),
+            product_views: Math.max(va.product_views, vb.product_views)
+        };
+    });
+
+    const prodKeys = new Set([...Object.keys(na.product_views), ...Object.keys(nb.product_views)]);
+    prodKeys.forEach(pid => {
+        const val = Math.max(na.product_views[pid] || 0, nb.product_views[pid] || 0);
+        if (val > 0) merged.product_views[pid] = val;
+    });
+
+    merged.updated_at = nb.updated_at || na.updated_at || new Date().toISOString();
+    return merged;
+}
+
+function addWebAnalyticsDelta(base, delta) {
+    const nb = normalizeWebAnalytics(base);
+    const nd = normalizeWebAnalytics(delta);
+    const out = mergeWebAnalyticsMax(nb, createEmptyWebAnalytics());
+
+    Object.keys(nd.daily).forEach(dk => {
+        const prev = out.daily[dk] || { page_views: 0, product_views: 0 };
+        out.daily[dk] = {
+            page_views: prev.page_views + (nd.daily[dk].page_views || 0),
+            product_views: prev.product_views + (nd.daily[dk].product_views || 0)
+        };
+    });
+
+    Object.keys(nd.product_views).forEach(pid => {
+        out.product_views[pid] = (out.product_views[pid] || 0) + (nd.product_views[pid] || 0);
+    });
+
+    out.updated_at = new Date().toISOString();
+    return out;
+}
+
+function subtractFlushedWebDelta(currentDelta, flushedDelta) {
+    const cur = normalizeWebAnalytics(currentDelta);
+    const flushed = normalizeWebAnalytics(flushedDelta);
+    const next = createEmptyWebAnalytics();
+
+    Object.keys(cur.daily).forEach(dk => {
+        const c = cur.daily[dk];
+        const f = flushed.daily[dk] || { page_views: 0, product_views: 0 };
+        const pv = Math.max(0, (c.page_views || 0) - (f.page_views || 0));
+        const prodV = Math.max(0, (c.product_views || 0) - (f.product_views || 0));
+        if (pv > 0 || prodV > 0) {
+            next.daily[dk] = { page_views: pv, product_views: prodV };
+        }
+    });
+
+    Object.keys(cur.product_views).forEach(pid => {
+        const rem = Math.max(0, (cur.product_views[pid] || 0) - (flushed.product_views[pid] || 0));
+        if (rem > 0) next.product_views[pid] = rem;
+    });
+
+    return next;
+}
+
+function getEffectiveWebAnalytics() {
+    return addWebAnalyticsDelta(getWebAnalyticsBaseline(), getWebAnalyticsDelta());
+}
+
+let webAnalyticsFlushTimer = null;
+function scheduleWebAnalyticsCloudFlush(delayMs = 900) {
+    if (typeof window === 'undefined') return;
+    if (webAnalyticsFlushTimer) clearTimeout(webAnalyticsFlushTimer);
+    webAnalyticsFlushTimer = setTimeout(() => {
+        webAnalyticsFlushTimer = null;
+        syncToCloud({ preserveCloudCatalog: true }).catch(() => {});
+    }, delayMs);
+}
+
+function recordWebAnalyticsEvent(type, productId = null) {
+    if (!['page_view', 'product_view'].includes(type)) return;
+    const dateKey = new Date().toISOString().slice(0, 10);
+    const delta = getWebAnalyticsDelta();
+    if (!delta.daily[dateKey]) {
+        delta.daily[dateKey] = { page_views: 0, product_views: 0 };
+    }
+    if (type === 'page_view') {
+        delta.daily[dateKey].page_views += 1;
+    } else if (type === 'product_view') {
+        delta.daily[dateKey].product_views += 1;
+        const pid = parseInt(productId, 10);
+        if (pid > 0) {
+            const key = String(pid);
+            delta.product_views[key] = (delta.product_views[key] || 0) + 1;
+        }
+    }
+    saveWebAnalyticsDelta(delta);
+    scheduleWebAnalyticsCloudFlush(900);
+}
+
+function mergeOrdersList(listA = [], listB = []) {
+    const demoCodes = ['MM-98214', 'MM-98215', 'MM-98216'];
+    const map = new Map();
+
+    [...(Array.isArray(listA) ? listA : []), ...(Array.isArray(listB) ? listB : [])].forEach(o => {
+        if (!o || !o.order_code || demoCodes.includes(o.order_code)) return;
+        const existing = map.get(o.order_code);
+        if (!existing) {
+            map.set(o.order_code, o);
+            return;
+        }
+        const existingTime = Date.parse(existing.updated_at || existing.created_at || 0) || 0;
+        const incomingTime = Date.parse(o.updated_at || o.created_at || 0) || 0;
+        if (incomingTime > existingTime) {
+            map.set(o.order_code, o);
+        } else if (incomingTime === existingTime && o.payment_status === 'paid' && existing.payment_status !== 'paid') {
+            map.set(o.order_code, o);
+        }
+    });
+
+    return Array.from(map.values()).sort((a, b) => {
+        const ta = Date.parse(a.created_at || 0) || 0;
+        const tb = Date.parse(b.created_at || 0) || 0;
+        if (tb !== ta) return tb - ta;
+        return (Number(b.id) || 0) - (Number(a.id) || 0);
+    });
+}
+
+function generateMockCustomerWebReport() {
+    const analytics = getEffectiveWebAnalytics();
+    const orders = getMockOrders().filter(o => o && o.status !== 'cancelled');
+    const products = getMockProducts();
+    const categories = getMockCategories();
+    const catMap = new Map(categories.map(c => [Number(c.id), c.name]));
+
+    let allTimePageViews = 0;
+    let allTimeProductViews = 0;
+    Object.keys(analytics.daily || {}).forEach(dateKey => {
+        const entry = analytics.daily[dateKey] || {};
+        allTimePageViews += Number(entry.page_views) || 0;
+        allTimeProductViews += Number(entry.product_views) || 0;
+    });
+
+    const dailyOrdersMap = {};
+    const productSalesMap = {};
+    let allTimeUnits = 0;
+    let allTimeRevenue = 0;
+
+    orders.forEach(o => {
+        const dateKey = String(o.created_at || '').slice(0, 10);
+        const orderRev = Number(o.total_amount) || 0;
+        allTimeRevenue += orderRev;
+
+        if (dateKey) {
+            if (!dailyOrdersMap[dateKey]) dailyOrdersMap[dateKey] = { orders: 0, units: 0, revenue: 0 };
+            dailyOrdersMap[dateKey].orders += 1;
+            dailyOrdersMap[dateKey].revenue += orderRev;
+        }
+
+        if (Array.isArray(o.items) && o.items.length > 0) {
+            o.items.forEach(it => {
+                const qty = Number(it.quantity) || 1;
+                const pid = Number(it.product_id || it.id) || 0;
+                const itemRev = it.total !== undefined ? Number(it.total) : (Number(it.price) || 0) * qty;
+                allTimeUnits += qty;
+                if (dateKey && dailyOrdersMap[dateKey]) dailyOrdersMap[dateKey].units += qty;
+                if (pid > 0) {
+                    if (!productSalesMap[pid]) productSalesMap[pid] = { sold_count: 0, revenue: 0 };
+                    productSalesMap[pid].sold_count += qty;
+                    productSalesMap[pid].revenue += itemRev;
+                }
+            });
+        } else {
+            const fallbackQty = Number(o.item_count) || 0;
+            allTimeUnits += fallbackQty;
+            if (dateKey && dailyOrdersMap[dateKey]) dailyOrdersMap[dateKey].units += fallbackQty;
+        }
+    });
+
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const daily = [];
+    let days7PageViews = 0, days7ProductViews = 0, days7Orders = 0, days7Units = 0, days7Revenue = 0;
+
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateKey = d.toISOString().slice(0, 10);
+        const shortDay = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()];
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dayLabel = `${shortDay} (${dd}/${mm})`;
+        const fullDate = `${dd}/${mm}/${d.getFullYear()}`;
+
+        const v = (analytics.daily && analytics.daily[dateKey]) || { page_views: 0, product_views: 0 };
+        const o = dailyOrdersMap[dateKey] || { orders: 0, units: 0, revenue: 0 };
+        const pv = Number(v.page_views) || 0;
+        const prodV = Number(v.product_views) || 0;
+
+        days7PageViews += pv;
+        days7ProductViews += prodV;
+        days7Orders += o.orders;
+        days7Units += o.units;
+        days7Revenue += o.revenue;
+
+        const prevRev = daily.length > 0 ? daily[daily.length - 1].revenue : 0;
+        let growth = '0%';
+        if (o.revenue > 0 && prevRev === 0) growth = '+100%';
+        else if (prevRev > 0) {
+            const diff = ((o.revenue - prevRev) / prevRev) * 100;
+            growth = diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`;
+        }
+
+        daily.push({
+            date: fullDate,
+            dateKey,
+            dayLabel,
+            is_today: dateKey === todayKey,
+            page_views: pv,
+            product_views: prodV,
+            orders: o.orders,
+            units: o.units,
+            revenue: o.revenue,
+            growth
+        });
+    }
+
+    const productRows = products.map(p => {
+        const pid = Number(p.id);
+        const views = Number(analytics.product_views && analytics.product_views[String(pid)]) || 0;
+        const sales = productSalesMap[pid] || { sold_count: 0, revenue: 0 };
+        return {
+            id: pid,
+            name: p.name,
+            image_url: p.image_url,
+            category_name: p.category_name || catMap.get(Number(p.category_id)) || 'Khác',
+            price: Number(p.price) || 0,
+            stock: Number(p.stock) || 0,
+            is_active: Number(p.is_active) === 1,
+            view_count: views,
+            sold_count: sales.sold_count,
+            revenue: sales.revenue
+        };
+    }).sort((a, b) => (b.revenue - a.revenue) || (b.view_count - a.view_count) || (a.id - b.id));
+
+    const todayViews = (analytics.daily && analytics.daily[todayKey]) || { page_views: 0, product_views: 0 };
+    const todayOrders = dailyOrdersMap[todayKey] || { orders: 0, units: 0, revenue: 0 };
+    const allTimeOrders = orders.length;
+    const conversionRate = allTimePageViews > 0 ? ((allTimeOrders / allTimePageViews) * 100).toFixed(1) : '0';
+
+    return {
+        success: true,
+        summary: {
+            all_time_page_views: allTimePageViews,
+            all_time_product_views: allTimeProductViews,
+            all_time_orders: allTimeOrders,
+            all_time_units: allTimeUnits,
+            all_time_revenue: allTimeRevenue,
+            today_page_views: Number(todayViews.page_views) || 0,
+            today_product_views: Number(todayViews.product_views) || 0,
+            today_orders: todayOrders.orders,
+            today_revenue: todayOrders.revenue,
+            days7_page_views: days7PageViews,
+            days7_product_views: days7ProductViews,
+            days7_orders: days7Orders,
+            days7_units: days7Units,
+            days7_revenue: days7Revenue,
+            conversion_rate: conversionRate
+        },
+        daily,
+        products: productRows
+    };
+}
+
+// ========================================================
 // HỆ THỐNG ĐỒNG BỘ ĐÁM MÂY (CROSS-DEVICE CLOUD SYNC)
 // ========================================================
 let isSyncingFromCloud = false;
 let isSyncingToCloud = false;
+let queuedCloudSyncOptions = null;
 let pendingCloudSyncTimeout = null;
 let cloudSyncCountdown = 30;
 let cloudCountdownInterval = null;
@@ -454,6 +807,30 @@ async function syncFromCloud(force = false) {
             }
             const activeDeletedIds = getDeletedProductIds();
 
+            let somethingChanged = Boolean(force);
+
+            // Đồng bộ thống kê lượt xem web khách hàng
+            if (data.web_analytics && typeof data.web_analytics === 'object') {
+                const prevAnalyticsStr = localStorage.getItem(WEB_ANALYTICS_KEY) || '';
+                const mergedAnalytics = mergeWebAnalyticsMax(getWebAnalyticsBaseline(), data.web_analytics);
+                const nextAnalyticsStr = JSON.stringify(mergedAnalytics);
+                if (prevAnalyticsStr !== nextAnalyticsStr) {
+                    localStorage.setItem(WEB_ANALYTICS_KEY, nextAnalyticsStr);
+                    somethingChanged = true;
+                }
+            }
+
+            // Đồng bộ đơn hàng từ trang web khách hàng
+            if (Array.isArray(data.orders)) {
+                const prevOrdersStr = localStorage.getItem(MOCK_ORDERS_KEY) || '';
+                const mergedOrders = mergeOrdersList(getMockOrders(), data.orders);
+                const nextOrdersStr = JSON.stringify(mergedOrders);
+                if (prevOrdersStr !== nextOrdersStr) {
+                    localStorage.setItem(MOCK_ORDERS_KEY, nextOrdersStr);
+                    somethingChanged = true;
+                }
+            }
+
             if (Array.isArray(data.products)) {
                 // Lọc bỏ ngay lập tức bất kỳ sản phẩm nào có ID trong danh sách đã xóa hoặc có cờ is_deleted
                 const cleanCloudProducts = data.products.filter(p => 
@@ -468,9 +845,13 @@ async function syncFromCloud(force = false) {
                     if (Array.isArray(data.categories) && data.categories.length > 0) {
                         localStorage.setItem(MOCK_CATEGORIES_KEY, JSON.stringify(data.categories));
                     }
+                    somethingChanged = true;
+                }
+
+                if (somethingChanged) {
                     const syncTime = data.updated_at || new Date().toISOString();
                     localStorage.setItem('mintmart_last_cloud_sync', syncTime);
-                    console.log(`[Cloud Sync] Đã đồng bộ thành công ${cleanCloudProducts.length} sản phẩm từ Đám Mây liên thiết bị!`);
+                    console.log(`[Cloud Sync] Đã đồng bộ ${cleanCloudProducts.length} sản phẩm, đơn hàng & lượt xem từ Đám Mây!`);
                     window.dispatchEvent(new CustomEvent('mintmart-cloud-synced', { detail: { ...data, products: cleanCloudProducts } }));
                 }
                 return { ...data, products: cleanCloudProducts };
@@ -485,25 +866,95 @@ async function syncFromCloud(force = false) {
 }
 
 async function syncToCloud(partialData = {}) {
+    const cloudUrl = getCloudStorageUrl();
+    if (!cloudUrl) return;
+
+    if (isSyncingToCloud) {
+        queuedCloudSyncOptions = {
+            ...(queuedCloudSyncOptions || {}),
+            ...partialData,
+            preserveCloudCatalog: Boolean(
+                (queuedCloudSyncOptions ? queuedCloudSyncOptions.preserveCloudCatalog : true) &&
+                (partialData.preserveCloudCatalog !== undefined ? partialData.preserveCloudCatalog : !isAdmin())
+            )
+        };
+        return;
+    }
+
+    isSyncingToCloud = true;
     try {
-        const cloudUrl = getCloudStorageUrl();
-        if (!cloudUrl) return;
+        const preserveCloudCatalog = partialData.preserveCloudCatalog !== undefined
+            ? Boolean(partialData.preserveCloudCatalog)
+            : (!partialData.products && !partialData.categories && !isAdmin());
 
-        if (isSyncingToCloud) return;
-        isSyncingToCloud = true;
+        // Luôn tải bản mới nhất trên Cloud trước khi POST để không ghi đè lượt xem web hay đơn hàng mới từ khách
+        let cloudData = null;
+        try {
+            const getController = new AbortController();
+            const getTimeout = setTimeout(() => getController.abort(), 5000);
+            const getRes = await fetch(cloudUrl, {
+                method: 'GET',
+                cache: 'no-cache',
+                headers: { 'Accept': 'application/json' },
+                signal: getController.signal
+            });
+            clearTimeout(getTimeout);
+            if (getRes.ok) {
+                cloudData = await getRes.json();
+            }
+        } catch (e) {}
 
-        const deletedIds = getDeletedProductIds();
-        const rawProds = partialData.products || getMockProducts();
-        const prods = rawProds.filter(p => p && !deletedIds.includes(Number(p.id)) && !p.is_deleted && p.deleted !== true);
-        const cats = partialData.categories || getMockCategories();
+        // Nếu phía khách hàng chỉ đồng bộ lượt xem/đơn hàng mà không tải được Cloud, tạm hoãn để tránh ghi đè danh mục Admin
+        if (preserveCloudCatalog && (!cloudData || !Array.isArray(cloudData.products))) {
+            return;
+        }
+
+        const cloudDeletedIds = Array.isArray(cloudData?.deleted_product_ids) ? cloudData.deleted_product_ids : [];
+        const deletedIds = Array.from(new Set([...getDeletedProductIds(), ...cloudDeletedIds.map(Number)]));
+
+        let baseProds = preserveCloudCatalog && Array.isArray(cloudData?.products)
+            ? cloudData.products
+            : (partialData.products || getMockProducts());
+
+        // Áp dụng trừ kho khi khách hàng vừa đặt hàng ở storefront
+        if (preserveCloudCatalog && Array.isArray(partialData.stockDeductions) && partialData.stockDeductions.length > 0) {
+            baseProds = baseProds.map(p => {
+                const cloned = { ...p };
+                const matched = partialData.stockDeductions.find(it => Number(it.id || it.product_id) === Number(cloned.id));
+                if (matched) {
+                    const qty = Number(matched.quantity) || 1;
+                    cloned.stock = Math.max(0, (Number(cloned.stock) || 0) - qty);
+                    cloned.sold_count = (Number(cloned.sold_count) || 0) + qty;
+                    cloned.shopee_stock = Math.max(0, (cloned.shopee_stock !== undefined ? Number(cloned.shopee_stock) : Number(cloned.stock)) - qty);
+                    cloned.lazada_stock = Math.max(0, (cloned.lazada_stock !== undefined ? Number(cloned.lazada_stock) : Number(cloned.stock)) - qty);
+                    cloned.shopee_sold_count = (Number(cloned.shopee_sold_count) || 0) + qty;
+                    cloned.lazada_sold_count = (Number(cloned.lazada_sold_count) || 0) + qty;
+                }
+                return cloned;
+            });
+        }
+
+        const prods = baseProds.filter(p => p && !deletedIds.includes(Number(p.id)) && !p.is_deleted && p.deleted !== true);
+        const cats = preserveCloudCatalog && Array.isArray(cloudData?.categories) && cloudData.categories.length > 0
+            ? cloudData.categories
+            : (partialData.categories || getMockCategories());
+
+        const mergedOrders = mergeOrdersList(cloudData?.orders || [], partialData.orders || getMockOrders());
+
+        // Snapshot delta trước khi POST để cộng chính xác lượt xem chưa đồng bộ
+        const flushedDelta = getWebAnalyticsDelta();
+        const mergedBaseline = mergeWebAnalyticsMax(cloudData?.web_analytics, getWebAnalyticsBaseline());
+        const nextAnalytics = addWebAnalyticsDelta(mergedBaseline, flushedDelta);
 
         const payload = {
             updated_at: new Date().toISOString(),
-            version: 3,
+            version: 4,
             source: 'MintMart Live Sync (Auto 30s)',
             deleted_product_ids: deletedIds,
             products: prods,
-            categories: cats
+            categories: cats,
+            orders: mergedOrders,
+            web_analytics: nextAnalytics
         };
 
         const controller = new AbortController();
@@ -520,7 +971,10 @@ async function syncToCloud(partialData = {}) {
         if (res.ok) {
             const syncTime = payload.updated_at;
             localStorage.setItem('mintmart_last_cloud_sync', syncTime);
-            console.log(`[Cloud Sync] Đã lưu ${prods.length} sản phẩm lên Đám Mây thành công! (Đã loại trừ ${deletedIds.length} ID đã xóa)`);
+            saveWebAnalyticsBaseline(nextAnalytics);
+            saveWebAnalyticsDelta(subtractFlushedWebDelta(getWebAnalyticsDelta(), flushedDelta));
+            localStorage.setItem(MOCK_ORDERS_KEY, JSON.stringify(mergedOrders));
+            console.log(`[Cloud Sync] Đã lưu ${prods.length} sản phẩm, ${mergedOrders.length} đơn & thống kê web lên Đám Mây!`);
             window.dispatchEvent(new CustomEvent('mintmart-cloud-saved', { detail: { syncTime, count: prods.length } }));
         } else {
             console.warn('[Cloud Sync Save] Máy chủ báo mã:', res.status);
@@ -529,6 +983,13 @@ async function syncToCloud(partialData = {}) {
         console.warn('[Cloud Sync Save Exception]:', saveErr.message);
     } finally {
         isSyncingToCloud = false;
+        if (queuedCloudSyncOptions) {
+            const nextOpts = queuedCloudSyncOptions;
+            queuedCloudSyncOptions = null;
+            setTimeout(() => {
+                syncToCloud(nextOpts).catch(() => {});
+            }, 150);
+        }
     }
 }
 
@@ -536,9 +997,11 @@ async function syncToCloud(partialData = {}) {
 async function run30sCloudCycle() {
     try {
         window.dispatchEvent(new CustomEvent('mintmart-cloud-sync-start'));
-        // 1. Đẩy các thay đổi cục bộ hiện tại lên đám mây
-        await syncToCloud();
-        // 2. Kéo các thay đổi mới nhất từ các máy tính khác về
+        // Chỉ đẩy lên Cloud nếu là Admin hoặc phía khách hàng có lượt xem/đơn hàng đang chờ
+        if (isAdmin() || hasPendingWebAnalyticsDelta()) {
+            await syncToCloud({ preserveCloudCatalog: !isAdmin() });
+        }
+        // Kéo các thay đổi mới nhất từ Cloud về
         await syncFromCloud();
         const now = new Date().toISOString();
         window.dispatchEvent(new CustomEvent('mintmart-cloud-cycle-complete', {
@@ -585,6 +1048,9 @@ if (typeof window !== 'undefined') {
     window.getCloudStorageUrl = getCloudStorageUrl;
     window.getDeletedProductIds = getDeletedProductIds;
     window.recordDeletedProductId = recordDeletedProductId;
+    window.recordWebAnalyticsEvent = recordWebAnalyticsEvent;
+    window.getEffectiveWebAnalytics = getEffectiveWebAnalytics;
+    window.generateMockCustomerWebReport = generateMockCustomerWebReport;
 }
 
 function getMockCategories() {
@@ -979,6 +1445,13 @@ async function handleMockApi(endpoint, options = {}) {
         };
     }
 
+    // K2. CUSTOMER WEB ANALYTICS TRACKING
+    if (path === '/api/analytics/track' && method === 'POST') {
+        const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
+        recordWebAnalyticsEvent(body.type, body.product_id);
+        return { success: true };
+    }
+
     // L. CREATE ORDER
     if (path === '/api/orders' && method === 'POST') {
         const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
@@ -1036,11 +1509,13 @@ async function handleMockApi(endpoint, options = {}) {
 
         const orderCode = 'MM-' + Math.floor(10000 + Math.random() * 90000);
         const orders = getMockOrders();
-        const total = items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
+        const total = items.reduce((sum, it) => sum + ((Number(it.price) || 0) * (Number(it.quantity) || 1)), 0);
         const payment_status = body.payment_status || 'pending';
+        const nowIso = new Date().toISOString();
+        const nextOrderId = orders.reduce((max, o) => Math.max(max, Number(o.id) || 0), 0) + 1;
 
         const newOrder = {
-            id: orders.length + 1,
+            id: nextOrderId,
             order_code: orderCode,
             customer_name: trimmedName,
             customer_phone: cleanPhone,
@@ -1051,26 +1526,41 @@ async function handleMockApi(endpoint, options = {}) {
             total_amount: total,
             status: 'pending',
             note: body.note || '',
-            created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
-            items: items
+            created_at: nowIso.replace('T', ' ').substring(0, 19),
+            updated_at: nowIso,
+            items: items.map(it => ({
+                ...it,
+                id: it.id || it.product_id,
+                product_id: it.product_id || it.id
+            }))
         };
         orders.unshift(newOrder);
         saveMockOrders(orders);
 
-        // Deduct mock product stock & increment marketplace sold counts
+        // Trừ kho nội bộ & đồng bộ Cloud mà không ghi đè danh mục sản phẩm Admin
         const prods = getMockProducts();
         items.forEach(it => {
-            const p = prods.find(item => item.id === it.id);
+            const targetId = Number(it.id || it.product_id);
+            const qty = Number(it.quantity) || 1;
+            const p = prods.find(item => Number(item.id) === targetId);
             if (p) {
-                p.stock = Math.max(0, p.stock - it.quantity);
-                p.sold_count = (p.sold_count || 0) + it.quantity;
-                p.shopee_stock = Math.max(0, (p.shopee_stock !== undefined ? p.shopee_stock : p.stock) - it.quantity);
-                p.lazada_stock = Math.max(0, (p.lazada_stock !== undefined ? p.lazada_stock : p.stock) - it.quantity);
-                p.shopee_sold_count = (p.shopee_sold_count || 0) + it.quantity;
-                p.lazada_sold_count = (p.lazada_sold_count || 0) + it.quantity;
+                const prevStock = Number(p.stock) || 0;
+                p.stock = Math.max(0, prevStock - qty);
+                p.sold_count = (Number(p.sold_count) || 0) + qty;
+                p.shopee_stock = Math.max(0, (p.shopee_stock !== undefined ? Number(p.shopee_stock) : prevStock) - qty);
+                p.lazada_stock = Math.max(0, (p.lazada_stock !== undefined ? Number(p.lazada_stock) : prevStock) - qty);
+                p.shopee_sold_count = (Number(p.shopee_sold_count) || 0) + qty;
+                p.lazada_sold_count = (Number(p.lazada_sold_count) || 0) + qty;
             }
         });
-        saveMockProducts(prods);
+        const deletedIds = getDeletedProductIds();
+        const cleanProds = prods.filter(p => p && !deletedIds.includes(Number(p.id)) && !p.is_deleted && p.deleted !== true);
+        localStorage.setItem(MOCK_PRODUCTS_KEY, JSON.stringify(cleanProds));
+        syncToCloud({
+            preserveCloudCatalog: true,
+            orders,
+            stockDeductions: items
+        });
 
         return {
             success: true,
@@ -1092,8 +1582,12 @@ async function handleMockApi(endpoint, options = {}) {
         const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
         const orders = getMockOrders();
         const o = orders.find(item => item.id === id);
-        if (o) o.status = body.status;
+        if (o) {
+            o.status = body.status;
+            o.updated_at = new Date().toISOString();
+        }
         saveMockOrders(orders);
+        syncToCloud({ preserveCloudCatalog: !isAdmin(), orders });
         return { success: true, message: 'Cập nhật trạng thái đơn hàng thành công!' };
     }
 
@@ -1103,8 +1597,12 @@ async function handleMockApi(endpoint, options = {}) {
         const body = typeof options.body === 'string' ? JSON.parse(options.body) : options.body || {};
         const orders = getMockOrders();
         const o = orders.find(item => item.id === id);
-        if (o) o.payment_status = body.payment_status;
+        if (o) {
+            o.payment_status = body.payment_status;
+            o.updated_at = new Date().toISOString();
+        }
         saveMockOrders(orders);
+        syncToCloud({ preserveCloudCatalog: !isAdmin(), orders });
         return { success: true, message: `Đã cập nhật trạng thái thanh toán sang: ${body.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}` };
     }
 
@@ -1211,6 +1709,11 @@ function generateMock7DayMarketplaceRevenue() {
     };
 }
 
+    // O0. CUSTOMER WEBSITE VIEWS & REVENUE REPORT
+    if (path === '/api/stats/customer-web') {
+        return generateMockCustomerWebReport();
+    }
+
     // O. DASHBOARD & REVENUE STATS
     if (path === '/api/stats/dashboard' || path === '/api/stats/revenue') {
         const orders = getMockOrders();
@@ -1235,6 +1738,7 @@ function generateMock7DayMarketplaceRevenue() {
 
         // 7-day marketplace data calculated from real orders (Bắt đầu từ 0)
         const marketplace7Days = generateMock7DayMarketplaceRevenue();
+        const customerWebReport = generateMockCustomerWebReport();
 
         return {
             success: true,
@@ -1247,6 +1751,7 @@ function generateMock7DayMarketplaceRevenue() {
                 lowStockProducts,
                 salesByCategory,
                 marketplace7Days,
+                customerWebReport,
                 monthlyRevenue: []
             }
         };
@@ -1432,10 +1937,12 @@ function generateMock7DayMarketplaceRevenue() {
         return {
             success: true,
             data: {
-                version: 2,
+                version: 4,
                 exported_at: new Date().toISOString(),
                 products: getMockProducts(),
-                categories: getMockCategories()
+                categories: getMockCategories(),
+                orders: getMockOrders(),
+                web_analytics: getEffectiveWebAnalytics()
             }
         };
     }
@@ -1447,7 +1954,19 @@ function generateMock7DayMarketplaceRevenue() {
             if (Array.isArray(importedData.categories) && importedData.categories.length > 0) {
                 localStorage.setItem(MOCK_CATEGORIES_KEY, JSON.stringify(importedData.categories));
             }
-            await syncToCloud({ products: importedData.products, categories: importedData.categories });
+            const nextOrders = Array.isArray(importedData.orders)
+                ? mergeOrdersList(getMockOrders(), importedData.orders)
+                : getMockOrders();
+            saveMockOrders(nextOrders);
+            if (importedData.web_analytics && typeof importedData.web_analytics === 'object') {
+                const mergedBaseline = mergeWebAnalyticsMax(getWebAnalyticsBaseline(), importedData.web_analytics);
+                saveWebAnalyticsBaseline(mergedBaseline);
+            }
+            await syncToCloud({
+                products: importedData.products,
+                categories: importedData.categories,
+                orders: nextOrders
+            });
             window.dispatchEvent(new CustomEvent('mintmart-cloud-synced', { detail: importedData }));
             return {
                 success: true,

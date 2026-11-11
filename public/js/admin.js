@@ -501,13 +501,20 @@ function startOrderNotificationWatcher() {
                             triggerNewOrderAlert(latest);
                         }
                         if (currentAdminTab === 'orders') loadAdminOrders();
+                        if (currentAdminTab === 'dashboard') loadDashboardStats();
                     } else if (prevStatus !== 'paid' && isPaid) {
                         lastKnownOrderPaymentStatuses.set(key, 'paid');
                         triggerPaymentSuccessAlert(latest);
                         if (currentAdminTab === 'orders') loadAdminOrders();
+                        if (currentAdminTab === 'dashboard') loadDashboardStats();
                     }
                 }
             } catch (err) {}
+        }
+        if (e.key === 'mintmart_web_analytics_delta_v2' || e.key === 'mintmart_web_analytics_v2') {
+            if (currentAdminTab === 'dashboard' && typeof loadCustomerWebReport === 'function') {
+                loadCustomerWebReport();
+            }
         }
     });
 }
@@ -728,6 +735,13 @@ async function loadDashboardStats() {
             }
         }
 
+        // Render Customer Website Views & Revenue Report
+        if (s.customerWebReport) {
+            renderCustomerWebReport(s.customerWebReport);
+        } else {
+            await loadCustomerWebReport();
+        }
+
         // Init / Update 2 Separate 7-Day Marketplace Tables & Charts
         await load7DayMarketplaceRevenue(s.marketplace7Days);
 
@@ -739,9 +753,333 @@ async function loadDashboardStats() {
     }
 }
 
-// Global instances for charts
+// Global instances for charts & Customer Web report state
 let shopee7DayChartInstance = null;
 let lazada7DayChartInstance = null;
+let webCustomer7DayChartInstance = null;
+let currentWebReportMode = 'daily';
+let cachedCustomerWebReport = null;
+
+function escapeAdminHtml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function setElementText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+}
+
+function formatGrowthBadgeHtml(growth) {
+    const text = String(growth || '0%');
+    const colorClass = text.startsWith('+')
+        ? 'text-emerald-600'
+        : (text.startsWith('-') ? 'text-rose-500' : 'text-slate-400');
+    const iconHtml = text.startsWith('+')
+        ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>'
+        : (text.startsWith('-') ? '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>' : '');
+    return `<span class="text-[11px] font-bold ${colorClass}">${iconHtml}${escapeAdminHtml(text)}</span>`;
+}
+
+function switchCustomerWebTableMode(mode) {
+    currentWebReportMode = mode === 'products' ? 'products' : 'daily';
+    const isDaily = currentWebReportMode === 'daily';
+
+    const btnDaily = document.getElementById('btnWebModeDaily');
+    const btnProducts = document.getElementById('btnWebModeProducts');
+    const dailyWrap = document.getElementById('webCustomerDailyTableWrap');
+    const productsWrap = document.getElementById('webCustomerProductsTableWrap');
+
+    const activeCls = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm transition-all';
+    const inactiveCls = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all';
+
+    if (btnDaily) btnDaily.className = isDaily ? activeCls : inactiveCls;
+    if (btnProducts) btnProducts.className = isDaily ? inactiveCls : activeCls;
+    if (dailyWrap) dailyWrap.classList.toggle('hidden', !isDaily);
+    if (productsWrap) productsWrap.classList.toggle('hidden', isDaily);
+}
+
+function renderCustomerWebChart(daily) {
+    const canvas = document.getElementById('webCustomer7DayChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const rows = Array.isArray(daily) ? daily : [];
+    const labels = rows.map(d => d.dayLabel || d.dateKey || '');
+    const visitsData = rows.map(d => Number(d.page_views) || 0);
+    const productViewsData = rows.map(d => Number(d.product_views) || 0);
+    const revenueData = rows.map(d => Number(d.revenue) || 0);
+
+    if (webCustomer7DayChartInstance) {
+        webCustomer7DayChartInstance.destroy();
+    }
+
+    webCustomer7DayChartInstance = new Chart(canvas, {
+        data: {
+            labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: 'Doanh thu Web (VNĐ)',
+                    data: revenueData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.25)',
+                    borderColor: '#10B981',
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    yAxisID: 'y1',
+                    order: 2
+                },
+                {
+                    type: 'line',
+                    label: 'Lượt truy cập Web',
+                    data: visitsData,
+                    borderColor: '#047857',
+                    backgroundColor: 'rgba(4, 120, 87, 0.1)',
+                    borderWidth: 2.5,
+                    tension: 0.35,
+                    pointBackgroundColor: '#047857',
+                    pointRadius: 3.5,
+                    yAxisID: 'y',
+                    order: 1
+                },
+                {
+                    type: 'line',
+                    label: 'Lượt xem SP',
+                    data: productViewsData,
+                    borderColor: '#0EA5E9',
+                    backgroundColor: 'rgba(14, 165, 233, 0.08)',
+                    borderWidth: 2,
+                    borderDash: [4, 4],
+                    tension: 0.35,
+                    pointBackgroundColor: '#0EA5E9',
+                    pointRadius: 3,
+                    yAxisID: 'y',
+                    order: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const label = ctx.dataset.label || '';
+                            const val = ctx.parsed.y || 0;
+                            if (ctx.dataset.yAxisID === 'y1') {
+                                return `${label}: ${formatCurrency(val)}`;
+                            }
+                            return `${label}: ${val.toLocaleString('vi-VN')} lượt`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0,
+                        font: { size: 10 },
+                        callback: (val) => `${val} lượt`
+                    },
+                    grid: { color: '#ECFDF5' }
+                },
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: false },
+                    ticks: {
+                        font: { size: 10 },
+                        callback: (val) => {
+                            if (val === 0) return '0 ₫';
+                            if (val >= 1000000) return `${(val / 1000000).toFixed(val % 1000000 === 0 ? 0 : 1)} Tr`;
+                            if (val >= 1000) return `${Math.round(val / 1000)} k`;
+                            return `${val} ₫`;
+                        }
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 10 } }
+                }
+            }
+        }
+    });
+}
+
+function renderCustomerWebReport(report) {
+    if (!report || !report.summary) return;
+    cachedCustomerWebReport = report;
+
+    const sum = report.summary;
+    const daily = Array.isArray(report.daily) ? report.daily : [];
+    const products = Array.isArray(report.products) ? report.products : [];
+
+    // 4 ô tóm tắt trên cùng
+    setElementText('webSummaryTotalVisits', `${(Number(sum.all_time_page_views) || 0).toLocaleString('vi-VN')} lượt`);
+    setElementText('webSummaryTodayVisits', `Hôm nay: ${(Number(sum.today_page_views) || 0).toLocaleString('vi-VN')} lượt`);
+    setElementText('webSummaryProductViews', `${(Number(sum.all_time_product_views) || 0).toLocaleString('vi-VN')} lượt`);
+    setElementText('webSummary7DayProductViews', `7 ngày: ${(Number(sum.days7_product_views) || 0).toLocaleString('vi-VN')} lượt`);
+    setElementText('webSummaryTotalOrders', `${(Number(sum.all_time_orders) || 0).toLocaleString('vi-VN')} đơn`);
+    setElementText('webSummaryConversion', `Tỷ lệ chốt: ${sum.conversion_rate || '0'}%`);
+    setElementText('webSummaryTotalRevenue', formatCurrency(sum.all_time_revenue || 0));
+    setElementText('webSummary7DayRevenue', `7 ngày: ${formatCurrency(sum.days7_revenue || 0)}`);
+
+    // Biểu đồ 7 ngày
+    renderCustomerWebChart(daily);
+
+    // Chế độ 1: Bảng 7 ngày
+    const dailyTbody = document.getElementById('webCustomer7DayTableBody');
+    if (dailyTbody) {
+        dailyTbody.innerHTML = daily.map(d => `
+            <tr class="${d.is_today ? 'bg-emerald-50/40' : ''} hover:bg-emerald-50/30 transition">
+                <td class="py-2.5 px-3">
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-bold text-slate-800">${escapeAdminHtml(d.dayLabel)}</span>
+                        ${d.is_today ? '<span class="bg-emerald-100 text-emerald-700 text-[9px] font-extrabold px-1.5 py-0.5 rounded">Hôm nay</span>' : ''}
+                    </div>
+                    <span class="text-[10px] text-slate-400 block">${escapeAdminHtml(d.date)}</span>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${(Number(d.page_views) || 0).toLocaleString('vi-VN')} lượt</span>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${(Number(d.product_views) || 0).toLocaleString('vi-VN')} lượt</span>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    <span class="font-bold text-slate-800">${Number(d.orders) || 0} đơn</span>
+                    <span class="text-[10px] text-slate-400 block">${Number(d.units) || 0} sp</span>
+                </td>
+                <td class="py-2.5 px-3 text-right">
+                    <strong class="font-black text-emerald-600 text-xs">${formatCurrency(d.revenue || 0)}</strong>
+                </td>
+                <td class="py-2.5 px-3 text-center">
+                    ${formatGrowthBadgeHtml(d.growth)}
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    setElementText('web7DayFooterVisits', `${(Number(sum.days7_page_views) || 0).toLocaleString('vi-VN')} lượt`);
+    setElementText('web7DayFooterProductViews', `${(Number(sum.days7_product_views) || 0).toLocaleString('vi-VN')} lượt`);
+    setElementText('web7DayFooterOrders', `${Number(sum.days7_orders) || 0} đơn / ${Number(sum.days7_units) || 0} sp`);
+    setElementText('web7DayFooterRevenue', formatCurrency(sum.days7_revenue || 0));
+
+    const growthFooter = document.getElementById('web7DayFooterGrowth');
+    if (growthFooter) {
+        if ((Number(sum.days7_revenue) || 0) > 0) {
+            growthFooter.innerHTML = '<i class="fa-solid fa-arrow-trend-up mr-1"></i> Hoạt động tốt';
+            growthFooter.className = 'py-3 px-3 text-center text-emerald-600 font-bold';
+        } else {
+            growthFooter.textContent = '0%';
+            growthFooter.className = 'py-3 px-3 text-center text-slate-400 font-bold';
+        }
+    }
+
+    // Chế độ 2: Bảng theo sản phẩm
+    const prodTbody = document.getElementById('webCustomerProductsTableBody');
+    let totalProdViews = 0;
+    let totalProdSold = 0;
+    let totalProdRev = 0;
+
+    if (prodTbody) {
+        if (products.length === 0) {
+            prodTbody.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-slate-400">Chưa có dữ liệu sản phẩm để thống kê.</td></tr>';
+        } else {
+            prodTbody.innerHTML = products.map(p => {
+                const views = Number(p.view_count) || 0;
+                const sold = Number(p.sold_count) || 0;
+                const rev = Number(p.revenue) || 0;
+                const stock = Number(p.stock) || 0;
+                totalProdViews += views;
+                totalProdSold += sold;
+                totalProdRev += rev;
+
+                const stockBadge = !p.is_active
+                    ? '<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[10px] font-bold">Tạm ẩn</span>'
+                    : (stock <= 0
+                        ? '<span class="bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full text-[10px] font-bold">Hết hàng</span>'
+                        : `<span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">${stock} sp</span>`);
+
+                return `
+                    <tr class="hover:bg-emerald-50/30 transition">
+                        <td class="py-2.5 px-3">
+                            <div class="flex items-center space-x-2.5">
+                                <img src="${escapeAdminHtml(p.image_url || 'https://placehold.co/40x40?text=MM')}" onerror="this.src='https://placehold.co/40x40?text=MM'" class="w-9 h-9 rounded-lg object-cover border border-slate-100 shrink-0" alt="">
+                                <div class="min-w-0">
+                                    <p class="font-bold text-slate-800 truncate max-w-[220px]">${escapeAdminHtml(p.name)}</p>
+                                    <span class="text-[10px] text-slate-400">${escapeAdminHtml(p.category_name || 'Khác')}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-semibold text-slate-700">${formatCurrency(p.price || 0)}</td>
+                        <td class="py-2.5 px-3 text-center">
+                            <span class="bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${views.toLocaleString('vi-VN')} lượt</span>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">
+                            <span class="bg-sky-100 text-sky-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${sold.toLocaleString('vi-VN')} sp</span>
+                        </td>
+                        <td class="py-2.5 px-3 text-right">
+                            <strong class="font-black text-emerald-600 text-xs">${formatCurrency(rev)}</strong>
+                        </td>
+                        <td class="py-2.5 px-3 text-center">${stockBadge}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    }
+
+    setElementText('webProductsFooterViews', `${totalProdViews.toLocaleString('vi-VN')} lượt`);
+    setElementText('webProductsFooterSold', `${totalProdSold.toLocaleString('vi-VN')} sp`);
+    setElementText('webProductsFooterRevenue', formatCurrency(totalProdRev));
+}
+
+async function loadCustomerWebReport() {
+    try {
+        const res = await apiFetch('/api/stats/customer-web');
+        if (res && res.success) {
+            renderCustomerWebReport(res);
+        }
+    } catch (err) {
+        console.error('Lỗi tải báo cáo trang web khách hàng:', err);
+    }
+}
+
+async function refreshCustomerWebReport() {
+    const btn = document.getElementById('btnRefreshWebReport');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-rotate fa-spin mr-1.5"></i>Đang tải...';
+    }
+    try {
+        if (typeof isStaticOrGitHubPages === 'function' && isStaticOrGitHubPages() && typeof syncFromCloud === 'function') {
+            await syncFromCloud(true);
+        }
+        await loadDashboardStats();
+        if (typeof showToast === 'function') {
+            showToast('success', 'Đã cập nhật số lần xem & doanh thu trang web khách hàng!');
+        }
+    } catch (err) {
+        console.error('Lỗi làm mới báo cáo web khách hàng:', err);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate mr-1.5"></i>Làm mới';
+        }
+    }
+}
 
 // LOAD VÀ RENDER 2 BẢNG DOANH THU 7 NGÀY GẦN NHẤT RIÊNG BIỆT CHO SHOPEE & LAZADA
 async function load7DayMarketplaceRevenue(initialData = null) {

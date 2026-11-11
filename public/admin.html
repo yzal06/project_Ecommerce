@@ -374,6 +374,138 @@
                         </div>
                     </div>
 
+                    <!-- BẢNG DÀNH RIÊNG CHO SỐ LẦN XEM & DOANH THU TRANG WEB KHÁCH HÀNG -->
+                    <div class="bg-white rounded-2xl p-6 border border-emerald-200 shadow-sm mb-6">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-emerald-100 mb-5">
+                            <div class="flex items-start sm:items-center space-x-3">
+                                <div class="w-11 h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black shadow-md shadow-emerald-500/20 text-lg shrink-0">
+                                    <i class="fa-solid fa-globe"></i>
+                                </div>
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="font-black text-slate-800 text-base">Bảng Số Lần Xem &amp; Doanh Thu - Trang Web Khách Hàng</h3>
+                                        <span class="bg-emerald-100 text-emerald-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping mr-1.5"></span>
+                                            www.mintmart.vn
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-0.5">Thống kê lượt truy cập, lượt xem chi tiết sản phẩm và doanh thu đơn hàng trực tiếp từ trang khách hàng</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                    <button type="button" id="btnWebModeDaily" onclick="switchCustomerWebTableMode('daily')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm transition-all">
+                                        <i class="fa-regular fa-calendar-days mr-1.5"></i>Theo 7 Ngày
+                                    </button>
+                                    <button type="button" id="btnWebModeProducts" onclick="switchCustomerWebTableMode('products')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all">
+                                        <i class="fa-solid fa-box-open mr-1.5"></i>Theo Sản Phẩm
+                                    </button>
+                                </div>
+                                <button type="button" id="btnRefreshWebReport" onclick="refreshCustomerWebReport()" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center">
+                                    <i class="fa-solid fa-rotate mr-1.5"></i>Làm mới
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 4 Ô Tóm Tắt Nhanh Web Khách Hàng -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+                            <div class="bg-emerald-50/60 border border-emerald-100 rounded-xl p-4">
+                                <div class="flex items-center justify-between text-xs text-emerald-700 font-bold mb-1">
+                                    <span>Số Lần Truy Cập Web</span>
+                                    <i class="fa-solid fa-eye"></i>
+                                </div>
+                                <p class="text-xl font-black text-slate-800" id="webSummaryTotalVisits">0 lượt</p>
+                                <p class="text-[11px] text-slate-500 mt-1" id="webSummaryTodayVisits">Hôm nay: 0 lượt</p>
+                            </div>
+                            <div class="bg-teal-50/60 border border-teal-100 rounded-xl p-4">
+                                <div class="flex items-center justify-between text-xs text-teal-700 font-bold mb-1">
+                                    <span>Số Lần Xem Sản Phẩm</span>
+                                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                                </div>
+                                <p class="text-xl font-black text-slate-800" id="webSummaryProductViews">0 lượt</p>
+                                <p class="text-[11px] text-slate-500 mt-1" id="webSummary7DayProductViews">7 ngày: 0 lượt</p>
+                            </div>
+                            <div class="bg-sky-50/60 border border-sky-100 rounded-xl p-4">
+                                <div class="flex items-center justify-between text-xs text-sky-700 font-bold mb-1">
+                                    <span>Đơn Hàng Website</span>
+                                    <i class="fa-solid fa-cart-shopping"></i>
+                                </div>
+                                <p class="text-xl font-black text-slate-800" id="webSummaryTotalOrders">0 đơn</p>
+                                <p class="text-[11px] text-slate-500 mt-1" id="webSummaryConversion">Tỷ lệ chốt: 0%</p>
+                            </div>
+                            <div class="bg-amber-50/60 border border-amber-100 rounded-xl p-4">
+                                <div class="flex items-center justify-between text-xs text-amber-700 font-bold mb-1">
+                                    <span>Doanh Thu Web Khách</span>
+                                    <i class="fa-solid fa-sack-dollar"></i>
+                                </div>
+                                <p class="text-xl font-black text-emerald-600" id="webSummaryTotalRevenue">0 ₫</p>
+                                <p class="text-[11px] text-slate-500 mt-1" id="webSummary7DayRevenue">7 ngày: 0 ₫</p>
+                            </div>
+                        </div>
+
+                        <!-- Biểu đồ 2 trục: Số lần xem & Doanh thu 7 ngày trên Web Khách Hàng -->
+                        <div class="h-48 mb-5 relative bg-emerald-50/20 rounded-xl p-3 border border-emerald-100/80">
+                            <canvas id="webCustomer7DayChart"></canvas>
+                        </div>
+
+                        <!-- Chế độ 1: Bảng theo 7 ngày -->
+                        <div id="webCustomerDailyTableWrap" class="overflow-x-auto rounded-xl border border-slate-100">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-emerald-50/80 text-slate-600 font-bold border-b border-emerald-100">
+                                    <tr>
+                                        <th class="py-3 px-3">Ngày</th>
+                                        <th class="py-3 px-3 text-center">Lượt Truy Cập Web</th>
+                                        <th class="py-3 px-3 text-center">Lượt Xem SP</th>
+                                        <th class="py-3 px-3 text-center">Đơn Hàng / SP Bán</th>
+                                        <th class="py-3 px-3 text-right">Doanh Thu Web</th>
+                                        <th class="py-3 px-3 text-center">Tăng Trưởng</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="webCustomer7DayTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
+                                    <!-- Rendered via JS -->
+                                </tbody>
+                                <tfoot class="bg-emerald-50/50 font-bold border-t border-emerald-100 text-slate-800">
+                                    <tr>
+                                        <td class="py-3 px-3">Tổng 7 ngày:</td>
+                                        <td class="py-3 px-3 text-center text-emerald-700" id="web7DayFooterVisits">0 lượt</td>
+                                        <td class="py-3 px-3 text-center text-teal-700" id="web7DayFooterProductViews">0 lượt</td>
+                                        <td class="py-3 px-3 text-center text-sky-700" id="web7DayFooterOrders">0 đơn / 0 sp</td>
+                                        <td class="py-3 px-3 text-right text-emerald-600 font-black text-sm" id="web7DayFooterRevenue">0 ₫</td>
+                                        <td class="py-3 px-3 text-center text-slate-500" id="web7DayFooterGrowth">0%</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Chế độ 2: Bảng theo sản phẩm -->
+                        <div id="webCustomerProductsTableWrap" class="overflow-x-auto rounded-xl border border-slate-100 hidden">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-emerald-50/80 text-slate-600 font-bold border-b border-emerald-100">
+                                    <tr>
+                                        <th class="py-3 px-3">Sản Phẩm</th>
+                                        <th class="py-3 px-3 text-right">Giá Bán</th>
+                                        <th class="py-3 px-3 text-center">Số Lần Khách Xem</th>
+                                        <th class="py-3 px-3 text-center">Đã Bán (Web)</th>
+                                        <th class="py-3 px-3 text-right">Doanh Thu Sản Phẩm</th>
+                                        <th class="py-3 px-3 text-center">Tồn Kho Web</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="webCustomerProductsTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
+                                    <!-- Rendered via JS -->
+                                </tbody>
+                                <tfoot class="bg-emerald-50/50 font-bold border-t border-emerald-100 text-slate-800">
+                                    <tr>
+                                        <td colspan="2" class="py-3 px-3">Tổng theo sản phẩm:</td>
+                                        <td class="py-3 px-3 text-center text-emerald-700" id="webProductsFooterViews">0 lượt</td>
+                                        <td class="py-3 px-3 text-center text-sky-700" id="webProductsFooterSold">0 sp</td>
+                                        <td class="py-3 px-3 text-right text-emerald-600 font-black text-sm" id="webProductsFooterRevenue">0 ₫</td>
+                                        <td class="py-3 px-3 text-center text-slate-400">-</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- KHỐI DOANH THU 7 NGÀY PHÂN TÁCH 2 SÀN SHOPEE & LAZADA THÀNH 2 BẢNG RIÊNG BIỆT -->
                     <div class="mb-6">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">

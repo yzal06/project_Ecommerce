@@ -810,6 +810,8 @@ app.post('/api/orders', async (req, res) => {
         // RÀNG BUỘC KIỂM TRA TỒN KHO LIÊN SÀN (WEB, SHOPEE, LAZADA)
         // ========================================================
         for (const item of items) {
+            item.product_id = item.product_id || item.id || null;
+            if (!item.image && item.image_url) item.image = item.image_url;
             if (item.product_id) {
                 const product = await getQuery(`
                     SELECT id, name, stock, shopee_stock, lazada_stock, is_active 
@@ -992,8 +994,232 @@ app.put('/api/orders/:id/payment', async (req, res) => {
 });
 
 /* ========================================================
+   CUSTOMER WEBSITE ANALYTICS (SỐ LẦN XEM & DOANH THU WEB)
+   ======================================================== */
+
+app.post('/api/analytics/track', async (req, res) => {
+    try {
+        const { type, product_id } = req.body || {};
+        if (!['page_view', 'product_view'].includes(type)) {
+            return res.status(400).json({ success: false, message: 'Loại sự kiện thống kê không hợp lệ' });
+        }
+
+        const dateKey = new Date().toISOString().slice(0, 10);
+        if (type === 'page_view') {
+            await runQuery(`
+                INSERT INTO web_daily_stats (date_key, page_views, product_views, updated_at)
+                VALUES (?, 1, 0, CURRENT_TIMESTAMP)
+                ON CONFLICT(date_key) DO UPDATE SET
+                    page_views = page_views + 1,
+                    updated_at = CURRENT_TIMESTAMP
+            `, [dateKey]);
+        } else if (type === 'product_view') {
+            await runQuery(`
+                INSERT INTO web_daily_stats (date_key, page_views, product_views, updated_at)
+                VALUES (?, 0, 1, CURRENT_TIMESTAMP)
+                ON CONFLICT(date_key) DO UPDATE SET
+                    product_views = product_views + 1,
+                    updated_at = CURRENT_TIMESTAMP
+            `, [dateKey]);
+
+            const pid = parseInt(product_id, 10);
+            if (pid > 0) {
+                await runQuery(`
+                    INSERT INTO web_product_stats (product_id, view_count, updated_at)
+                    VALUES (?, 1, CURRENT_TIMESTAMP)
+                    ON CONFLICT(product_id) DO UPDATE SET
+                        view_count = view_count + 1,
+                        updated_at = CURRENT_TIMESTAMP
+                `, [pid]);
+            }
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Lỗi ghi nhận lượt xem web khách hàng:', err);
+        res.status(500).json({ success: false, message: 'Lỗi ghi nhận lượt xem' });
+    }
+});
+
+async function buildCustomerWebReport() {
+    const dailyStatsRows = await allQuery(`SELECT date_key, page_views, product_views FROM web_daily_stats`);
+    const dailyViewsMap = {};
+    let allTimePageViews = 0;
+    let allTimeProductViews = 0;
+
+    dailyStatsRows.forEach(r => {
+        const pv = Number(r.page_views) || 0;
+        const prodV = Number(r.product_views) || 0;
+        dailyViewsMap[r.date_key] = { page_views: pv, product_views: prodV };
+        allTimePageViews += pv;
+        allTimeProductViews += prodV;
+    });
+
+    const dailyOrderRows = await allQuery(`
+        SELECT DATE(o.created_at) as order_date,
+               COUNT(DISTINCT o.id) as order_count,
+               COALESCE(SUM(o.total_amount), 0) as revenue
+        FROM orders o
+        WHERE o.status != 'cancelled'
+        GROUP BY DATE(o.created_at)
+    `);
+    const dailyUnitsRows = await allQuery(`
+        SELECT DATE(o.created_at) as order_date,
+               COALESCE(SUM(oi.quantity), 0) as total_units
+        FROM order_items oi
+        INNER JOIN orders o ON oi.order_id = o.id
+        WHERE o.status != 'cancelled'
+        GROUP BY DATE(o.created_at)
+    `);
+
+    const dailyOrdersMap = {};
+    dailyOrderRows.forEach(r => {
+        dailyOrdersMap[r.order_date] = {
+            orders: Number(r.order_count) || 0,
+            revenue: Number(r.revenue) || 0,
+            units: 0
+        };
+    });
+    dailyUnitsRows.forEach(r => {
+        if (!dailyOrdersMap[r.order_date]) {
+            dailyOrdersMap[r.order_date] = { orders: 0, revenue: 0, units: 0 };
+        }
+        dailyOrdersMap[r.order_date].units = Number(r.total_units) || 0;
+    });
+
+    const allTimeOrderTotals = await getQuery(`
+        SELECT COUNT(*) as total_orders,
+               COALESCE(SUM(total_amount), 0) as total_revenue
+        FROM orders
+        WHERE status != 'cancelled'
+    `);
+    const allTimeUnitsTotals = await getQuery(`
+        SELECT COALESCE(SUM(oi.quantity), 0) as total_units
+        FROM order_items oi
+        INNER JOIN orders o ON oi.order_id = o.id
+        WHERE o.status != 'cancelled'
+    `);
+
+    const daily = [];
+    let days7PageViews = 0;
+    let days7ProductViews = 0;
+    let days7Orders = 0;
+    let days7Units = 0;
+    let days7Revenue = 0;
+    const todayKey = new Date().toISOString().slice(0, 10);
+
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateKey = d.toISOString().slice(0, 10);
+        const shortDay = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d.getDay()];
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dayLabel = `${shortDay} (${dd}/${mm})`;
+        const fullDate = `${dd}/${mm}/${d.getFullYear()}`;
+
+        const v = dailyViewsMap[dateKey] || { page_views: 0, product_views: 0 };
+        const o = dailyOrdersMap[dateKey] || { orders: 0, units: 0, revenue: 0 };
+
+        days7PageViews += v.page_views;
+        days7ProductViews += v.product_views;
+        days7Orders += o.orders;
+        days7Units += o.units;
+        days7Revenue += o.revenue;
+
+        const prevRev = daily.length > 0 ? daily[daily.length - 1].revenue : 0;
+        let growth = '0%';
+        if (o.revenue > 0 && prevRev === 0) {
+            growth = '+100%';
+        } else if (prevRev > 0) {
+            const diff = ((o.revenue - prevRev) / prevRev) * 100;
+            growth = diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`;
+        }
+
+        daily.push({
+            date: fullDate,
+            dateKey,
+            dayLabel,
+            is_today: dateKey === todayKey,
+            page_views: v.page_views,
+            product_views: v.product_views,
+            orders: o.orders,
+            units: o.units,
+            revenue: o.revenue,
+            growth
+        });
+    }
+
+    const productRows = await allQuery(`
+        SELECT p.id, p.name, p.image_url, p.price, p.stock, p.is_active,
+               c.name as category_name,
+               COALESCE(wps.view_count, 0) as view_count,
+               COALESCE(SUM(CASE WHEN o.status != 'cancelled' THEN oi.quantity ELSE 0 END), 0) as sold_units,
+               COALESCE(SUM(CASE WHEN o.status != 'cancelled' THEN oi.total ELSE 0 END), 0) as revenue
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN web_product_stats wps ON wps.product_id = p.id
+        LEFT JOIN order_items oi ON oi.product_id = p.id
+        LEFT JOIN orders o ON oi.order_id = o.id
+        GROUP BY p.id
+        ORDER BY revenue DESC, view_count DESC, p.id ASC
+    `);
+
+    const todayViews = dailyViewsMap[todayKey] || { page_views: 0, product_views: 0 };
+    const todayOrderStats = dailyOrdersMap[todayKey] || { orders: 0, units: 0, revenue: 0 };
+    const allTimeOrders = Number(allTimeOrderTotals?.total_orders) || 0;
+    const allTimeRevenue = Number(allTimeOrderTotals?.total_revenue) || 0;
+    const allTimeUnits = Number(allTimeUnitsTotals?.total_units) || 0;
+    const conversionRate = allTimePageViews > 0 ? ((allTimeOrders / allTimePageViews) * 100).toFixed(1) : '0';
+
+    return {
+        success: true,
+        summary: {
+            all_time_page_views: allTimePageViews,
+            all_time_product_views: allTimeProductViews,
+            all_time_orders: allTimeOrders,
+            all_time_units: allTimeUnits,
+            all_time_revenue: allTimeRevenue,
+            today_page_views: todayViews.page_views,
+            today_product_views: todayViews.product_views,
+            today_orders: todayOrderStats.orders,
+            today_revenue: todayOrderStats.revenue,
+            days7_page_views: days7PageViews,
+            days7_product_views: days7ProductViews,
+            days7_orders: days7Orders,
+            days7_units: days7Units,
+            days7_revenue: days7Revenue,
+            conversion_rate: conversionRate
+        },
+        daily,
+        products: productRows.map(r => ({
+            id: r.id,
+            name: r.name,
+            image_url: r.image_url,
+            category_name: r.category_name || 'Khác',
+            price: Number(r.price) || 0,
+            stock: Number(r.stock) || 0,
+            is_active: Number(r.is_active) === 1,
+            view_count: Number(r.view_count) || 0,
+            sold_count: Number(r.sold_units) || 0,
+            revenue: Number(r.revenue) || 0
+        }))
+    };
+}
+
+/* ========================================================
    ADMIN DASHBOARD STATS
    ======================================================== */
+
+app.get('/api/stats/customer-web', requireAdmin, async (req, res) => {
+    try {
+        const report = await buildCustomerWebReport();
+        res.json(report);
+    } catch (err) {
+        console.error('Lỗi lấy thống kê trang web khách hàng:', err);
+        res.status(500).json({ success: false, message: 'Lỗi server khi lấy thống kê web khách hàng' });
+    }
+});
 
 app.get('/api/stats/dashboard', requireAdmin, async (req, res) => {
     try {
@@ -1035,6 +1261,9 @@ app.get('/api/stats/dashboard', requireAdmin, async (req, res) => {
         // 7-day marketplace revenue separated for Shopee & Lazada
         const marketplace7Days = await marketplaceService.get7DayMarketplaceRevenue();
 
+        // Customer website views & revenue report
+        const customerWebReport = await buildCustomerWebReport();
+
         res.json({
             success: true,
             stats: {
@@ -1045,7 +1274,8 @@ app.get('/api/stats/dashboard', requireAdmin, async (req, res) => {
                 recentOrders,
                 lowStockProducts,
                 salesByCategory,
-                marketplace7Days
+                marketplace7Days,
+                customerWebReport
             }
         });
     } catch (err) {
