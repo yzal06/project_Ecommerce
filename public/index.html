@@ -193,75 +193,75 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
             
             <!-- Top Bar (With Mobile Hamburger) -->
-            <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-3.5 sticky top-0 z-20 flex items-center justify-between">
-                <div class="flex items-center space-x-3">
+            <header class="bg-white border-b border-slate-200 px-3.5 sm:px-6 py-2.5 sm:py-3.5 sticky top-0 z-20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                <div class="flex items-center space-x-2.5 min-w-0 flex-1">
                     <!-- Hamburger Menu Button for Mobile -->
-                    <button onclick="toggleAdminSidebar(true)" class="md:hidden p-2 -ml-2 text-slate-600 hover:text-emerald-600 rounded-xl hover:bg-slate-100 transition text-lg" title="Mở danh mục menu">
+                    <button onclick="toggleAdminSidebar(true)" class="md:hidden p-2 -ml-1.5 text-slate-600 hover:text-emerald-600 rounded-xl hover:bg-slate-100 transition text-lg shrink-0" title="Mở danh mục menu">
                         <i class="fa-solid fa-bars"></i>
                     </button>
-                    <div>
-                        <h2 class="text-sm sm:text-base font-extrabold text-slate-800" id="adminPageTitle">Bảng Điều Khiển</h2>
-                        <div class="text-[10px] sm:text-[11px] text-slate-400" id="adminBreadcrumb">MintMart > Quản Trị > Tổng quan</div>
+                    <div class="min-w-0 flex-1">
+                        <h2 class="text-sm sm:text-base font-extrabold text-slate-800 truncate leading-snug" id="adminPageTitle">Bảng Điều Khiển</h2>
+                        <div class="text-[10px] sm:text-[11px] text-slate-400 truncate" id="adminBreadcrumb">MintMart > Quản Trị > Tổng quan</div>
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-2 sm:space-x-3">
+                <div class="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 w-full sm:w-auto overflow-x-auto no-scrollbar">
                     <!-- NÚT TRẠNG THÁI & ĐỒNG BỘ ĐÁM MÂY ĐA THIẾT BỊ (TỰ ĐỘNG 30S) -->
-                    <div class="flex items-center space-x-1">
-                        <button id="cloudSyncBtn" onclick="handleManualCloudSync()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition shadow-sm" title="Tự động đồng bộ 2 chiều lên & xuống Đám Mây mỗi 30s. Bấm để đẩy và tải dữ liệu ngay!">
-                            <span class="relative flex h-2 w-2 mr-0.5">
+                    <div class="flex items-center space-x-1 shrink-0">
+                        <button id="cloudSyncBtn" onclick="handleManualCloudSync()" class="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition shadow-sm whitespace-nowrap" title="Tự động đồng bộ 2 chiều lên & xuống Đám Mây mỗi 30s. Bấm để đẩy và tải dữ liệu ngay!">
+                            <span class="relative flex h-2 w-2 mr-0.5 shrink-0">
                                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
                                 <span class="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
                             </span>
                             <i class="fa-solid fa-cloud text-sky-600" id="cloudSyncIcon"></i>
-                            <span id="cloudSyncLabel" class="hidden sm:inline">Đám mây: Tự động (30s)</span>
+                            <span id="cloudSyncLabel" class="hidden lg:inline">Đám mây: Tự động (30s)</span>
                             <span id="cloudSyncCountdownBadge" class="px-1.5 py-0.5 text-[10px] font-mono font-black bg-sky-200 text-sky-800 rounded-md">30s</span>
                         </button>
-                        <button onclick="handleConfigureCloudUrl()" class="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-sky-600 border border-slate-200 rounded-xl text-xs transition" title="Cài đặt máy chủ Cloud Sync">
+                        <button onclick="handleConfigureCloudUrl()" class="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-sky-600 border border-slate-200 rounded-xl text-xs transition shrink-0" title="Cài đặt máy chủ Cloud Sync">
                             <i class="fa-solid fa-gear text-[11px]"></i>
                         </button>
                     </div>
 
                     <!-- LOA THÔNG BÁO BẠN CÓ ĐƠN HÀNG (QUYỀN ADMIN) -->
-                    <div class="flex items-center space-x-1">
-                        <button id="speakerToggleBtn" onclick="toggleSpeakerSound()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition shadow-sm" title="Bật/Tắt loa phát thanh thông báo đơn hàng">
+                    <div class="flex items-center space-x-1 shrink-0">
+                        <button id="speakerToggleBtn" onclick="toggleSpeakerSound()" class="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition shadow-sm whitespace-nowrap" title="Bật/Tắt loa phát thanh thông báo đơn hàng">
                             <i class="fa-solid fa-volume-high text-emerald-600" id="speakerIcon"></i>
-                            <span id="speakerLabel" class="hidden sm:inline">Loa: Bật</span>
+                            <span id="speakerLabel" class="hidden md:inline">Loa: Bật</span>
                         </button>
-                        <button onclick="testOrderSound()" class="hidden md:inline-flex items-center text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition" title="Bấm để thử âm thanh loa đơn mới">
+                        <button onclick="testOrderSound()" class="hidden xl:inline-flex items-center text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap" title="Bấm để thử âm thanh loa đơn mới">
                             <i class="fa-solid fa-play text-[9px] mr-1 text-emerald-600"></i> Thử Loa
                         </button>
-                        <button onclick="testPaymentSound()" class="hidden md:inline-flex items-center text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition" title="Bấm để thử âm thanh báo khách đã thanh toán thành công">
+                        <button onclick="testPaymentSound()" class="hidden xl:inline-flex items-center text-[11px] text-slate-500 hover:text-emerald-700 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition whitespace-nowrap" title="Bấm để thử âm thanh báo khách đã thanh toán thành công">
                             <i class="fa-solid fa-bell text-[10px] mr-1 text-emerald-600"></i> Thử Báo TT
                         </button>
                     </div>
 
                     <!-- Change Admin Password Button -->
-                    <button onclick="openChangePasswordModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center" title="Đổi thông tin & mật khẩu Quản trị">
+                    <button onclick="openChangePasswordModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl transition flex items-center shrink-0 whitespace-nowrap" title="Đổi thông tin & mật khẩu Quản trị">
                         <i class="fa-solid fa-key sm:mr-1.5 text-amber-600"></i>
-                        <span class="hidden sm:inline">Đổi Mật Khẩu</span>
+                        <span class="hidden md:inline">Đổi Mật Khẩu</span>
                     </button>
 
                     <!-- Quick Add Product Button -->
-                    <button onclick="openProductModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 sm:px-4 py-2 rounded-xl shadow-md transition flex items-center">
+                    <button onclick="openProductModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md transition flex items-center shrink-0 whitespace-nowrap">
                         <i class="fa-solid fa-plus sm:mr-1.5"></i>
                         <span class="hidden sm:inline">Thêm Mặt Hàng Mới</span>
                         <span class="sm:hidden ml-1">Thêm</span>
                     </button>
 
                     <!-- Link to Customer Website -->
-                    <a href="index.html" target="_blank" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl transition flex items-center">
+                    <a href="index.html" target="_blank" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl transition flex items-center shrink-0 whitespace-nowrap" title="Xem Web Bán Hàng">
                         <i class="fa-solid fa-store sm:mr-1.5 text-emerald-600"></i>
-                        <span class="hidden sm:inline">Xem Web Bán Hàng</span>
+                        <span class="hidden lg:inline">Xem Web Bán Hàng</span>
                     </a>
                 </div>
             </header>
 
             <!-- Dynamic Views Container -->
-            <main class="flex-1 p-6 relative">
+            <main class="flex-1 p-3 sm:p-6 pb-24 md:pb-6 relative">
                 
                 <!-- Live Order Audio Alert Toast (Kèm Loa Thông Báo) -->
-                <div id="liveOrderAlertBanner" class="hidden fixed bottom-6 right-6 z-50 bg-white border-2 border-emerald-500 rounded-3xl p-4 sm:p-5 shadow-2xl max-w-sm flex items-start space-x-3.5 transition-all duration-300 transform scale-100 animate-bounce">
+                <div id="liveOrderAlertBanner" class="hidden fixed bottom-20 sm:bottom-6 left-3 right-3 sm:left-auto sm:right-6 z-50 bg-white border-2 border-emerald-500 rounded-3xl p-4 sm:p-5 shadow-2xl max-w-sm flex items-start space-x-3.5 transition-all duration-300 transform scale-100 animate-bounce">
                     <div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl flex-shrink-0 shadow-sm">
                         <i class="fa-solid fa-bullhorn text-emerald-600 animate-pulse"></i>
                     </div>
@@ -287,7 +287,7 @@
                 </div>
 
                 <!-- Live Payment Success Alert Toast (Thông Báo Tiền Đã Về) -->
-                <div id="livePaymentAlertBanner" class="hidden fixed bottom-6 right-6 z-50 bg-white border-2 border-emerald-600 rounded-3xl p-4 sm:p-5 shadow-2xl max-w-sm flex items-start space-x-3.5 transition-all duration-300 transform scale-100 animate-bounce">
+                <div id="livePaymentAlertBanner" class="hidden fixed bottom-20 sm:bottom-6 left-3 right-3 sm:left-auto sm:right-6 z-50 bg-white border-2 border-emerald-600 rounded-3xl p-4 sm:p-5 shadow-2xl max-w-sm flex items-start space-x-3.5 transition-all duration-300 transform scale-100 animate-bounce">
                     <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center text-xl flex-shrink-0 shadow-md shadow-emerald-500/20">
                         <i class="fa-solid fa-money-bill-wave animate-pulse"></i>
                     </div>
@@ -313,165 +313,165 @@
                 </div>
                 
                 <!-- TAB 1: DASHBOARD OVERVIEW -->
-                <div id="tabContent-dashboard" class="space-y-6">
+                <div id="tabContent-dashboard" class="space-y-4 sm:space-y-6">
                     
                     <!-- 4 KPI Stat Cards -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                         <!-- Revenue -->
-                        <div class="kpi-card p-5 rounded-2xl flex items-center justify-between">
-                            <div>
-                                <span class="text-xs font-bold uppercase text-slate-400">Doanh Thu Thực Tế</span>
-                                <div class="text-2xl font-black text-slate-800 mt-1" id="statTotalRevenue">0 ₫</div>
-                                <span class="text-[11px] text-slate-400 font-medium flex items-center mt-1" id="statRevenueSubtitle">
-                                    <i class="fa-solid fa-coins mr-1"></i> Bắt đầu từ 0 ₫
+                        <div class="kpi-card p-3.5 sm:p-5 rounded-2xl flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-[10px] sm:text-xs font-bold uppercase text-slate-400 block truncate">Doanh Thu Thực Tế</span>
+                                <div class="text-lg sm:text-2xl font-black text-slate-800 mt-1 truncate" id="statTotalRevenue">0 ₫</div>
+                                <span class="text-[10px] sm:text-[11px] text-slate-400 font-medium flex items-center mt-1 truncate" id="statRevenueSubtitle">
+                                    <i class="fa-solid fa-coins mr-1 shrink-0"></i> Bắt đầu từ 0 ₫
                                 </span>
                             </div>
-                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-base sm:text-xl shrink-0">
                                 <i class="fa-solid fa-sack-dollar"></i>
                             </div>
                         </div>
 
                         <!-- Orders -->
-                        <div class="kpi-card p-5 rounded-2xl flex items-center justify-between">
-                            <div>
-                                <span class="text-xs font-bold uppercase text-slate-400">Tổng Đơn Hàng</span>
-                                <div class="text-2xl font-black text-slate-800 mt-1" id="statTotalOrders">0</div>
-                                <span class="text-[11px] text-slate-400 font-medium flex items-center mt-1" id="statOrdersSubtitle">
-                                    <i class="fa-solid fa-cart-shopping mr-1"></i> Chưa có đơn hàng
+                        <div class="kpi-card p-3.5 sm:p-5 rounded-2xl flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-[10px] sm:text-xs font-bold uppercase text-slate-400 block truncate">Tổng Đơn Hàng</span>
+                                <div class="text-lg sm:text-2xl font-black text-slate-800 mt-1 truncate" id="statTotalOrders">0</div>
+                                <span class="text-[10px] sm:text-[11px] text-slate-400 font-medium flex items-center mt-1 truncate" id="statOrdersSubtitle">
+                                    <i class="fa-solid fa-cart-shopping mr-1 shrink-0"></i> Chưa có đơn hàng
                                 </span>
                             </div>
-                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-base sm:text-xl shrink-0">
                                 <i class="fa-solid fa-cart-shopping"></i>
                             </div>
                         </div>
 
                         <!-- Products -->
-                        <div class="kpi-card p-5 rounded-2xl flex items-center justify-between">
-                            <div>
-                                <span class="text-xs font-bold uppercase text-slate-400">Mặt Hàng Kinh Doanh</span>
-                                <div class="text-2xl font-black text-slate-800 mt-1" id="statTotalProducts">0</div>
-                                <span class="text-[11px] text-slate-500 font-medium mt-1 block">
+                        <div class="kpi-card p-3.5 sm:p-5 rounded-2xl flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-[10px] sm:text-xs font-bold uppercase text-slate-400 block truncate">Mặt Hàng Kinh Doanh</span>
+                                <div class="text-lg sm:text-2xl font-black text-slate-800 mt-1 truncate" id="statTotalProducts">0</div>
+                                <span class="text-[10px] sm:text-[11px] text-slate-500 font-medium mt-1 block truncate">
                                     Đang phân phối trên trang
                                 </span>
                             </div>
-                            <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-base sm:text-xl shrink-0">
                                 <i class="fa-solid fa-boxes-stacked"></i>
                             </div>
                         </div>
 
                         <!-- Customers -->
-                        <div class="kpi-card p-5 rounded-2xl flex items-center justify-between">
-                            <div>
-                                <span class="text-xs font-bold uppercase text-slate-400">Khách Hàng Thành Viên</span>
-                                <div class="text-2xl font-black text-slate-800 mt-1" id="statTotalCustomers">0</div>
-                                <span class="text-[11px] text-slate-400 font-medium flex items-center mt-1" id="statCustomersSubtitle">
-                                    <i class="fa-solid fa-users mr-1"></i> Chưa có khách hàng
+                        <div class="kpi-card p-3.5 sm:p-5 rounded-2xl flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <span class="text-[10px] sm:text-xs font-bold uppercase text-slate-400 block truncate">Khách Hàng Thành Viên</span>
+                                <div class="text-lg sm:text-2xl font-black text-slate-800 mt-1 truncate" id="statTotalCustomers">0</div>
+                                <span class="text-[10px] sm:text-[11px] text-slate-400 font-medium flex items-center mt-1 truncate" id="statCustomersSubtitle">
+                                    <i class="fa-solid fa-users mr-1 shrink-0"></i> Chưa có khách hàng
                                 </span>
                             </div>
-                            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-base sm:text-xl shrink-0">
                                 <i class="fa-solid fa-users"></i>
                             </div>
                         </div>
                     </div>
 
                     <!-- BẢNG DÀNH RIÊNG CHO SỐ LẦN XEM & DOANH THU TRANG WEB KHÁCH HÀNG -->
-                    <div class="bg-white rounded-2xl p-6 border border-emerald-200 shadow-sm mb-6">
-                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-emerald-100 mb-5">
+                    <div class="bg-white rounded-2xl p-4 sm:p-6 border border-emerald-200 shadow-sm mb-6">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 pb-4 border-b border-emerald-100 mb-4 sm:mb-5">
                             <div class="flex items-start sm:items-center space-x-3">
-                                <div class="w-11 h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black shadow-md shadow-emerald-500/20 text-lg shrink-0">
+                                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black shadow-md shadow-emerald-500/20 text-base sm:text-lg shrink-0">
                                     <i class="fa-solid fa-globe"></i>
                                 </div>
-                                <div>
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="font-black text-slate-800 text-base">Bảng Số Lần Xem &amp; Doanh Thu - Trang Web Khách Hàng</h3>
-                                        <span class="bg-emerald-100 text-emerald-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full flex items-center">
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                        <h3 class="font-black text-slate-800 text-sm sm:text-base leading-snug">Bảng Số Lần Xem &amp; Doanh Thu - Trang Web Khách Hàng</h3>
+                                        <span class="bg-emerald-100 text-emerald-700 text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center whitespace-nowrap">
                                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping mr-1.5"></span>
                                             www.mintmart.vn
                                         </span>
                                     </div>
-                                    <p class="text-xs text-slate-400 mt-0.5">Thống kê lượt truy cập, lượt xem chi tiết sản phẩm và doanh thu đơn hàng trực tiếp từ trang khách hàng</p>
+                                    <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">Thống kê lượt truy cập, lượt xem chi tiết sản phẩm và doanh thu đơn hàng trực tiếp từ trang khách hàng</p>
                                 </div>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex flex-wrap items-center justify-between sm:justify-start gap-2 w-full lg:w-auto">
                                 <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                                    <button type="button" id="btnWebModeDaily" onclick="switchCustomerWebTableMode('daily')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm transition-all">
-                                        <i class="fa-regular fa-calendar-days mr-1.5"></i>Theo 7 Ngày
+                                    <button type="button" id="btnWebModeDaily" onclick="switchCustomerWebTableMode('daily')" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm transition-all whitespace-nowrap">
+                                        <i class="fa-regular fa-calendar-days mr-1"></i>Theo 7 Ngày
                                     </button>
-                                    <button type="button" id="btnWebModeProducts" onclick="switchCustomerWebTableMode('products')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all">
-                                        <i class="fa-solid fa-box-open mr-1.5"></i>Theo Sản Phẩm
+                                    <button type="button" id="btnWebModeProducts" onclick="switchCustomerWebTableMode('products')" class="px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all whitespace-nowrap">
+                                        <i class="fa-solid fa-box-open mr-1"></i>Theo Sản Phẩm
                                     </button>
                                 </div>
-                                <button type="button" id="btnRefreshWebReport" onclick="refreshCustomerWebReport()" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center">
+                                <button type="button" id="btnRefreshWebReport" onclick="refreshCustomerWebReport()" class="px-3 py-1.5 sm:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold transition flex items-center whitespace-nowrap">
                                     <i class="fa-solid fa-rotate mr-1.5"></i>Làm mới
                                 </button>
                             </div>
                         </div>
 
                         <!-- 4 Ô Tóm Tắt Nhanh Web Khách Hàng -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-                            <div class="bg-emerald-50/60 border border-emerald-100 rounded-xl p-4">
-                                <div class="flex items-center justify-between text-xs text-emerald-700 font-bold mb-1">
-                                    <span>Số Lần Truy Cập Web</span>
-                                    <i class="fa-solid fa-eye"></i>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-4 sm:mb-5">
+                            <div class="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3 sm:p-4">
+                                <div class="flex items-center justify-between text-[11px] sm:text-xs text-emerald-700 font-bold mb-1 gap-1">
+                                    <span class="truncate">Số Lần Truy Cập Web</span>
+                                    <i class="fa-solid fa-eye shrink-0"></i>
                                 </div>
-                                <p class="text-xl font-black text-slate-800" id="webSummaryTotalVisits">0 lượt</p>
-                                <p class="text-[11px] text-slate-500 mt-1" id="webSummaryTodayVisits">Hôm nay: 0 lượt</p>
+                                <p class="text-base sm:text-xl font-black text-slate-800 truncate" id="webSummaryTotalVisits">0 lượt</p>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1 truncate" id="webSummaryTodayVisits">Hôm nay: 0 lượt</p>
                             </div>
-                            <div class="bg-teal-50/60 border border-teal-100 rounded-xl p-4">
-                                <div class="flex items-center justify-between text-xs text-teal-700 font-bold mb-1">
-                                    <span>Số Lần Xem Sản Phẩm</span>
-                                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                            <div class="bg-teal-50/60 border border-teal-100 rounded-xl p-3 sm:p-4">
+                                <div class="flex items-center justify-between text-[11px] sm:text-xs text-teal-700 font-bold mb-1 gap-1">
+                                    <span class="truncate">Số Lần Xem Sản Phẩm</span>
+                                    <i class="fa-solid fa-magnifying-glass-chart shrink-0"></i>
                                 </div>
-                                <p class="text-xl font-black text-slate-800" id="webSummaryProductViews">0 lượt</p>
-                                <p class="text-[11px] text-slate-500 mt-1" id="webSummary7DayProductViews">7 ngày: 0 lượt</p>
+                                <p class="text-base sm:text-xl font-black text-slate-800 truncate" id="webSummaryProductViews">0 lượt</p>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1 truncate" id="webSummary7DayProductViews">7 ngày: 0 lượt</p>
                             </div>
-                            <div class="bg-sky-50/60 border border-sky-100 rounded-xl p-4">
-                                <div class="flex items-center justify-between text-xs text-sky-700 font-bold mb-1">
-                                    <span>Đơn Hàng Website</span>
-                                    <i class="fa-solid fa-cart-shopping"></i>
+                            <div class="bg-sky-50/60 border border-sky-100 rounded-xl p-3 sm:p-4">
+                                <div class="flex items-center justify-between text-[11px] sm:text-xs text-sky-700 font-bold mb-1 gap-1">
+                                    <span class="truncate">Đơn Hàng Website</span>
+                                    <i class="fa-solid fa-cart-shopping shrink-0"></i>
                                 </div>
-                                <p class="text-xl font-black text-slate-800" id="webSummaryTotalOrders">0 đơn</p>
-                                <p class="text-[11px] text-slate-500 mt-1" id="webSummaryConversion">Tỷ lệ chốt: 0%</p>
+                                <p class="text-base sm:text-xl font-black text-slate-800 truncate" id="webSummaryTotalOrders">0 đơn</p>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1 truncate" id="webSummaryConversion">Tỷ lệ chốt: 0%</p>
                             </div>
-                            <div class="bg-amber-50/60 border border-amber-100 rounded-xl p-4">
-                                <div class="flex items-center justify-between text-xs text-amber-700 font-bold mb-1">
-                                    <span>Doanh Thu Web Khách</span>
-                                    <i class="fa-solid fa-sack-dollar"></i>
+                            <div class="bg-amber-50/60 border border-amber-100 rounded-xl p-3 sm:p-4">
+                                <div class="flex items-center justify-between text-[11px] sm:text-xs text-amber-700 font-bold mb-1 gap-1">
+                                    <span class="truncate">Doanh Thu Web Khách</span>
+                                    <i class="fa-solid fa-sack-dollar shrink-0"></i>
                                 </div>
-                                <p class="text-xl font-black text-emerald-600" id="webSummaryTotalRevenue">0 ₫</p>
-                                <p class="text-[11px] text-slate-500 mt-1" id="webSummary7DayRevenue">7 ngày: 0 ₫</p>
+                                <p class="text-base sm:text-xl font-black text-emerald-600 truncate" id="webSummaryTotalRevenue">0 ₫</p>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 mt-1 truncate" id="webSummary7DayRevenue">7 ngày: 0 ₫</p>
                             </div>
                         </div>
 
                         <!-- Biểu đồ 2 trục: Số lần xem & Doanh thu 7 ngày trên Web Khách Hàng -->
-                        <div class="h-48 mb-5 relative bg-emerald-50/20 rounded-xl p-3 border border-emerald-100/80">
+                        <div class="h-52 sm:h-56 mb-4 sm:mb-5 relative bg-emerald-50/20 rounded-xl p-2 sm:p-3 border border-emerald-100/80">
                             <canvas id="webCustomer7DayChart"></canvas>
                         </div>
 
                         <!-- Chế độ 1: Bảng theo 7 ngày -->
                         <div id="webCustomerDailyTableWrap" class="overflow-x-auto rounded-xl border border-slate-100">
-                            <table class="w-full text-left text-xs">
+                            <table class="w-full min-w-[540px] text-left text-xs whitespace-nowrap">
                                 <thead class="bg-emerald-50/80 text-slate-600 font-bold border-b border-emerald-100">
                                     <tr>
-                                        <th class="py-3 px-3">Ngày</th>
-                                        <th class="py-3 px-3 text-center">Lượt Truy Cập Web</th>
-                                        <th class="py-3 px-3 text-center">Lượt Xem SP</th>
-                                        <th class="py-3 px-3 text-center">Đơn Hàng / SP Bán</th>
-                                        <th class="py-3 px-3 text-right">Doanh Thu Web</th>
-                                        <th class="py-3 px-3 text-center">Tăng Trưởng</th>
+                                        <th class="py-3 px-3 whitespace-nowrap">Ngày</th>
+                                        <th class="py-3 px-3 text-center whitespace-nowrap">Lượt Truy Cập Web</th>
+                                        <th class="py-3 px-3 text-center whitespace-nowrap">Lượt Xem SP</th>
+                                        <th class="py-3 px-3 text-center whitespace-nowrap">Đơn Hàng / SP Bán</th>
+                                        <th class="py-3 px-3 text-right whitespace-nowrap">Doanh Thu Web</th>
+                                        <th class="py-3 px-3 text-center whitespace-nowrap">Tăng Trưởng</th>
                                     </tr>
                                 </thead>
                                 <tbody id="webCustomer7DayTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
                                     <!-- Rendered via JS -->
                                 </tbody>
-                                <tfoot class="bg-emerald-50/50 font-bold border-t border-emerald-100 text-slate-800">
+                                <tfoot class="bg-emerald-50/50 font-bold border-t border-emerald-100 text-slate-800 whitespace-nowrap">
                                     <tr>
-                                        <td class="py-3 px-3">Tổng 7 ngày:</td>
-                                        <td class="py-3 px-3 text-center text-emerald-700" id="web7DayFooterVisits">0 lượt</td>
-                                        <td class="py-3 px-3 text-center text-teal-700" id="web7DayFooterProductViews">0 lượt</td>
-                                        <td class="py-3 px-3 text-center text-sky-700" id="web7DayFooterOrders">0 đơn / 0 sp</td>
-                                        <td class="py-3 px-3 text-right text-emerald-600 font-black text-sm" id="web7DayFooterRevenue">0 ₫</td>
-                                        <td class="py-3 px-3 text-center text-slate-500" id="web7DayFooterGrowth">0%</td>
+                                        <td class="py-3 px-3 whitespace-nowrap">Tổng 7 ngày:</td>
+                                        <td class="py-3 px-3 text-center text-emerald-700 whitespace-nowrap" id="web7DayFooterVisits">0 lượt</td>
+                                        <td class="py-3 px-3 text-center text-teal-700 whitespace-nowrap" id="web7DayFooterProductViews">0 lượt</td>
+                                        <td class="py-3 px-3 text-center text-sky-700 whitespace-nowrap" id="web7DayFooterOrders">0 đơn / 0 sp</td>
+                                        <td class="py-3 px-3 text-right text-emerald-600 font-black text-sm whitespace-nowrap" id="web7DayFooterRevenue">0 ₫</td>
+                                        <td class="py-3 px-3 text-center text-slate-500 whitespace-nowrap" id="web7DayFooterGrowth">0%</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -479,27 +479,27 @@
 
                         <!-- Chế độ 2: Bảng theo sản phẩm -->
                         <div id="webCustomerProductsTableWrap" class="overflow-x-auto rounded-xl border border-slate-100 hidden">
-                            <table class="w-full text-left text-xs">
+                            <table class="w-full min-w-[560px] text-left text-xs whitespace-nowrap">
                                 <thead class="bg-emerald-50/80 text-slate-600 font-bold border-b border-emerald-100">
                                     <tr>
-                                        <th class="py-3 px-3">Sản Phẩm</th>
-                                        <th class="py-3 px-3 text-right">Giá Bán</th>
-                                        <th class="py-3 px-3 text-center">Số Lần Khách Xem</th>
-                                        <th class="py-3 px-3 text-center">Đã Bán (Web)</th>
-                                        <th class="py-3 px-3 text-right">Doanh Thu Sản Phẩm</th>
-                                        <th class="py-3 px-3 text-center">Tồn Kho Web</th>
+                                        <th class="py-3 px-3 whitespace-nowrap">Sản Phẩm</th>
+                                        <th class="py-3 px-3 text-right whitespace-nowrap">Giá Bán</th>
+                                        <th class="py-3 px-3 text-center whitespace-nowrap">Số Lần Khách Xem</th>
+                                        <th class="py-3 px-3 text-center whitespace-nowrap">Đã Bán (Web)</th>
+                                        <th class="py-3 px-3 text-right whitespace-nowrap">Doanh Thu Sản Phẩm</th>
+                                        <th class="py-3 px-3 text-center whitespace-nowrap">Tồn Kho Web</th>
                                     </tr>
                                 </thead>
                                 <tbody id="webCustomerProductsTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
                                     <!-- Rendered via JS -->
                                 </tbody>
-                                <tfoot class="bg-emerald-50/50 font-bold border-t border-emerald-100 text-slate-800">
+                                <tfoot class="bg-emerald-50/50 font-bold border-t border-emerald-100 text-slate-800 whitespace-nowrap">
                                     <tr>
-                                        <td colspan="2" class="py-3 px-3">Tổng theo sản phẩm:</td>
-                                        <td class="py-3 px-3 text-center text-emerald-700" id="webProductsFooterViews">0 lượt</td>
-                                        <td class="py-3 px-3 text-center text-sky-700" id="webProductsFooterSold">0 sp</td>
-                                        <td class="py-3 px-3 text-right text-emerald-600 font-black text-sm" id="webProductsFooterRevenue">0 ₫</td>
-                                        <td class="py-3 px-3 text-center text-slate-400">-</td>
+                                        <td colspan="2" class="py-3 px-3 whitespace-nowrap">Tổng theo sản phẩm:</td>
+                                        <td class="py-3 px-3 text-center text-emerald-700 whitespace-nowrap" id="webProductsFooterViews">0 lượt</td>
+                                        <td class="py-3 px-3 text-center text-sky-700 whitespace-nowrap" id="webProductsFooterSold">0 sp</td>
+                                        <td class="py-3 px-3 text-right text-emerald-600 font-black text-sm whitespace-nowrap" id="webProductsFooterRevenue">0 ₫</td>
+                                        <td class="py-3 px-3 text-center text-slate-400 whitespace-nowrap">-</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -840,17 +840,17 @@
                         </div>
 
                         <!-- Existing Categories List -->
-                        <div class="md:col-span-2 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <div class="md:col-span-2 bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm">
                             <h3 class="font-bold text-slate-800 text-sm mb-4">Danh Sách Danh Mục Hiện Có</h3>
                             <div class="overflow-x-auto">
-                                <table class="w-full text-left text-xs">
+                                <table class="w-full min-w-[460px] text-left text-xs whitespace-nowrap">
                                     <thead class="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase">
                                         <tr>
-                                            <th class="py-2.5 px-3">Icon</th>
-                                            <th class="py-2.5 px-3">Tên Danh Mục</th>
-                                            <th class="py-2.5 px-3">Slug</th>
-                                            <th class="py-2.5 px-3">Số Mặt Hàng</th>
-                                            <th class="py-2.5 px-3 text-right">Thao Tác</th>
+                                            <th class="py-2.5 px-3 whitespace-nowrap">Icon</th>
+                                            <th class="py-2.5 px-3 whitespace-nowrap">Tên Danh Mục</th>
+                                            <th class="py-2.5 px-3 whitespace-nowrap">Slug</th>
+                                            <th class="py-2.5 px-3 whitespace-nowrap">Số Mặt Hàng</th>
+                                            <th class="py-2.5 px-3 text-right whitespace-nowrap">Thao Tác</th>
                                         </tr>
                                     </thead>
                                     <tbody id="adminCategoriesTableBody" class="divide-y divide-slate-100">
@@ -863,24 +863,29 @@
                 </div>
 
                 <!-- TAB 4: ORDERS MANAGEMENT -->
-                <div id="tabContent-orders" class="hidden space-y-5">
+                <div id="tabContent-orders" class="hidden space-y-4 sm:space-y-5">
                     <!-- Order Filter Tabs -->
-                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
-                        <div class="flex items-center space-x-2 text-xs font-bold" id="orderFilterPills">
-                            <button onclick="filterOrdersByStatus('all')" class="order-pill active px-3 py-1.5 rounded-lg bg-emerald-600 text-white">Tất cả</button>
-                            <button onclick="filterOrdersByStatus('pending')" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">Chờ xử lý</button>
-                            <button onclick="filterOrdersByStatus('shipping')" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">Đang giao</button>
-                            <button onclick="filterOrdersByStatus('completed')" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">Đã hoàn thành</button>
-                            <button onclick="filterOrdersByStatus('cancelled')" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">Đã hủy</button>
+                    <div class="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+                        <div class="flex items-center gap-1.5 sm:gap-2 text-xs font-bold overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 no-scrollbar" id="orderFilterPills">
+                            <button onclick="filterOrdersByStatus('all', this)" class="order-pill active px-3 py-1.5 rounded-lg bg-emerald-600 text-white whitespace-nowrap shrink-0">Tất cả</button>
+                            <button onclick="filterOrdersByStatus('pending', this)" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap shrink-0">Chờ xử lý</button>
+                            <button onclick="filterOrdersByStatus('shipping', this)" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap shrink-0">Đang giao</button>
+                            <button onclick="filterOrdersByStatus('completed', this)" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap shrink-0">Đã hoàn thành</button>
+                            <button onclick="filterOrdersByStatus('cancelled', this)" class="order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap shrink-0">Đã hủy</button>
                         </div>
-                        <span class="text-xs text-slate-400">Tự động đồng bộ từ khách hàng</span>
+                        <span class="text-[11px] sm:text-xs text-slate-400">Tự động đồng bộ từ khách hàng</span>
                     </div>
 
-                    <!-- Orders Table -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <!-- Mobile Orders Cards View (Visible on Mobile Only) -->
+                    <div id="adminOrdersMobileContainer" class="space-y-3 md:hidden">
+                        <!-- Dynamically injected mobile order cards via JS -->
+                    </div>
+
+                    <!-- Orders Table (Visible on Tablets & Desktops) -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hidden md:block">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[11px]">
+                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[11px] whitespace-nowrap">
                                     <tr>
                                         <th class="py-3 px-3">Mã Đơn</th>
                                         <th class="py-3 px-3">Khách Hàng & SĐT</th>
@@ -903,18 +908,18 @@
 
                 <!-- TAB 5: USERS & ROLES -->
                 <div id="tabContent-users" class="hidden space-y-5">
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-4">
+                    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                             <div>
                                 <h3 class="font-bold text-slate-800 text-sm">Danh Sách Tài Khoản & Phân Quyền</h3>
                                 <p class="text-xs text-slate-400">Bạn có thể phân quyền Quản Trị Viên (Admin) hoặc Khách Hàng (Customer)</p>
                             </div>
-                            <button onclick="openChangePasswordModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow transition flex items-center">
+                            <button onclick="openChangePasswordModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow transition flex items-center whitespace-nowrap">
                                 <i class="fa-solid fa-key mr-1.5"></i> Đổi Mật Khẩu / Tài Khoản Admin
                             </button>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
+                            <table class="w-full min-w-[560px] text-left text-xs whitespace-nowrap">
                                 <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-bold text-[11px]">
                                     <tr>
                                         <th class="py-3 px-4">Họ và Tên</th>
@@ -1527,11 +1532,6 @@
     </div>
 
 
-
-    <!-- Mobile Floating Action Button (Thêm Sản Phẩm Nhanh Trên Điện Thoại) -->
-    <button onclick="openProductModal()" class="admin-mobile-fab md:hidden" title="Thêm mặt hàng mới trên điện thoại">
-        <i class="fa-solid fa-plus"></i>
-    </button>
 
     <!-- Mobile Fixed Bottom Navigation Bar (Dành riêng cho giao diện điện thoại) -->
     <div class="admin-mobile-nav md:hidden">

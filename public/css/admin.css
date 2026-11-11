@@ -168,6 +168,22 @@ input:checked + .slider:before {
     #adminMainLayout {
         padding-bottom: 76px;
     }
+
+    /* Prevent table headers and status pills from breaking into vertical words on mobile */
+    table th {
+        white-space: nowrap;
+    }
+}
+
+/* Hide horizontal scrollbar for mobile pill toolbars */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar,
+.scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 /* Mobile Product Card */
@@ -210,10 +226,11 @@ input:checked + .slider:before {
     color: #64748B;
     font-size: 10px;
     font-weight: 700;
-    padding: 6px 12px;
+    padding: 6px 10px;
     border-radius: 12px;
     transition: color 0.15s;
     position: relative;
+    white-space: nowrap;
 }
 
 .admin-mobile-nav-item.active {
@@ -223,28 +240,4 @@ input:checked + .slider:before {
 .admin-mobile-nav-item i {
     font-size: 18px;
     margin-bottom: 2px;
-}
-
-/* Mobile Quick Add Floating Button */
-.admin-mobile-fab {
-    position: fixed;
-    bottom: 80px;
-    right: 18px;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #10B981, #059669);
-    color: #FFFFFF;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.45);
-    z-index: 40;
-    font-size: 22px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-.admin-mobile-fab:active {
-    transform: scale(0.92);
 }

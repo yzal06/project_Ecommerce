@@ -800,7 +800,7 @@ function formatGrowthBadgeHtml(growth) {
     const iconHtml = text.startsWith('+')
         ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>'
         : (text.startsWith('-') ? '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>' : '');
-    return `<span class="text-[11px] font-bold ${colorClass}">${iconHtml}${escapeAdminHtml(text)}</span>`;
+    return `<span class="inline-flex items-center whitespace-nowrap text-[11px] font-bold ${colorClass}">${iconHtml}${escapeAdminHtml(text)}</span>`;
 }
 
 function switchCustomerWebTableMode(mode) {
@@ -812,8 +812,8 @@ function switchCustomerWebTableMode(mode) {
     const dailyWrap = document.getElementById('webCustomerDailyTableWrap');
     const productsWrap = document.getElementById('webCustomerProductsTableWrap');
 
-    const activeCls = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm transition-all';
-    const inactiveCls = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all';
+    const activeCls = 'px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm transition-all whitespace-nowrap';
+    const inactiveCls = 'px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 transition-all whitespace-nowrap';
 
     if (btnDaily) btnDaily.className = isDaily ? activeCls : inactiveCls;
     if (btnProducts) btnProducts.className = isDaily ? inactiveCls : activeCls;
@@ -886,7 +886,7 @@ function renderCustomerWebChart(daily) {
             plugins: {
                 legend: {
                     position: 'top',
-                    labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } }
+                    labels: { boxWidth: 12, padding: 10, font: { size: 11, weight: 'bold' } }
                 },
                 tooltip: {
                     callbacks: {
@@ -917,14 +917,16 @@ function renderCustomerWebChart(daily) {
                     type: 'linear',
                     position: 'right',
                     beginAtZero: true,
+                    suggestedMax: 100000,
                     grid: { drawOnChartArea: false },
                     ticks: {
+                        precision: 0,
                         font: { size: 10 },
                         callback: (val) => {
                             if (val === 0) return '0 ₫';
                             if (val >= 1000000) return `${(val / 1000000).toFixed(val % 1000000 === 0 ? 0 : 1)} Tr`;
                             if (val >= 1000) return `${Math.round(val / 1000)} k`;
-                            return `${val} ₫`;
+                            return `${Math.round(val)} ₫`;
                         }
                     }
                 },
@@ -963,27 +965,27 @@ function renderCustomerWebReport(report) {
     if (dailyTbody) {
         dailyTbody.innerHTML = daily.map(d => `
             <tr class="${d.is_today ? 'bg-emerald-50/40' : ''} hover:bg-emerald-50/30 transition">
-                <td class="py-2.5 px-3">
-                    <div class="flex items-center gap-1.5">
-                        <span class="font-bold text-slate-800">${escapeAdminHtml(d.dayLabel)}</span>
-                        ${d.is_today ? '<span class="bg-emerald-100 text-emerald-700 text-[9px] font-extrabold px-1.5 py-0.5 rounded">Hôm nay</span>' : ''}
+                <td class="py-2.5 px-3 whitespace-nowrap">
+                    <div class="flex items-center gap-1.5 whitespace-nowrap">
+                        <span class="font-bold text-slate-800 whitespace-nowrap">${escapeAdminHtml(d.dayLabel)}</span>
+                        ${d.is_today ? '<span class="inline-block whitespace-nowrap bg-emerald-100 text-emerald-700 text-[9px] font-extrabold px-1.5 py-0.5 rounded">Hôm nay</span>' : ''}
                     </div>
-                    <span class="text-[10px] text-slate-400 block">${escapeAdminHtml(d.date)}</span>
+                    <span class="text-[10px] text-slate-400 block whitespace-nowrap">${escapeAdminHtml(d.date)}</span>
                 </td>
-                <td class="py-2.5 px-3 text-center">
-                    <span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${(Number(d.page_views) || 0).toLocaleString('vi-VN')} lượt</span>
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <span class="inline-block whitespace-nowrap bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${(Number(d.page_views) || 0).toLocaleString('vi-VN')} lượt</span>
                 </td>
-                <td class="py-2.5 px-3 text-center">
-                    <span class="bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${(Number(d.product_views) || 0).toLocaleString('vi-VN')} lượt</span>
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <span class="inline-block whitespace-nowrap bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${(Number(d.product_views) || 0).toLocaleString('vi-VN')} lượt</span>
                 </td>
-                <td class="py-2.5 px-3 text-center">
-                    <span class="font-bold text-slate-800">${Number(d.orders) || 0} đơn</span>
-                    <span class="text-[10px] text-slate-400 block">${Number(d.units) || 0} sp</span>
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <span class="font-bold text-slate-800 whitespace-nowrap">${Number(d.orders) || 0} đơn</span>
+                    <span class="text-[10px] text-slate-400 block whitespace-nowrap">${Number(d.units) || 0} sp</span>
                 </td>
-                <td class="py-2.5 px-3 text-right">
-                    <strong class="font-black text-emerald-600 text-xs">${formatCurrency(d.revenue || 0)}</strong>
+                <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                    <strong class="font-black text-emerald-600 text-xs whitespace-nowrap">${formatCurrency(d.revenue || 0)}</strong>
                 </td>
-                <td class="py-2.5 px-3 text-center">
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
                     ${formatGrowthBadgeHtml(d.growth)}
                 </td>
             </tr>
@@ -999,10 +1001,10 @@ function renderCustomerWebReport(report) {
     if (growthFooter) {
         if ((Number(sum.days7_revenue) || 0) > 0) {
             growthFooter.innerHTML = '<i class="fa-solid fa-arrow-trend-up mr-1"></i> Hoạt động tốt';
-            growthFooter.className = 'py-3 px-3 text-center text-emerald-600 font-bold';
+            growthFooter.className = 'py-3 px-3 text-center text-emerald-600 font-bold whitespace-nowrap';
         } else {
             growthFooter.textContent = '0%';
-            growthFooter.className = 'py-3 px-3 text-center text-slate-400 font-bold';
+            growthFooter.className = 'py-3 px-3 text-center text-slate-400 font-bold whitespace-nowrap';
         }
     }
 
@@ -1026,33 +1028,33 @@ function renderCustomerWebReport(report) {
                 totalProdRev += rev;
 
                 const stockBadge = !p.is_active
-                    ? '<span class="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[10px] font-bold">Tạm ẩn</span>'
+                    ? '<span class="inline-block whitespace-nowrap bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full text-[10px] font-bold">Tạm ẩn</span>'
                     : (stock <= 0
-                        ? '<span class="bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full text-[10px] font-bold">Hết hàng</span>'
-                        : `<span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">${stock} sp</span>`);
+                        ? '<span class="inline-block whitespace-nowrap bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full text-[10px] font-bold">Hết hàng</span>'
+                        : `<span class="inline-block whitespace-nowrap bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-bold">${stock} sp</span>`);
 
                 return `
                     <tr class="hover:bg-emerald-50/30 transition">
-                        <td class="py-2.5 px-3">
+                        <td class="py-2.5 px-3 whitespace-nowrap">
                             <div class="flex items-center space-x-2.5">
                                 <img src="${escapeAdminHtml(p.image_url || 'https://placehold.co/40x40?text=MM')}" onerror="this.src='https://placehold.co/40x40?text=MM'" class="w-9 h-9 rounded-lg object-cover border border-slate-100 shrink-0" alt="">
                                 <div class="min-w-0">
-                                    <p class="font-bold text-slate-800 truncate max-w-[220px]">${escapeAdminHtml(p.name)}</p>
+                                    <p class="font-bold text-slate-800 truncate max-w-[180px] sm:max-w-[220px]">${escapeAdminHtml(p.name)}</p>
                                     <span class="text-[10px] text-slate-400">${escapeAdminHtml(p.category_name || 'Khác')}</span>
                                 </div>
                             </div>
                         </td>
-                        <td class="py-2.5 px-3 text-right font-semibold text-slate-700">${formatCurrency(p.price || 0)}</td>
-                        <td class="py-2.5 px-3 text-center">
-                            <span class="bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${views.toLocaleString('vi-VN')} lượt</span>
+                        <td class="py-2.5 px-3 text-right font-semibold text-slate-700 whitespace-nowrap">${formatCurrency(p.price || 0)}</td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <span class="inline-block whitespace-nowrap bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${views.toLocaleString('vi-VN')} lượt</span>
                         </td>
-                        <td class="py-2.5 px-3 text-center">
-                            <span class="bg-sky-100 text-sky-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${sold.toLocaleString('vi-VN')} sp</span>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                            <span class="inline-block whitespace-nowrap bg-sky-100 text-sky-800 px-2.5 py-0.5 rounded-full font-bold text-[11px]">${sold.toLocaleString('vi-VN')} sp</span>
                         </td>
-                        <td class="py-2.5 px-3 text-right">
-                            <strong class="font-black text-emerald-600 text-xs">${formatCurrency(rev)}</strong>
+                        <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                            <strong class="font-black text-emerald-600 text-xs whitespace-nowrap">${formatCurrency(rev)}</strong>
                         </td>
-                        <td class="py-2.5 px-3 text-center">${stockBadge}</td>
+                        <td class="py-2.5 px-3 text-center whitespace-nowrap">${stockBadge}</td>
                     </tr>
                 `;
             }).join('');
@@ -1133,32 +1135,32 @@ async function load7DayMarketplaceRevenue(initialData = null) {
     if (shpGrowthFooter) {
         if (shp.total_revenue > 0) {
             shpGrowthFooter.innerHTML = `<i class="fa-solid fa-arrow-trend-up mr-1"></i> Tăng trưởng thực tế`;
-            shpGrowthFooter.className = "py-2.5 px-3 text-center text-emerald-600 font-bold";
+            shpGrowthFooter.className = "py-2.5 px-3 text-center text-emerald-600 font-bold whitespace-nowrap";
         } else {
             shpGrowthFooter.textContent = '0%';
-            shpGrowthFooter.className = "py-2.5 px-3 text-center text-slate-400 font-bold";
+            shpGrowthFooter.className = "py-2.5 px-3 text-center text-slate-400 font-bold whitespace-nowrap";
         }
     }
 
     if (shpTableBody && shp.daily) {
         shpTableBody.innerHTML = shp.daily.map(d => `
             <tr class="hover:bg-orange-50/40 transition">
-                <td class="py-2.5 px-3">
-                    <span class="font-bold text-slate-800">${d.dayLabel}</span>
-                    <span class="text-[10px] text-slate-400 block">${d.date}</span>
+                <td class="py-2.5 px-3 whitespace-nowrap">
+                    <span class="font-bold text-slate-800 whitespace-nowrap">${d.dayLabel}</span>
+                    <span class="text-[10px] text-slate-400 block whitespace-nowrap">${d.date}</span>
                 </td>
-                <td class="py-2.5 px-3 text-center">
-                    <span class="font-bold text-slate-800">${d.orders}</span>
-                    ${d.real_synced_orders > 0 ? `<span class="text-[9px] text-orange-600 font-bold block">(+${d.real_synced_orders} web)</span>` : ''}
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <span class="font-bold text-slate-800 whitespace-nowrap">${d.orders}</span>
+                    ${d.real_synced_orders > 0 ? `<span class="text-[9px] text-orange-600 font-bold block whitespace-nowrap">(+${d.real_synced_orders} web)</span>` : ''}
                 </td>
-                <td class="py-2.5 px-3 text-center">
-                    <span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-bold text-[10px]">${d.units} sp</span>
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <span class="inline-block whitespace-nowrap bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full font-bold text-[10px]">${d.units} sp</span>
                 </td>
-                <td class="py-2.5 px-3 text-right">
-                    <strong class="font-black text-orange-600 text-xs">${formatCurrency(d.revenue)}</strong>
+                <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                    <strong class="font-black text-orange-600 text-xs whitespace-nowrap">${formatCurrency(d.revenue)}</strong>
                 </td>
-                <td class="py-2.5 px-3 text-center">
-                    <span class="text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : (d.growth.startsWith('-') ? 'text-rose-500' : 'text-slate-400')}">
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <span class="inline-flex items-center whitespace-nowrap text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : (d.growth.startsWith('-') ? 'text-rose-500' : 'text-slate-400')}">
                         ${d.growth.startsWith('+') ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>' : (d.growth.startsWith('-') ? '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>' : '')}${d.growth}
                     </span>
                 </td>
@@ -1181,22 +1183,22 @@ async function load7DayMarketplaceRevenue(initialData = null) {
     if (lazTableBody && laz.daily) {
         lazTableBody.innerHTML = laz.daily.map(d => `
             <tr class="hover:bg-indigo-50/40 transition">
-                <td class="py-2.5 px-3">
-                    <span class="font-bold text-slate-800">${d.dayLabel}</span>
-                    <span class="text-[10px] text-slate-400 block">${d.date}</span>
+                <td class="py-2.5 px-3 whitespace-nowrap">
+                    <span class="font-bold text-slate-800 whitespace-nowrap">${d.dayLabel}</span>
+                    <span class="text-[10px] text-slate-400 block whitespace-nowrap">${d.date}</span>
                 </td>
-                <td class="py-2.5 px-3 text-center">
-                    <span class="font-bold text-slate-800">${d.orders}</span>
-                    ${d.real_synced_orders > 0 ? `<span class="text-[9px] text-indigo-600 font-bold block">(+${d.real_synced_orders} web)</span>` : ''}
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <span class="font-bold text-slate-800 whitespace-nowrap">${d.orders}</span>
+                    ${d.real_synced_orders > 0 ? `<span class="text-[9px] text-indigo-600 font-bold block whitespace-nowrap">(+${d.real_synced_orders} web)</span>` : ''}
                 </td>
-                <td class="py-2.5 px-3 text-center">
-                    <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold text-[10px]">${d.units} sp</span>
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <span class="inline-block whitespace-nowrap bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold text-[10px]">${d.units} sp</span>
                 </td>
-                <td class="py-2.5 px-3 text-right">
-                    <strong class="font-black text-indigo-600 text-xs">${formatCurrency(d.revenue)}</strong>
+                <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                    <strong class="font-black text-indigo-600 text-xs whitespace-nowrap">${formatCurrency(d.revenue)}</strong>
                 </td>
-                <td class="py-2.5 px-3 text-center">
-                    <span class="text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : (d.growth.startsWith('-') ? 'text-rose-500' : 'text-slate-400')}">
+                <td class="py-2.5 px-3 text-center whitespace-nowrap">
+                    <span class="inline-flex items-center whitespace-nowrap text-[11px] font-bold ${d.growth.startsWith('+') ? 'text-emerald-600' : (d.growth.startsWith('-') ? 'text-rose-500' : 'text-slate-400')}">
                         ${d.growth.startsWith('+') ? '<i class="fa-solid fa-arrow-up text-[9px] mr-0.5"></i>' : (d.growth.startsWith('-') ? '<i class="fa-solid fa-arrow-down text-[9px] mr-0.5"></i>' : '')}${d.growth}
                     </span>
                 </td>
@@ -2055,20 +2057,20 @@ function renderAdminCategories() {
         const safeName = (c.name || '').replace(/'/g, "\\'");
         return `
         <tr class="hover:bg-slate-50 transition">
-            <td class="py-2.5 px-3">
+            <td class="py-2.5 px-3 whitespace-nowrap">
                 <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
                     <i class="fa-solid ${c.icon || 'fa-tag'}"></i>
                 </div>
             </td>
-            <td class="py-2.5 px-3 font-bold text-slate-800">${c.name}</td>
-            <td class="py-2.5 px-3 text-slate-400 font-mono text-[11px]">${c.slug}</td>
-            <td class="py-2.5 px-3">
-                <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            <td class="py-2.5 px-3 font-bold text-slate-800 whitespace-nowrap">${c.name}</td>
+            <td class="py-2.5 px-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">${c.slug}</td>
+            <td class="py-2.5 px-3 whitespace-nowrap">
+                <span class="inline-block whitespace-nowrap bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
                     ${c.product_count || 0} sản phẩm
                 </span>
             </td>
-            <td class="py-2.5 px-3 text-right">
-                <button onclick="deleteCategory(${c.id}, '${safeName}')" class="px-2.5 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-lg transition inline-flex items-center" title="Xóa danh mục này">
+            <td class="py-2.5 px-3 text-right whitespace-nowrap">
+                <button onclick="deleteCategory(${c.id}, '${safeName}')" class="px-2.5 py-1 text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold rounded-lg transition inline-flex items-center whitespace-nowrap" title="Xóa danh mục này">
                     <i class="fa-regular fa-trash-can mr-1"></i> Xóa
                 </button>
             </td>
@@ -2143,21 +2145,84 @@ async function loadAdminOrders() {
     }
 }
 
-function filterOrdersByStatus(status) {
+function filterOrdersByStatus(status, btnEl) {
     currentOrderFilter = status;
 
     // Update pill buttons
     const pills = document.querySelectorAll('.order-pill');
     pills.forEach(p => {
-        p.className = 'order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200';
+        p.className = 'order-pill px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 whitespace-nowrap shrink-0';
     });
 
-    event.target.className = 'order-pill active px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold';
+    const targetBtn = btnEl || (typeof event !== 'undefined' && event ? (event.currentTarget || event.target) : null);
+    if (targetBtn) {
+        targetBtn.className = 'order-pill active px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold whitespace-nowrap shrink-0';
+    }
     loadAdminOrders();
 }
 
 function renderAdminOrdersTable(orders) {
     const tbody = document.getElementById('adminOrdersTableBody');
+    const mobileContainer = document.getElementById('adminOrdersMobileContainer');
+
+    if (mobileContainer) {
+        if (orders.length === 0) {
+            mobileContainer.innerHTML = `
+                <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-xs shadow-sm">
+                    <i class="fa-solid fa-box-open text-2xl text-slate-300 mb-2 block"></i>
+                    Không có đơn hàng nào trong mục này
+                </div>
+            `;
+        } else {
+            mobileContainer.innerHTML = orders.map(o => `
+                <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="font-black text-emerald-700 whitespace-nowrap">${escapeAdminHtml(o.order_code)}</span>
+                            <span class="text-[10px] text-slate-400 whitespace-nowrap">${formatDate(o.created_at)}</span>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shrink-0 ${getStatusBadgeClass(o.status)}">
+                            ${getStatusText(o.status)}
+                        </span>
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-bold text-slate-800 truncate">
+                                <i class="fa-solid fa-user text-slate-400 mr-1.5 text-[11px]"></i>${escapeAdminHtml(o.customer_name)}
+                            </span>
+                            <a href="tel:${escapeAdminHtml(o.customer_phone)}" class="text-[11px] text-emerald-600 font-bold whitespace-nowrap shrink-0">
+                                <i class="fa-solid fa-phone text-[10px] mr-1"></i>${escapeAdminHtml(o.customer_phone)}
+                            </a>
+                        </div>
+                        <div class="text-slate-600 text-[11px] flex items-start gap-1.5">
+                            <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0 text-[11px]"></i>
+                            <span>${escapeAdminHtml(o.shipping_address || 'Chưa có địa chỉ')}</span>
+                        </div>
+                        ${o.note && o.note.trim() ? `
+                            <div class="bg-amber-50/90 border border-amber-200 text-amber-900 text-[11px] p-2 rounded-xl flex items-start gap-1.5">
+                                <i class="fa-solid fa-note-sticky text-amber-500 mt-0.5 shrink-0"></i>
+                                <span class="italic font-medium">${escapeAdminHtml(o.note)}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <strong class="font-black text-slate-800 text-sm whitespace-nowrap">${formatCurrency(o.total_amount)}</strong>
+                            <span class="text-[10px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded whitespace-nowrap">${escapeAdminHtml(o.payment_method || 'COD')}</span>
+                            ${o.payment_status === 'paid'
+                                ? `<button onclick="toggleOrderPaymentStatus(${o.id}, 'pending')" class="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full inline-flex items-center whitespace-nowrap"><i class="fa-solid fa-check mr-1 text-emerald-600"></i>Đã TT</button>`
+                                : `<button onclick="toggleOrderPaymentStatus(${o.id}, 'paid')" class="text-[10px] font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full inline-flex items-center whitespace-nowrap"><i class="fa-regular fa-clock mr-1 text-amber-600"></i>Chờ TT</button>`
+                            }
+                        </div>
+                        <button onclick="viewOrderDetail(${o.id})" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-xl text-xs transition border border-emerald-200/60 shadow-sm inline-flex items-center whitespace-nowrap shrink-0">
+                            <i class="fa-solid fa-eye mr-1 text-[11px]"></i> Chi tiết
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
     if (!tbody) return;
 
     if (orders.length === 0) {
@@ -2169,10 +2234,10 @@ function renderAdminOrdersTable(orders) {
         <tr class="hover:bg-slate-50 transition">
             <td class="py-3 px-3 font-black text-emerald-700 whitespace-nowrap">${o.order_code}</td>
             <td class="py-3 px-3">
-                <div class="font-bold text-slate-800 flex items-center">
+                <div class="font-bold text-slate-800 flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-user text-slate-400 mr-1.5 text-[11px]"></i>${o.customer_name}
                 </div>
-                <div class="text-[11px] text-emerald-600 font-bold mt-0.5 flex items-center">
+                <div class="text-[11px] text-emerald-600 font-bold mt-0.5 flex items-center whitespace-nowrap">
                     <i class="fa-solid fa-phone text-[10px] mr-1 text-emerald-500"></i>
                     <a href="tel:${o.customer_phone}" class="hover:underline">${o.customer_phone}</a>
                 </div>
@@ -2191,7 +2256,7 @@ function renderAdminOrdersTable(orders) {
                         <span class="italic font-medium leading-tight">${o.note}</span>
                     </div>
                 ` : `
-                    <span class="text-slate-400 text-[11px] italic flex items-center">
+                    <span class="text-slate-400 text-[11px] italic flex items-center whitespace-nowrap">
                         <i class="fa-regular fa-comment-dots mr-1 text-slate-300"></i> Không có ghi chú
                     </span>
                 `}
@@ -2199,23 +2264,23 @@ function renderAdminOrdersTable(orders) {
             <td class="py-3 px-3 font-extrabold text-slate-800 whitespace-nowrap">${formatCurrency(o.total_amount)}</td>
             <td class="py-3 px-3 whitespace-nowrap">
                 <div class="flex flex-col gap-1 items-start">
-                    <span class="text-[10px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
+                    <span class="text-[10px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded whitespace-nowrap">
                         ${o.payment_method || 'COD'}
                     </span>
                     ${o.payment_status === 'paid'
-                        ? `<button onclick="toggleOrderPaymentStatus(${o.id}, 'pending')" class="text-[9px] font-black bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-1.5 py-0.5 rounded-full flex items-center transition" title="Bấm để đổi sang Chờ thanh toán"><i class="fa-solid fa-check mr-1 text-emerald-600"></i>Đã TT</button>`
-                        : `<button onclick="toggleOrderPaymentStatus(${o.id}, 'paid')" class="text-[9px] font-black bg-amber-100 text-amber-800 hover:bg-amber-200 px-1.5 py-0.5 rounded-full flex items-center transition" title="Bấm để xác nhận Đã thanh toán"><i class="fa-regular fa-clock mr-1 text-amber-600"></i>Chờ TT</button>`
+                        ? `<button onclick="toggleOrderPaymentStatus(${o.id}, 'pending')" class="text-[9px] font-black bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-1.5 py-0.5 rounded-full flex items-center transition whitespace-nowrap" title="Bấm để đổi sang Chờ thanh toán"><i class="fa-solid fa-check mr-1 text-emerald-600"></i>Đã TT</button>`
+                        : `<button onclick="toggleOrderPaymentStatus(${o.id}, 'paid')" class="text-[9px] font-black bg-amber-100 text-amber-800 hover:bg-amber-200 px-1.5 py-0.5 rounded-full flex items-center transition whitespace-nowrap" title="Bấm để xác nhận Đã thanh toán"><i class="fa-regular fa-clock mr-1 text-amber-600"></i>Chờ TT</button>`
                     }
                 </div>
             </td>
             <td class="py-3 px-3 whitespace-nowrap">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeClass(o.status)}">
+                <span class="inline-block whitespace-nowrap px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeClass(o.status)}">
                     ${getStatusText(o.status)}
                 </span>
             </td>
             <td class="py-3 px-3 text-slate-400 text-[11px] whitespace-nowrap">${formatDate(o.created_at)}</td>
             <td class="py-3 px-3 text-right whitespace-nowrap">
-                <button onclick="viewOrderDetail(${o.id})" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-xs transition border border-emerald-200/60 shadow-sm flex items-center ml-auto">
+                <button onclick="viewOrderDetail(${o.id})" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold rounded-lg text-xs transition border border-emerald-200/60 shadow-sm flex items-center ml-auto whitespace-nowrap">
                     <i class="fa-solid fa-eye mr-1 text-[11px]"></i> Chi tiết
                 </button>
             </td>
