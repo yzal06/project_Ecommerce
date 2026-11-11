@@ -256,8 +256,8 @@ function playPaymentSuccessChime() {
     playDingDongChime();
 }
 
-// Audio cache cho giọng nữ Việt Nam phát thanh chuẩn
-let cachedFemaleAudio = null;
+// Audio cache cho các file giọng nữ Việt Nam phát thanh chuẩn theo đường dẫn
+const cachedFemaleAudios = {};
 
 // Tìm kiếm giọng đọc nữ tiếng Việt từ Web Speech API
 function getVietnameseFemaleVoice() {
@@ -281,28 +281,46 @@ if ('speechSynthesis' in window) {
     };
 }
 
-// Phát thanh giọng nữ Việt Nam: "Bạn có đơn hàng mới!"
-function speakOrderAlert(text = 'Bạn có đơn hàng mới!') {
-    // Ưu tiên 1: Phát file audio giọng nữ Việt Nam chuẩn bản địa (100% tiếng Việt tự nhiên)
-    const audioPath = 'uploads/alert-order-vi.mp3';
+/**
+ * Phát file audio giọng nữ Việt Nam chuẩn bản địa theo đường dẫn,
+ * fallback sang Web Speech API nếu trình duyệt chặn autoplay hoặc chưa tải file.
+ */
+function playFemaleVoiceAudio(audioPath, fallbackText) {
     try {
-        if (!cachedFemaleAudio) {
-            cachedFemaleAudio = new Audio(audioPath);
+        if (typeof Audio === 'undefined') {
+            fallbackWebSpeechFemale(fallbackText);
+            return;
         }
-        cachedFemaleAudio.currentTime = 0;
-        const playPromise = cachedFemaleAudio.play();
+        // Dừng audio thông báo khác đang phát để tránh hai giọng nói chồng lên nhau
+        Object.values(cachedFemaleAudios).forEach((existingAudio) => {
+            if (existingAudio && !existingAudio.paused) {
+                existingAudio.pause();
+                existingAudio.currentTime = 0;
+            }
+        });
+        if (!cachedFemaleAudios[audioPath]) {
+            cachedFemaleAudios[audioPath] = new Audio(audioPath);
+        }
+        const audio = cachedFemaleAudios[audioPath];
+        audio.currentTime = 0;
+        const playPromise = audio.play();
         if (playPromise !== undefined) {
             playPromise.then(() => {
                 // Đã phát thành công giọng nữ Việt Nam
-            }).catch(e => {
+            }).catch(() => {
                 // Fallback nếu trình duyệt yêu cầu tương tác hoặc file chưa nạp
-                fallbackWebSpeechFemale(text);
+                fallbackWebSpeechFemale(fallbackText);
             });
             return;
         }
     } catch (err) {
-        fallbackWebSpeechFemale(text);
+        fallbackWebSpeechFemale(fallbackText);
     }
+}
+
+// Phát thanh giọng nữ Việt Nam: "Bạn có đơn hàng mới!"
+function speakOrderAlert(text = 'Bạn có đơn hàng mới!') {
+    playFemaleVoiceAudio('uploads/alert-order-vi.mp3', text);
 }
 
 // Fallback sử dụng Web Speech API lọc đúng giọng nữ tiếng Việt
@@ -349,9 +367,9 @@ function dismissOrderAlert() {
     if (banner) banner.classList.add('hidden');
 }
 
-// Phát thanh thông báo đơn hàng đã thanh toán thành công (giọng nữ Việt Nam)
+// Phát thanh thông báo đơn hàng đã thanh toán thành công (giọng nữ Việt Nam chuẩn như đơn mới)
 function speakPaymentAlert(text = 'Bạn có đơn hàng đã thanh toán thành công!') {
-    fallbackWebSpeechFemale(text);
+    playFemaleVoiceAudio('uploads/alert-payment-vi.mp3', text);
 }
 
 // Kích hoạt chuông Ding-dong + giọng nữ Việt Nam + banner thông báo thanh toán thành công (đồng bộ như có đơn mới)
@@ -398,7 +416,7 @@ function testPaymentSound() {
     setTimeout(() => {
         speakPaymentAlert('Bạn có đơn hàng đã thanh toán thành công!');
     }, 350);
-    showToast('success', '🔊 Đang phát thông báo thanh toán thành công: "Bạn có đơn hàng đã thanh toán thành công!"');
+    showToast('success', '🔊 Đang phát thông báo giọng nữ Việt Nam: "Bạn có đơn hàng đã thanh toán thành công!"');
 }
 
 // Tự động kiểm tra đơn hàng mới & thanh toán thành công trong nền
