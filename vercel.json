@@ -1,5 +1,8 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "outputDirectory": ".",
+  "installCommand": "echo 'Skip Node dependency install for static Admin portal'",
+  "buildCommand": "echo 'Static Admin portal ready'",
+  "outputDirectory": "public",
   "cleanUrls": true
 }

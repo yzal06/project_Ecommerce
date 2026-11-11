@@ -1,0 +1,11 @@
+# Exclude Express/SQLite backend files so Vercel builds Admin Portal strictly as a static site
+server.js
+database.js
+cloudSyncService.js
+marketplaceService.js
+ecommerce.db
+start.bat
+api/
+node_modules/
+.env
+.env.*
